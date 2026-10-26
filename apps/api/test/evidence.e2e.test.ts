@@ -7,7 +7,7 @@ import type { TestTenant } from '@auditos/db/testing';
 import { createPools } from '@auditos/db';
 import { buildApp } from '../src/app';
 import { validateUpload } from '../src/evidence/validate';
-import { harness, login, makeTenant, makeUser, ownerQuery, type Harness, type Session, type TestUser } from './helpers';
+import { login, makeTenant, makeUser, ownerQuery, type Harness, type Session, type TestUser } from './helpers';
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4]);
 const PDF = Buffer.from('%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF');
