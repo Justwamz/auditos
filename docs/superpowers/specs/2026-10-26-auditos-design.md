@@ -274,6 +274,7 @@ Rationale: the integrity and security backbone is the hard-to-retrofit part, so 
 4. **Regulated clients**: SMEs first, regulated (RBA/CMA) later.
 5. **IFRS for SMEs edition**: support both, selected by period. 2nd edition (as amended) for periods before 1 Jan 2027; 3rd edition (2025) for periods beginning on or after 1 Jan 2027. Full IFRS as a second framework.
 6. **Content**: user will supply firm checklists/templates later. Until then, I author placeholder starter content, clearly labelled as unreviewed.
+2a. **Update**: this is a demo for now, so Render may hold all data and residency is not enforced yet. Synthetic data only until the residency decision is made; revisit before any real client data.
 7. **Delivery**: build now, run locally on localhost; Render hosting later.
 
 ## 16. Open questions for you (superseded where answered above)
