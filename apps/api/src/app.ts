@@ -8,6 +8,8 @@ import { ZodError } from 'zod';
 import { createPools } from '@auditos/db';
 import { authRoutes } from './auth/routes';
 import { docControlRoutes } from './doc-control/routes';
+import { evidenceRoutes } from './evidence/routes';
+import type { BlobStore, Scanner } from './evidence/storage';
 import { engagementRoutes } from './engagements/routes';
 import { tenantRoutes } from './tenants/routes';
 import { loadConfig } from './config';
@@ -19,6 +21,8 @@ export interface AppOptions {
   env?: NodeJS.ProcessEnv;
   now?: () => number;
   pools?: { app: Pool };
+  blobs?: BlobStore;
+  scanner?: Scanner;
   /** Extra route plugins, registered after auth (feature modules). */
   routes?: Array<(app: FastifyInstance) => Promise<void>>;
 }
@@ -53,6 +57,8 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
     app.decorate('pools', { app: appPool });
   }
   app.decorate('cfg', cfg);
+  app.decorate('blobs', opts.blobs);
+  app.decorate('scanner', opts.scanner);
   app.decorate('now', opts.now ?? Date.now);
   app.addHook('onClose', async () => {
     await ownedPool?.end();
@@ -133,6 +139,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   await app.register(tenantRoutes);
   await app.register(engagementRoutes);
   await app.register(docControlRoutes);
+  await app.register(evidenceRoutes);
   for (const plugin of opts.routes ?? []) await app.register(plugin);
   return app;
 }

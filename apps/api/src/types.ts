@@ -19,6 +19,8 @@ declare module 'fastify' {
     pools: { app: Pool };
     cfg: Config;
     now: () => number;
+    blobs: import('./evidence/storage').BlobStore | undefined;
+    scanner: import('./evidence/storage').Scanner | undefined;
   }
   interface FastifyRequest {
     auth?: AuthCtx;
