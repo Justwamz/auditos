@@ -26,6 +26,7 @@ export interface PolicyCtx {
   engagementPartnerId?: string;
   eqrId?: string;
   itemState?: ItemState;
+  itemKind?: string;
   engagementState?: EngagementState;
   approver?: { userId: string; role: Role };
 }
@@ -85,7 +86,8 @@ export function can(actor: Actor, action: Action, ctx: PolicyCtx): Decision {
     case 'item.signoff.partner': {
       if (locked) return deny('engagement is locked');
       const needed: Role[] = action === 'item.signoff.partner' ? ['partner'] : ['manager', 'partner'];
-      if (!needed.includes(actor.role)) return deny(action === 'item.signoff.partner' ? 'partner only' : 'manager or partner only');
+      const eqrFinal = action === 'item.signoff.partner' && actor.role === 'eqr' && ctx.itemKind === 'eqr_review';
+      if (!needed.includes(actor.role) && !eqrFinal) return deny(action === 'item.signoff.partner' ? 'partner only' : 'manager or partner only');
       if (ctx.preparerId === actor.userId) return deny('cannot review own work');
       if (action === 'item.signoff.manager' && ctx.preparerGrade !== undefined && gradeOf(actor) <= ctx.preparerGrade) {
         return deny('reviewer grade must exceed preparer grade');

@@ -7,6 +7,8 @@ import type { Pool } from 'pg';
 import { ZodError } from 'zod';
 import { createPools } from '@auditos/db';
 import { authRoutes } from './auth/routes';
+import { checklistRoutes } from './checklists/routes';
+import { reviewNoteRoutes } from './review-notes/routes';
 import { docControlRoutes } from './doc-control/routes';
 import { evidenceRoutes } from './evidence/routes';
 import type { BlobStore, Scanner } from './evidence/storage';
@@ -140,6 +142,8 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   await app.register(engagementRoutes);
   await app.register(docControlRoutes);
   await app.register(evidenceRoutes);
+  await app.register(checklistRoutes);
+  await app.register(reviewNoteRoutes);
   for (const plugin of opts.routes ?? []) await app.register(plugin);
   return app;
 }

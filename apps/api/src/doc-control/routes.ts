@@ -1,11 +1,11 @@
 import type { FastifyInstance } from 'fastify';
-import type { PoolClient } from 'pg';
 import { z } from 'zod';
-import { can, GRADE, type ItemState, type Role } from '@auditos/authz';
+import { can, GRADE } from '@auditos/authz';
 import { withTenant } from '@auditos/db';
 import { actorOf, assertCan, httpError, tenantCtx } from '../authz';
 import { loadEngagement } from '../engagements/service';
 import { registerDocControlGates } from './gates';
+import { editItemTx, lastEditor, loadItem, memberGrade, ITEM_COLUMNS, type ItemRow } from './service';
 
 const uuid = z.string().uuid();
 const MAX_CONTENT_BYTES = 200_000;
@@ -21,40 +21,6 @@ const patchBody = z
   .refine((b) => b.title !== undefined || b.content !== undefined, 'nothing to change');
 const signoffBody = z.object({ level: z.enum(['prepared', 'manager', 'partner']), expectedHash: z.string().regex(/^[0-9a-f]{64}$/) });
 const reasonBody = z.object({ reason: z.string().max(500) });
-
-interface ItemRow {
-  id: string;
-  engagement_id: string;
-  kind: string;
-  title: string;
-  content: unknown;
-  state: ItemState;
-  version: number;
-  content_hash: string;
-  addendum_of: string | null;
-  created_by: string;
-  created_at: Date;
-  updated_at: Date;
-  deleted_at: Date | null;
-  deleted_reason: string | null;
-}
-
-const ITEM_COLUMNS = 'id, engagement_id, kind, title, content, state, version, content_hash, addendum_of, created_by, created_at, updated_at, deleted_at, deleted_reason';
-
-const loadItem = async (tx: PoolClient, id: string): Promise<ItemRow | undefined> =>
-  (await tx.query(`select ${ITEM_COLUMNS} from wp_items where id = $1`, [id])).rows[0] as ItemRow | undefined;
-
-const memberGrade = async (tx: PoolClient, userId: string): Promise<{ role: Role; grade: number } | undefined> => {
-  const r = (await tx.query('select role, grade from memberships where user_id = $1', [userId])).rows[0];
-  return r ? { role: r.role as Role, grade: r.grade as number } : undefined;
-};
-
-const lastEditor = async (tx: PoolClient, item: ItemRow): Promise<{ id: string | null; grade: number }> => {
-  const r = (await tx.query('select edited_by from wp_item_versions where item_id = $1 and version = $2', [item.id, item.version])).rows[0];
-  const id = (r?.edited_by as string | null) ?? null;
-  const m = id ? await memberGrade(tx, id) : undefined;
-  return { id, grade: m?.grade ?? 0 };
-};
 
 const presentItem = (i: ItemRow) => ({
   id: i.id,
@@ -149,18 +115,9 @@ export async function docControlRoutes(app: FastifyInstance): Promise<void> {
     const body = patchBody.parse(req.body);
     if (body.content !== undefined && JSON.stringify(body.content).length > MAX_CONTENT_BYTES) throw httpError(413, 'content_too_large');
     return withTenant(pool, tenantCtx(req), async (tx) => {
-      const item = await loadItem(tx, id);
+      const item = await loadItem(tx, id, true);
       if (!item) throw httpError(404, 'not_found');
-      const eng = await loadEngagement(tx, item.engagement_id);
-      if (!eng) throw httpError(404, 'not_found');
-      assertCan(req, 'item.edit', { assigned: true, itemState: item.state, engagementState: eng.state });
-      if (item.state === 'partner_approved' && !body.reason) throw httpError(400, 'reason_required');
-      await tx.query("select set_config('app.edit_reason', $1, true)", [body.reason ?? '']);
-      const r = await tx.query('update wp_items set title = coalesce($2, title), content = coalesce($3::jsonb, content) where id = $1 returning version, state, content_hash', [
-        id, body.title ?? null, body.content === undefined ? null : JSON.stringify(body.content),
-      ]);
-      const row = r.rows[0];
-      return { version: row.version, state: row.state, contentHash: row.content_hash };
+      return editItemTx(req, tx, item, body);
     });
   });
 
@@ -176,6 +133,7 @@ export async function docControlRoutes(app: FastifyInstance): Promise<void> {
       assertCan(req, `item.signoff.${body.level}`, {
         assigned: true,
         engagementState: eng.state,
+        itemKind: item.kind,
         ...(editor.id ? { preparerId: editor.id, preparerGrade: editor.grade } : {}),
       });
       const r = await tx.query('select item_signoff($1, $2, $3) as state', [id, body.level, body.expectedHash]);

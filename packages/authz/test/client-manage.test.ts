@@ -22,3 +22,10 @@ test('only assigned managers and partners can assign members', () => {
   expect(can(actor('manager'), 'engagement.assign', { assigned: false }).allow).toBe(false);
   expect(can(actor('senior'), 'engagement.assign', { assigned: true }).allow).toBe(false);
 });
+
+test('an eqr may give the final sign-off only on an eqr_review item', () => {
+  const ctx = { assigned: true, preparerId: 'p', preparerGrade: 2 };
+  expect(can(actor('eqr'), 'item.signoff.partner', { ...ctx, itemKind: 'eqr_review' }).allow).toBe(true);
+  expect(can(actor('eqr'), 'item.signoff.partner', { ...ctx, itemKind: 'checklist' }).allow).toBe(false);
+  expect(can(actor('eqr'), 'item.signoff.partner', ctx).allow).toBe(false);
+});
