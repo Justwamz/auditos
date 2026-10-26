@@ -38,6 +38,27 @@ export async function peopleRoutes(app: FastifyInstance): Promise<void> {
     });
   });
 
+  app.get<{ Params: { id: string } }>('/engagements/:id/unlock-requests', { config: { access: 'tenant' } }, async (req) => {
+    const id = z.string().uuid().safeParse(req.params.id);
+    if (!id.success) throw httpError(404, 'not_found');
+    return withTenant(pool, tenantCtx(req), async (tx) => {
+      if (!(await loadEngagement(tx, id.data))) throw httpError(404, 'not_found');
+      const rows = (
+        await tx.query(
+          `select r.id, r.requested_by, ru.email as requested_by_email, r.reason, r.status, r.created_at, r.decided_at
+             from unlock_requests r join users ru on ru.id = r.requested_by where r.engagement_id = $1 order by r.created_at desc`,
+          [id.data],
+        )
+      ).rows;
+      return {
+        requests: rows.map((r) => ({
+          id: r.id, requestedBy: r.requested_by, requestedByEmail: r.requested_by_email, reason: r.reason, status: r.status,
+          createdAt: r.created_at, decidedAt: r.decided_at,
+        })),
+      };
+    });
+  });
+
   app.get('/independence', { config: { access: 'tenant' } }, async (req) => {
     const ctx = tenantCtx(req);
     const rows = await withTenant(pool, ctx, async (tx) =>

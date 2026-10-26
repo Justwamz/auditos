@@ -52,3 +52,12 @@ describe('people and team', () => {
     expect((await call(sOut, 'GET', '/independence')).json().declarations).toEqual([]);
   });
 });
+
+describe('unlock requests listing', () => {
+  test('members of an engagement can list its unlock requests; outsiders get 404', async () => {
+    const res = await call(sF, 'GET', `/engagements/${engId}/unlock-requests`);
+    expect(res.statusCode).toBe(200);
+    expect(res.json().requests).toEqual([]);
+    expect((await call(sOut, 'GET', `/engagements/${engId}/unlock-requests`)).statusCode).toBe(404);
+  });
+});
