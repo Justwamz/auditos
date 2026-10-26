@@ -1,0 +1,10 @@
+{
+  "name": "@auditos/audit-log",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": { "@auditos/db": "workspace:*", "pg": "^8.13.1" },
+  "devDependencies": { "@types/pg": "^8.11.10" },
+  "scripts": { "test": "vitest run", "typecheck": "tsc --noEmit", "lint": "eslint src test" }
+}

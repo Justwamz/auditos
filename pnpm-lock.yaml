@@ -30,6 +30,19 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.5)
 
+  packages/audit-log:
+    dependencies:
+      '@auditos/db':
+        specifier: workspace:*
+        version: link:../db
+      pg:
+        specifier: ^8.13.1
+        version: 8.23.1
+    devDependencies:
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.23.1
+
   packages/authz: {}
 
   packages/db:
