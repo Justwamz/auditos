@@ -3,8 +3,9 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Nav } from '@/components/Nav';
 import { StepUpProvider } from '@/components/StepUp';
+import { resolveApiUrl } from '@/lib/apiUrl';
 
-const API_URL = process.env.API_URL ?? 'http://localhost:4010';
+const API_URL = resolveApiUrl();
 
 interface Me {
   email: string;

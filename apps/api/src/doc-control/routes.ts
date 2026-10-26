@@ -13,11 +13,11 @@ const MAX_CONTENT_BYTES = 200_000;
 const createBody = z.object({
   kind: z.string().regex(/^[a-z0-9_]{1,60}$/),
   title: z.string().trim().min(1).max(300),
-  content: z.record(z.unknown()).default({}),
+  content: z.record(z.string(), z.unknown()).default({}),
   addendumOf: uuid.optional(),
 });
 const patchBody = z
-  .object({ title: z.string().trim().min(1).max(300).optional(), content: z.record(z.unknown()).optional(), reason: z.string().trim().min(5).max(500).optional() })
+  .object({ title: z.string().trim().min(1).max(300).optional(), content: z.record(z.string(), z.unknown()).optional(), reason: z.string().trim().min(5).max(500).optional() })
   .refine((b) => b.title !== undefined || b.content !== undefined, 'nothing to change');
 const signoffBody = z.object({ level: z.enum(['prepared', 'manager', 'partner']), expectedHash: z.string().regex(/^[0-9a-f]{64}$/) });
 const reasonBody = z.object({ reason: z.string().max(500) });

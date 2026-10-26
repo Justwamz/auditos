@@ -2,7 +2,9 @@
   "name": "auditos",
   "private": true,
   "packageManager": "pnpm@10.29.2",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
@@ -17,5 +19,11 @@
     "typescript-eslint": "^8.19.0",
     "eslint-plugin-security": "^3.0.1",
     "@types/node": "^22.10.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": ">=8.5.23",
+      "uuid": ">=11.1.1"
+    }
   }
 }

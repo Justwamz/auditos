@@ -1,0 +1,64 @@
+# Render blueprint for the AuditOS demo. Create it from the repo: New > Blueprint.
+# Demo data only. Data residency in Kenya is NOT satisfied by these regions; settle that before real client data.
+databases:
+  - name: auditos-db
+    databaseName: auditos
+    plan: basic-256mb
+    region: frankfurt
+    postgresMajorVersion: "16"
+    ipAllowList: []   # private network only; add your own IP here if you need psql from a laptop
+
+services:
+  - type: web
+    name: auditos-api
+    runtime: node
+    region: frankfurt
+    plan: starter
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    preDeployCommand: pnpm --filter @auditos/api prepare-db
+    startCommand: pnpm --filter @auditos/api start
+    healthCheckPath: /health
+    disk:
+      name: evidence
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      - key: PG_SUPERUSER_URL
+        fromDatabase:
+          name: auditos-db
+          property: connectionString
+      - key: DB_NAME
+        value: auditos
+      - key: OWNER_PASSWORD
+        generateValue: true
+      - key: APP_PASSWORD
+        generateValue: true
+      - key: APP_ENC_KEY
+        generateValue: true   # 256-bit base64, the format the API expects
+      - key: PLATFORM_ADMIN_TOKEN
+        generateValue: true
+      - key: UPLOAD_DIR
+        value: /var/data/evidence
+
+  - type: web
+    name: auditos-web
+    runtime: node
+    region: frankfurt
+    plan: starter
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @auditos/web build
+    startCommand: pnpm --filter @auditos/web exec next start -p $PORT
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      - key: API_HOSTPORT
+        fromService:
+          type: web
+          name: auditos-api
+          property: hostport

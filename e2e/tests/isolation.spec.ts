@@ -44,7 +44,7 @@ test('the statements page shows the draft statements with comparatives after car
   await expect(page.getByText('Carried forward')).toBeVisible();
   await page.getByRole('tab', { name: 'Statements', exact: true }).click();
   await expect(page.getByText('Draft: not approved for issue')).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Profit for the year' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Profit for the year' }).first()).toBeVisible();
   await expect(page.getByRole('cell', { name: '130,000.00' }).first()).toBeVisible();
   await expect(page.getByRole('cell', { name: '1,150,000.00' }).first()).toBeVisible();
 });

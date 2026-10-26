@@ -60,7 +60,9 @@ export async function seedDemoData(owner: Pool, firmName = 'Demo Firm A', slug =
     await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
     const user = async (role: string): Promise<string> =>
       (await c.query('select id from users where lower(email) = $1', [`${role.replace('_', '-')}@${slug}.example.test`])).rows[0].id as string;
-    const [partner, manager, senior, staff, qo, eqr] = await Promise.all(['partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr'].map(user));
+    const ids: string[] = [];
+    for (const role of ['partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr']) ids.push(await user(role));
+    const [partner, manager, senior, staff, qo, eqr] = ids;
 
     await as(c, tenantId, manager!);
     if ((await c.query('select 1 from clients where name = $1', [SYNTHETIC_CLIENT])).rowCount) {

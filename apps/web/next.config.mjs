@@ -1,8 +1,9 @@
-const API_URL = process.env.API_URL ?? 'http://localhost:4010';
+const API_URL = process.env.API_URL ?? (process.env.API_HOSTPORT ? `http://${process.env.API_HOSTPORT}` : 'http://localhost:4010');
 
 /** @type {import('next').NextConfig} */
 export default {
   poweredByHeader: false,
+  distDir: process.env.NEXT_DIST_DIR ?? '.next',
   reactStrictMode: true,
   // The browser only ever talks to this origin; the API is reached through /api so cookies stay same-origin.
   async rewrites() {
