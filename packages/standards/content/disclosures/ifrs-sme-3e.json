@@ -1,0 +1,24 @@
+{
+  "framework": "IFRS_SME_3E",
+  "status": "unreviewed-placeholder",
+  "note": "Firm-authored paraphrase for periods beginning on or after 1 January 2027. Section references are indicative and must be confirmed by a qualified reviewer against the third edition.",
+  "items": [
+    { "id": "sofp", "ref": "Section 4", "text": "Statement of financial position presented with required headings", "check": "sofp" },
+    { "id": "pl", "ref": "Section 5", "text": "Profit or loss presented for the period", "check": "pl" },
+    { "id": "equity", "ref": "Section 6", "text": "Changes in equity reconciled for the period", "check": "equity" },
+    { "id": "cashflow", "ref": "Section 7", "text": "Cash flow statement presented", "check": "cashflow" },
+    { "id": "comparatives", "ref": "Section 3", "text": "Comparative amounts presented for the prior period", "check": "comparatives" },
+    { "id": "basis-of-preparation", "ref": "Section 3 and Section 8", "text": "Basis of preparation and statement of compliance", "noteId": "policies" },
+    { "id": "going-concern", "ref": "Section 3", "text": "Going concern assessment and any material uncertainty disclosed", "noteId": "going-concern" },
+    { "id": "key-judgements", "ref": "Section 8", "text": "Significant judgements and estimation uncertainty", "noteId": "key-judgements" },
+    { "id": "revenue-note", "ref": "Section 23", "text": "Revenue recognition policy and revenue by category", "noteId": "revenue-note" },
+    { "id": "revenue-performance-obligations", "ref": "Section 23", "text": "Contracts with customers: how performance obligations were identified and when revenue is recognised", "noteId": "revenue-performance-obligations" },
+    { "id": "fair-value-measurement", "ref": "Section 12", "text": "Fair value measurement basis and hierarchy for items carried at fair value", "noteId": "fair-value-measurement" },
+    { "id": "cash-note", "ref": "Section 7", "text": "Components of cash and cash equivalents", "noteId": "cash-note" },
+    { "id": "tax-note", "ref": "Section 29", "text": "Income tax expense and balances", "noteId": "tax-note" },
+    { "id": "ppe-reconciliation", "ref": "Section 17", "text": "Reconciliation of property, plant and equipment", "noteId": "ppe-note" },
+    { "id": "employee-benefits", "ref": "Section 28", "text": "Employee benefit costs", "noteId": "employee-benefits" },
+    { "id": "events-after-period", "ref": "Section 32", "text": "Events after the reporting period", "noteId": "events-after-period" },
+    { "id": "related-parties", "ref": "Section 33", "text": "Related party relationships, transactions and key management compensation", "noteId": "related-parties" }
+  ]
+}

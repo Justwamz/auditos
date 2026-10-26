@@ -1,0 +1,224 @@
+{
+  "framework": "IFRS_SME_2E",
+  "periodStart": "2026-01-01",
+  "periodEnd": "2026-12-31",
+  "hasComparatives": false,
+  "sofp": {
+    "sections": [
+      {
+        "id": "non_current_assets",
+        "label": "Non-current assets",
+        "rows": [
+          {
+            "id": "ppe",
+            "label": "Property, plant and equipment",
+            "current": "12000000"
+          }
+        ],
+        "total": "12000000"
+      },
+      {
+        "id": "current_assets",
+        "label": "Current assets",
+        "rows": [
+          {
+            "id": "trade_receivables",
+            "label": "Trade and other receivables",
+            "current": "25000000"
+          },
+          {
+            "id": "cash",
+            "label": "Cash and cash equivalents",
+            "current": "40000000"
+          }
+        ],
+        "total": "65000000"
+      },
+      {
+        "id": "equity",
+        "label": "Equity",
+        "rows": [
+          {
+            "id": "share_capital",
+            "label": "Share capital",
+            "current": "5000000"
+          },
+          {
+            "id": "retained_earnings",
+            "label": "Retained earnings",
+            "current": "57000000"
+          }
+        ],
+        "total": "62000000"
+      },
+      {
+        "id": "non_current_liabilities",
+        "label": "Non-current liabilities",
+        "rows": [],
+        "total": "0"
+      },
+      {
+        "id": "current_liabilities",
+        "label": "Current liabilities",
+        "rows": [
+          {
+            "id": "trade_payables",
+            "label": "Trade and other payables",
+            "current": "9000000"
+          },
+          {
+            "id": "tax_payable",
+            "label": "Current tax payable",
+            "current": "6000000"
+          }
+        ],
+        "total": "15000000"
+      }
+    ],
+    "totalAssets": "77000000",
+    "totalEquityAndLiabilities": "77000000"
+  },
+  "pl": {
+    "rows": [
+      {
+        "id": "revenue_total",
+        "label": "Revenue",
+        "current": "170000000"
+      },
+      {
+        "id": "gross_profit",
+        "label": "Gross profit",
+        "current": "170000000",
+        "subtotal": true
+      },
+      {
+        "id": "admin_expenses",
+        "label": "Administrative expenses",
+        "current": "-110000000"
+      },
+      {
+        "id": "depreciation",
+        "label": "Depreciation and amortisation",
+        "current": "-4000000"
+      },
+      {
+        "id": "operating_profit",
+        "label": "Operating profit",
+        "current": "56000000",
+        "subtotal": true
+      },
+      {
+        "id": "profit_before_tax",
+        "label": "Profit before tax",
+        "current": "56000000",
+        "subtotal": true
+      },
+      {
+        "id": "income_tax",
+        "label": "Income tax expense",
+        "current": "-6000000"
+      },
+      {
+        "id": "profit",
+        "label": "Profit for the year",
+        "current": "50000000",
+        "subtotal": true
+      }
+    ],
+    "profit": "50000000"
+  },
+  "equity": {
+    "rows": [
+      {
+        "id": "opening",
+        "label": "Balance at start of period",
+        "values": {
+          "share_capital": "5000000",
+          "other_reserves": "0",
+          "retained_earnings": "7000000",
+          "total": "12000000"
+        }
+      },
+      {
+        "id": "profit",
+        "label": "Profit for the year",
+        "values": {
+          "share_capital": "0",
+          "other_reserves": "0",
+          "retained_earnings": "50000000",
+          "total": "50000000"
+        }
+      },
+      {
+        "id": "dividends",
+        "label": "Dividends declared",
+        "values": {
+          "share_capital": "0",
+          "other_reserves": "0",
+          "retained_earnings": "0",
+          "total": "0"
+        }
+      },
+      {
+        "id": "closing",
+        "label": "Balance at end of period",
+        "values": {
+          "share_capital": "5000000",
+          "other_reserves": "0",
+          "retained_earnings": "57000000",
+          "total": "62000000"
+        }
+      }
+    ]
+  },
+  "notes": [
+    {
+      "id": "revenue-note",
+      "title": "Revenue",
+      "rows": [
+        {
+          "id": "revenue",
+          "label": "Sale of goods and services",
+          "current": "170000000"
+        },
+        {
+          "id": "rental_income",
+          "label": "Rental income",
+          "current": "0"
+        }
+      ]
+    },
+    {
+      "id": "cash-note",
+      "title": "Cash and cash equivalents",
+      "rows": [
+        {
+          "id": "cash",
+          "label": "Cash and bank balances",
+          "current": "40000000"
+        },
+        {
+          "id": "bank_overdraft",
+          "label": "Bank overdraft",
+          "current": "0"
+        }
+      ]
+    },
+    {
+      "id": "tax-note",
+      "title": "Income tax",
+      "rows": [
+        {
+          "id": "income_tax",
+          "label": "Income tax expense",
+          "current": "6000000"
+        },
+        {
+          "id": "tax_payable",
+          "label": "Current tax payable",
+          "current": "6000000"
+        }
+      ]
+    }
+  ]
+}
