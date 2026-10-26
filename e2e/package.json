@@ -1,0 +1,8 @@
+{
+  "name": "@auditos/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "playwright test", "install-browsers": "playwright install chromium" },
+  "devDependencies": { "@playwright/test": "^1.49.1" }
+}

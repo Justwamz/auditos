@@ -79,7 +79,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (users.length === 0) {
     console.log('Seed: nothing new to create (already seeded). Credentials file left as is.');
   } else {
-    writeFileSync(CREDENTIALS_FILE, JSON.stringify({ password, users }, null, 2));
-    console.log(`Seeded ${users.length} users. Credentials written to ${CREDENTIALS_FILE} (git-ignored).`);
+    writeFileSync(process.env.SEED_CREDENTIALS_FILE ?? CREDENTIALS_FILE, JSON.stringify({ password, users }, null, 2));
+    console.log(`Seeded ${users.length} users. Credentials written to ${process.env.SEED_CREDENTIALS_FILE ?? CREDENTIALS_FILE} (git-ignored).`);
   }
 }
