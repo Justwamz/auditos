@@ -7,6 +7,7 @@ import type { Pool } from 'pg';
 import { ZodError } from 'zod';
 import { createPools } from '@auditos/db';
 import { authRoutes } from './auth/routes';
+import { engagementRoutes } from './engagements/routes';
 import { tenantRoutes } from './tenants/routes';
 import { loadConfig } from './config';
 import { sha256Hex } from './security/crypto';
@@ -115,6 +116,10 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
     if (err instanceof ZodError) {
       return reply.code(400).send({ error: 'invalid_request', issues: err.issues.map((i) => ({ path: i.path, message: i.message })) });
     }
+    const dbCode = (err as { code?: string }).code;
+    if (typeof dbCode === 'string' && /^AO\d{3}$/.test(dbCode)) {
+      return reply.code(Number(dbCode.slice(2))).send({ error: err.message });
+    }
     const status = (err as FastifyError).statusCode ?? 500;
     if (status >= 400 && status < 500) {
       return reply.code(status).send({ error: status === 429 ? 'rate_limited' : ((err as FastifyError).code ?? 'bad_request').toLowerCase() });
@@ -125,6 +130,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
 
   await app.register(authRoutes);
   await app.register(tenantRoutes);
+  await app.register(engagementRoutes);
   for (const plugin of opts.routes ?? []) await app.register(plugin);
   return app;
 }

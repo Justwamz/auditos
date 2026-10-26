@@ -3,6 +3,7 @@ import { GRADE, type Actor, type EngagementState, type ItemState, type Role } fr
 export type Action =
   | 'engagement.read'
   | 'engagement.transition'
+  | 'engagement.assign'
   | 'engagement.assign_eqr'
   | 'engagement.unlock'
   | 'item.edit'
@@ -12,6 +13,8 @@ export type Action =
   | 'item.delete.request'
   | 'item.delete.approve'
   | 'tenant.admin'
+  | 'client.manage'
+  | 'engagement.create'
   | 'export';
 
 export interface PolicyCtx {
@@ -42,6 +45,9 @@ export function can(actor: Actor, action: Action, ctx: PolicyCtx): Decision {
     return actor.role === 'firm_admin' ? allow : deny('firm admin only');
   }
   if (actor.role === 'firm_admin') return deny('firm admin has no access to engagement content');
+  if (action === 'client.manage' || action === 'engagement.create') {
+    return actor.role === 'manager' || actor.role === 'partner' ? allow : deny('manager or partner only');
+  }
   if (!ctx.assigned) return deny('not assigned to this engagement');
 
   const locked = ctx.engagementState === 'locked' || ctx.itemState === 'locked';
@@ -52,6 +58,7 @@ export function can(actor: Actor, action: Action, ctx: PolicyCtx): Decision {
       return allow;
     case 'export':
       return allow;
+    case 'engagement.assign':
     case 'engagement.transition':
       return actor.role === 'manager' || actor.role === 'partner' ? allow : deny('manager or partner only');
     case 'engagement.assign_eqr':

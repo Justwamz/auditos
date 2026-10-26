@@ -104,11 +104,12 @@ export async function login(h: Harness, user: TestUser): Promise<Session> {
 }
 
 /** Owner-side query with a tenant context set (needed for tables with forced RLS). */
-export async function ownerQuery(h: Harness, tenantId: string, sql: string, params: unknown[] = []) {
+export async function ownerQuery(h: Harness, tenantId: string, sql: string, params: unknown[] = [], userId?: string) {
   const c = await h.owner.connect();
   try {
     await c.query('BEGIN');
     await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    if (userId) await c.query("select set_config('app.user_id', $1, true)", [userId]);
     const r = await c.query(sql, params);
     await c.query('COMMIT');
     return r;
