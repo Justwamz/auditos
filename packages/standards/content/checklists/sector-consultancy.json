@@ -1,0 +1,16 @@
+{
+  "id": "sector-consultancy",
+  "title": "Sector pack: consultancy",
+  "phase": "fieldwork",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "applies": { "sector": ["consultancy"] },
+  "items": [
+    { "id": "con-01", "ref": "K1", "mandatory": true, "standardRefs": ["ISA 330", "ISA 540 (Revised)"], "question": "Has revenue on engagements spanning the year end been tested for the stage of completion, and unbilled work in progress valued and supported by time records?" },
+    { "id": "con-02", "ref": "K2", "mandatory": true, "standardRefs": ["ISA 500"], "question": "Has work in progress and unbilled fees been agreed to contracts, timesheets or milestones, and tested for recoverability?" },
+    { "id": "con-03", "ref": "K3", "mandatory": true, "standardRefs": ["ISA 330"], "question": "Have fees invoiced in advance been identified and deferred where the service has not been delivered by the reporting date?" },
+    { "id": "con-04", "ref": "K4", "mandatory": false, "standardRefs": ["ISA 550"], "question": "Have fees from and payments to related parties or the owners been identified and tested?" },
+    { "id": "con-05", "ref": "K5", "mandatory": false, "standardRefs": ["ISA 330"], "question": "Has staff cost been reconciled to payroll records and to the cost recovery assumptions used for fee recognition?" }
+  ]
+}

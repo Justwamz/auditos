@@ -1,0 +1,19 @@
+{
+  "id": "acceptance",
+  "title": "Client acceptance and continuance",
+  "phase": "acceptance",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    { "id": "acc-01", "ref": "A1", "mandatory": true, "standardRefs": ["ISQM 1", "ISA 220 (Revised)"], "question": "Has the firm assessed the integrity of the client's owners and management, and recorded the basis for accepting or continuing the relationship?" },
+    { "id": "acc-02", "ref": "A2", "mandatory": true, "standardRefs": ["ISA 210", "ISQM 1"], "question": "Do the preconditions for an audit exist, including an acceptable reporting framework and management's acknowledgement of its responsibilities?" },
+    { "id": "acc-03", "ref": "A3", "mandatory": true, "standardRefs": ["ISQM 1", "ICPAK Code of Ethics"], "question": "Has each engagement team member and the engagement partner confirmed independence, and has the firm recorded any threats identified and the safeguards applied?" },
+    { "id": "acc-04", "ref": "A4", "mandatory": true, "standardRefs": ["ISQM 1"], "question": "Does the firm have the competence, time and resources to perform this engagement, including any specialist input needed?" },
+    { "id": "acc-05", "ref": "A5", "mandatory": true, "standardRefs": ["ISA 210"], "question": "Has a signed engagement letter covering scope, framework, responsibilities and reporting been obtained?" },
+    { "id": "acc-06", "ref": "A6", "mandatory": true, "standardRefs": ["ISQM 1", "POCAMLA"], "question": "Have client identification and anti-money-laundering checks been completed and filed?" },
+    { "id": "acc-07", "ref": "A7", "mandatory": true, "standardRefs": ["ISQM 1"], "question": "Has a conflicts check across the firm's other clients been performed and the outcome recorded?" },
+    { "id": "acc-08", "ref": "A8", "mandatory": false, "standardRefs": ["ISA 300", "ISA 510"], "question": "For a continuing client, have prior-year issues and any change in auditor communications been considered, and for a new client, has the predecessor auditor been contacted?" },
+    { "id": "acc-09", "ref": "A9", "mandatory": true, "standardRefs": ["ISQM 2", "ISQM 1"], "question": "Has the firm determined whether this engagement requires an engagement quality review, and recorded the decision?" }
+  ]
+}

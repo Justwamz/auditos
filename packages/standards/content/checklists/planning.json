@@ -1,0 +1,21 @@
+{
+  "id": "planning",
+  "title": "Planning and risk assessment",
+  "phase": "planning",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    { "id": "pln-01", "ref": "P1", "mandatory": true, "standardRefs": ["ISA 315 (Revised 2019)"], "question": "Has the team documented its understanding of the entity, its environment, the applicable reporting framework and its internal control?" },
+    { "id": "pln-02", "ref": "P2", "mandatory": true, "standardRefs": ["ISA 320"], "question": "Has materiality, performance materiality and the clearly trivial threshold been set with a documented benchmark and rationale, and approved by the partner?" },
+    { "id": "pln-03", "ref": "P3", "mandatory": true, "standardRefs": ["ISA 315 (Revised 2019)"], "question": "Have risks of material misstatement been identified and assessed at financial statement and assertion level, with significant risks flagged?" },
+    { "id": "pln-04", "ref": "P4", "mandatory": true, "standardRefs": ["ISA 240"], "question": "Has the team discussed where the financial statements may be susceptible to fraud, and recorded the fraud risk assessment, including presumed revenue recognition risk?" },
+    { "id": "pln-05", "ref": "P5", "mandatory": true, "standardRefs": ["ISA 570 (Revised)"], "question": "Has an initial going concern assessment been made, and are there events or conditions that cast doubt on the entity's ability to continue?" },
+    { "id": "pln-06", "ref": "P6", "mandatory": true, "standardRefs": ["ISA 550"], "question": "Have related parties and related party transactions been identified, with procedures planned for them?" },
+    { "id": "pln-07", "ref": "P7", "mandatory": true, "standardRefs": ["ISA 250 (Revised)"], "question": "Have the laws and regulations with a direct effect on the financial statements, and those with an indirect effect, been identified, with planned procedures?" },
+    { "id": "pln-08", "ref": "P8", "mandatory": true, "standardRefs": ["ISA 300"], "question": "Is there an approved overall audit strategy and detailed audit plan, including team roles, timetable and budget?" },
+    { "id": "pln-09", "ref": "P9", "mandatory": false, "standardRefs": ["ISA 402", "ISA 620"], "question": "If the entity uses a service organisation or the team relies on an expert, have the related planning steps been completed?" },
+    { "id": "pln-10", "ref": "P10", "mandatory": true, "when": { "riskFlag": "fraud" }, "standardRefs": ["ISA 240"], "question": "Given the elevated fraud risk, has the plan been adjusted with unpredictable procedures and more senior involvement, and has management override of controls been addressed?" },
+    { "id": "pln-11", "ref": "P11", "mandatory": true, "when": { "riskFlag": "first_year" }, "standardRefs": ["ISA 510"], "question": "For a first-year engagement, has a plan been made to obtain evidence over opening balances?" }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "completion",
+  "title": "Completion and reporting",
+  "phase": "completion",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    { "id": "cmp-01", "ref": "C1", "mandatory": true, "standardRefs": ["ISA 560"], "question": "Have subsequent events been reviewed up to the date of the auditor's report, with any adjusting or disclosable events dealt with?" },
+    { "id": "cmp-02", "ref": "C2", "mandatory": true, "standardRefs": ["ISA 570 (Revised)"], "question": "Has the going concern conclusion been documented, including any material uncertainty and its disclosure?" },
+    { "id": "cmp-03", "ref": "C3", "mandatory": true, "standardRefs": ["ISA 580"], "question": "Has a signed management representation letter been obtained, dated no later than the report date?" },
+    { "id": "cmp-04", "ref": "C4", "mandatory": true, "standardRefs": ["ISA 520"], "question": "Has final analytical review been performed to confirm the financial statements are consistent with the team's understanding of the entity?" },
+    { "id": "cmp-05", "ref": "C5", "mandatory": true, "standardRefs": ["ISA 450", "ISA 700 (Revised)"], "question": "Have the financial statements been checked for compliance with the applicable framework, including the disclosure checklist?" },
+    { "id": "cmp-06", "ref": "C6", "mandatory": true, "standardRefs": ["ISA 700 (Revised)", "ISA 705 (Revised)", "ISA 706 (Revised)"], "question": "Has the form of audit opinion been determined, and any modification, emphasis of matter or other matter paragraph justified?" },
+    { "id": "cmp-07", "ref": "C7", "mandatory": true, "standardRefs": ["ISA 260 (Revised)"], "question": "Have significant findings been communicated to those charged with governance?" },
+    { "id": "cmp-08", "ref": "C8", "mandatory": true, "standardRefs": ["ISA 220 (Revised)"], "question": "Has the engagement partner reviewed the file and confirmed sufficient appropriate evidence has been obtained for the opinion?" },
+    { "id": "cmp-09", "ref": "C9", "mandatory": true, "standardRefs": ["ISQM 2"], "question": "Where an engagement quality review is required, has the reviewer completed the review before the report is dated?" },
+    { "id": "cmp-10", "ref": "C10", "mandatory": true, "standardRefs": ["ISA 230"], "question": "Has the final file been assembled within the firm's deadline after the report date, and the assembly date recorded?" }
+  ]
+}

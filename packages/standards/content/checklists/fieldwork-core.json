@@ -1,0 +1,25 @@
+{
+  "id": "fieldwork-core",
+  "title": "Fieldwork: core areas",
+  "phase": "fieldwork",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    { "id": "fld-01", "ref": "F1", "mandatory": true, "standardRefs": ["ISA 330"], "question": "Do the further audit procedures performed respond to each assessed risk of material misstatement, and are the responses documented against the risk register?" },
+    { "id": "fld-02", "ref": "F2", "mandatory": true, "standardRefs": ["ISA 240", "ISA 330"], "question": "Have journal entries and other adjustments been tested for management override, including unusual entries near period end?" },
+    { "id": "fld-03", "ref": "F3", "mandatory": true, "standardRefs": ["ISA 500", "ISA 505"], "question": "Have trade receivable balances been tested by confirmation or alternative procedures, with cut-off and recoverability assessed?" },
+    { "id": "fld-04", "ref": "F4", "mandatory": true, "standardRefs": ["ISA 500", "ISA 505"], "question": "Have trade payable and accrual balances been tested for completeness and cut-off, including a search for unrecorded liabilities?" },
+    { "id": "fld-05", "ref": "F5", "mandatory": true, "standardRefs": ["ISA 505", "ISA 500"], "question": "Have bank balances been agreed to bank confirmations and reconciliations, and have reconciling items been followed up?" },
+    { "id": "fld-06", "ref": "F6", "mandatory": true, "standardRefs": ["ISA 330", "ISA 500"], "question": "Have payroll costs, statutory deductions (PAYE, NSSF, SHIF, housing levy) and related liabilities been tested?" },
+    { "id": "fld-07", "ref": "F7", "mandatory": true, "standardRefs": ["ISA 330", "ISA 500"], "question": "Have revenue transactions been tested for occurrence, accuracy and cut-off, in response to the presumed fraud risk?" },
+    { "id": "fld-08", "ref": "F8", "mandatory": true, "standardRefs": ["ISA 500", "ISA 330"], "question": "Have additions, disposals and depreciation of property, plant and equipment been tested?" },
+    { "id": "fld-09", "ref": "F9", "mandatory": true, "standardRefs": ["ISA 540 (Revised)"], "question": "Have accounting estimates and the related disclosures been evaluated, including indicators of management bias?" },
+    { "id": "fld-10", "ref": "F10", "mandatory": true, "standardRefs": ["ISA 550"], "question": "Have identified related party transactions and balances been tested and their disclosure agreed to evidence?" },
+    { "id": "fld-11", "ref": "F11", "mandatory": true, "standardRefs": ["ISA 250 (Revised)"], "question": "Have inquiries and procedures on compliance with laws and regulations been performed, and any non-compliance evaluated and communicated?" },
+    { "id": "fld-12", "ref": "F12", "mandatory": true, "standardRefs": ["ISA 450"], "question": "Have misstatements been accumulated on the schedule of adjustments, with unadjusted items evaluated against materiality?" },
+    { "id": "fld-13", "ref": "F13", "mandatory": true, "standardRefs": ["ISA 265"], "question": "Have control deficiencies identified during the audit been recorded and assessed for communication to management?" },
+    { "id": "fld-14", "ref": "F14", "mandatory": true, "when": { "riskFlag": "fraud" }, "standardRefs": ["ISA 240"], "question": "Have the additional unpredictable procedures planned for the elevated fraud risk been performed and the results evaluated?" },
+    { "id": "fld-15", "ref": "F15", "mandatory": false, "when": { "riskFlag": "going_concern" }, "standardRefs": ["ISA 570 (Revised)"], "question": "Given the going concern indicators, has management's forecast been tested, and has the adequacy of the related disclosure been assessed?" }
+  ]
+}

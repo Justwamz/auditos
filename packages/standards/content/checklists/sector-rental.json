@@ -1,0 +1,18 @@
+{
+  "id": "sector-rental",
+  "title": "Sector pack: rental",
+  "phase": "fieldwork",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "applies": { "sector": ["rental"] },
+  "items": [
+    { "id": "rnt-01", "ref": "R1", "mandatory": true, "standardRefs": ["ISA 500"], "question": "Has ownership of each investment property been agreed to title documents or lease agreements?" },
+    { "id": "rnt-02", "ref": "R2", "mandatory": true, "standardRefs": ["ISA 540 (Revised)", "ISA 620"], "question": "Where investment property is carried at fair value, has the valuation, the valuer's competence and the key assumptions been evaluated?" },
+    { "id": "rnt-03", "ref": "R3", "mandatory": true, "standardRefs": ["ISA 330"], "question": "Has rental income been tested against lease agreements and tenant schedules, including rent-free periods and escalation clauses?" },
+    { "id": "rnt-04", "ref": "R4", "mandatory": true, "standardRefs": ["ISA 540 (Revised)"], "question": "Have rent arrears been assessed for recoverability and the allowance for doubtful rent reviewed?" },
+    { "id": "rnt-05", "ref": "R5", "mandatory": true, "standardRefs": ["ISA 330"], "question": "Are tenant deposits held and recorded as liabilities, and are the funds accounted for?" },
+    { "id": "rnt-06", "ref": "R6", "mandatory": false, "standardRefs": ["ISA 500"], "question": "Has expenditure on repairs been split between capital improvements and maintenance, and tested accordingly?" },
+    { "id": "rnt-07", "ref": "R7", "mandatory": false, "standardRefs": ["ISA 250 (Revised)"], "question": "Have property rates, land rent and withholding tax on rent been considered for compliance and accruals?" }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "sector-trading",
+  "title": "Sector pack: trading",
+  "phase": "fieldwork",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "applies": { "sector": ["trading"] },
+  "items": [
+    { "id": "trd-01", "ref": "T1", "mandatory": true, "standardRefs": ["ISA 501"], "question": "Was the inventory count attended or an alternative performed, with test counts agreed to the count sheets and the final listing?" },
+    { "id": "trd-02", "ref": "T2", "mandatory": true, "standardRefs": ["ISA 501", "ISA 500"], "question": "Has the inventory count cut-off been tested, with roll-forward or roll-back to the reporting date where the count was on another date?" },
+    { "id": "trd-03", "ref": "T3", "mandatory": true, "standardRefs": ["ISA 540 (Revised)"], "question": "Has inventory been tested for lower of cost and net realisable value, including slow-moving and obsolete stock?" },
+    { "id": "trd-04", "ref": "T4", "mandatory": true, "standardRefs": ["ISA 500"], "question": "Has the costing of inventory been agreed to supplier invoices and the costing method confirmed as consistently applied?" },
+    { "id": "trd-05", "ref": "T5", "mandatory": false, "standardRefs": ["ISA 330"], "question": "Have gross margin trends by product line been analysed and unusual movements explained?" },
+    { "id": "trd-06", "ref": "T6", "mandatory": false, "standardRefs": ["ISA 330"], "question": "Have sales returns, credit notes and discounts after period end been reviewed for cut-off?" }
+  ]
+}
