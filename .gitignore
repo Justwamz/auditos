@@ -1,0 +1,10 @@
+.superpowers/
+node_modules/
+.next/
+dist/
+storage/
+.env*
+!.env.example
+*.log
+.turbo/
+coverage/
