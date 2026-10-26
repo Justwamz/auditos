@@ -6,6 +6,7 @@ import { bootstrap, createPools, loadEnv, migrate } from '@auditos/db';
 import { encrypt } from '../security/crypto';
 import { hashPassword } from '../security/password';
 import { generateSecret, otpauthUri } from '../security/totp';
+import { seedDemoData } from './demo-data';
 
 const FIRMS = [
   { name: 'Demo Firm A', slug: 'firm-a' },
@@ -63,6 +64,8 @@ export async function seed(env: NodeJS.ProcessEnv = process.env): Promise<{ pass
         c.release();
       }
     }
+    const created = await seedDemoData(owner);
+    if (created) console.log('Seeded a synthetic client with FY2025 and FY2026 engagements in Demo Firm A.');
   } finally {
     await owner.end();
     await app.end();

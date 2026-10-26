@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { Nav } from '@/components/Nav';
 import { StepUpProvider } from '@/components/StepUp';
 
-const API_URL = process.env.API_URL ?? 'http://localhost:4000';
+const API_URL = process.env.API_URL ?? 'http://localhost:4010';
 
 interface Me {
   email: string;

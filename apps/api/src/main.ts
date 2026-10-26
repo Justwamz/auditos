@@ -3,5 +3,5 @@ import { buildApp } from './app';
 
 loadEnv();
 const app = await buildApp();
-const port = Number(process.env.PORT ?? 4000);
+const port = Number(process.env.PORT ?? 4010);
 await app.listen({ port, host: process.env.HOST ?? '0.0.0.0' });

@@ -1,4 +1,4 @@
-const API_URL = process.env.API_URL ?? 'http://localhost:4000';
+const API_URL = process.env.API_URL ?? 'http://localhost:4010';
 
 /** @type {import('next').NextConfig} */
 export default {
