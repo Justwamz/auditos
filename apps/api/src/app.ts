@@ -7,6 +7,7 @@ import type { Pool } from 'pg';
 import { ZodError } from 'zod';
 import { createPools } from '@auditos/db';
 import { authRoutes } from './auth/routes';
+import { tenantRoutes } from './tenants/routes';
 import { loadConfig } from './config';
 import { sha256Hex } from './security/crypto';
 import type { AuthCtx } from './types';
@@ -76,7 +77,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   });
 
   app.addHook('onRequest', async (req, reply) => {
-    if (UNSAFE.has(req.method)) {
+    if (UNSAFE.has(req.method) && req.routeOptions.config?.csrf !== false) {
       const header = req.headers['x-csrf-token'];
       const stored = req.cookies.aos_csrf;
       if (typeof header !== 'string' || !stored || !safeEqual(header, stored)) {
@@ -123,6 +124,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   });
 
   await app.register(authRoutes);
+  await app.register(tenantRoutes);
   for (const plugin of opts.routes ?? []) await app.register(plugin);
   return app;
 }

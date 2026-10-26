@@ -26,5 +26,7 @@ declare module 'fastify' {
   interface FastifyContextConfig {
     access?: Access;
     stepUp?: boolean;
+    /** Set false only for token-authenticated machine endpoints that carry no cookies. */
+    csrf?: boolean;
   }
 }

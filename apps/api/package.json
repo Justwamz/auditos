@@ -19,12 +19,16 @@
     "tsx": "^4.19.2",
     "zod": "^3.24.1"
   },
-  "devDependencies": { "@types/pg": "^8.11.10" },
+  "devDependencies": {
+    "@types/pg": "^8.11.10"
+  },
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src test"
+    "lint": "eslint src test",
+    "seed": "tsx src/dev/seed.ts",
+    "totp": "tsx src/dev/totp.ts"
   }
 }

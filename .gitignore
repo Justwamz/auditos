@@ -9,3 +9,4 @@ storage/
 .turbo/
 coverage/
 .pgdata/
+.seed-credentials.local.json
