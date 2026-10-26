@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "main": "src/index.ts",
+  "dependencies": { "@auditos/standards": "workspace:*" },
+  "devDependencies": { "fast-check": "^3.23.0" },
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
