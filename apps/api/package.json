@@ -1,0 +1,30 @@
+{
+  "name": "@auditos/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/app.ts",
+  "dependencies": {
+    "@auditos/audit-log": "workspace:*",
+    "@auditos/authz": "workspace:*",
+    "@auditos/db": "workspace:*",
+    "@auditos/fs-engine": "workspace:*",
+    "@auditos/standards": "workspace:*",
+    "@fastify/cookie": "^11.0.1",
+    "@fastify/helmet": "^13.0.0",
+    "@fastify/rate-limit": "^10.2.1",
+    "@node-rs/argon2": "^2.0.2",
+    "fastify": "^5.2.0",
+    "pg": "^8.13.1",
+    "tsx": "^4.19.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": { "@types/pg": "^8.11.10" },
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test"
+  }
+}
