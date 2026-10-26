@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import type { TestTenant } from '@auditos/db/testing';
-import { harness, login, makeTenant, makeUser, stepUp, type Harness, type Session, type TestUser } from './helpers';
+import { trading } from '../../../packages/fs-engine/test/fixtures';
+import { csvOf, harness, importTb, login, makeTenant, makeUser, stepUp, type Harness, type Session, type TestUser } from './helpers';
 
 let h: Harness;
 let T: TestTenant;
@@ -9,7 +10,7 @@ let sP: Session, sM: Session, sF: Session, sS: Session;
 let tradingClient: string;
 let farmingClient: string;
 
-const call = (s: Session, method: 'GET' | 'POST' | 'PATCH', url: string, payload?: object) =>
+const call = (s: Session, method: 'GET' | 'POST' | 'PUT' | 'PATCH', url: string, payload?: object) =>
   h.app.inject({ method, url, headers: s.headers, ...(payload ? { payload } : {}) });
 
 const newEngagement = async (client: string, riskFlags: string[] = []): Promise<string> => {
@@ -233,6 +234,9 @@ describe('fieldwork to completion gate', () => {
       }
     }
     expect((await call(sF, 'GET', `/engagements/${e}/completeness`)).json().mandatoryOpen).toEqual([]);
+    expect((await call(sM, 'POST', `/engagements/${e}/transition`, { to: 'completion' })).json().blockers.map((b: { gate: string }) => b.gate)).toEqual(['trialBalanceMappedAndBalanced']);
+    expect((await importTb(h, sF, e, 'tb.csv', Buffer.from(csvOf(trading.tb)))).statusCode).toBe(200);
+    expect((await call(sF, 'PUT', `/engagements/${e}/mapping`, { mapping: trading.mapping })).statusCode).toBe(200);
 
     const paper = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'workpaper', title: 'WP', content: {} })).json().id;
     const note = (await call(sM, 'POST', `/items/${paper}/review-notes`, { text: 'Open point on this paper' })).json().id;

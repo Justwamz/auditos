@@ -1,5 +1,4 @@
 import { createHash, randomUUID } from 'node:crypto';
-import multipart from '@fastify/multipart';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { appendEvent } from '@auditos/audit-log';
@@ -7,7 +6,7 @@ import { withTenant } from '@auditos/db';
 import { assertCan, httpError, tenantCtx } from '../authz';
 import { loadEngagement } from '../engagements/service';
 import { LocalBlobStore, StubScanner } from './storage';
-import { MAX_UPLOAD_BYTES, sanitizeName, validateUpload } from './validate';
+import { sanitizeName, validateUpload } from './validate';
 
 const uuid = z.string().uuid();
 
@@ -15,7 +14,6 @@ export async function evidenceRoutes(app: FastifyInstance): Promise<void> {
   const pool = app.pools.app;
   const blobs = app.blobs ?? new LocalBlobStore(app.cfg.uploadDir);
   const scanner = app.scanner ?? new StubScanner();
-  await app.register(multipart, { limits: { fileSize: MAX_UPLOAD_BYTES, files: 1, fields: 5 } });
 
   app.post<{ Params: { id: string } }>('/engagements/:id/evidence', { config: { access: 'tenant' } }, async (req, reply) => {
     const engagementId = uuid.safeParse(req.params.id);

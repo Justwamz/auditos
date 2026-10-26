@@ -1,5 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import cookie from '@fastify/cookie';
+import multipart from '@fastify/multipart';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
@@ -11,8 +12,10 @@ import { checklistRoutes } from './checklists/routes';
 import { reviewNoteRoutes } from './review-notes/routes';
 import { docControlRoutes } from './doc-control/routes';
 import { evidenceRoutes } from './evidence/routes';
+import { MAX_UPLOAD_BYTES } from './evidence/validate';
 import type { BlobStore, Scanner } from './evidence/storage';
 import { engagementRoutes } from './engagements/routes';
+import { financialRoutes } from './financials/routes';
 import { tenantRoutes } from './tenants/routes';
 import { loadConfig } from './config';
 import { sha256Hex } from './security/crypto';
@@ -80,6 +83,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
     crossOriginResourcePolicy: { policy: 'same-site' },
   });
   await app.register(cookie);
+  await app.register(multipart, { limits: { fileSize: MAX_UPLOAD_BYTES, files: 1, fields: 5 } });
   await app.register(rateLimit, { global: true, max: 300, timeWindow: '1 minute' });
 
   app.addHook('onSend', async (_req, reply) => {
@@ -144,6 +148,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   await app.register(evidenceRoutes);
   await app.register(checklistRoutes);
   await app.register(reviewNoteRoutes);
+  await app.register(financialRoutes);
   for (const plugin of opts.routes ?? []) await app.register(plugin);
   return app;
 }

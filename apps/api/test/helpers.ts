@@ -127,3 +127,25 @@ export async function stepUp(h: Harness, s: Session, u: TestUser): Promise<void>
   const res = await h.app.inject({ method: 'POST', url: '/auth/stepup', headers: s.headers, payload: { code: codeNow(u.secret, h.clock) } });
   if (res.statusCode !== 200) throw new Error(`step-up failed: ${res.statusCode} ${res.body}`);
 }
+
+export const csvOf = (rows: { code: string; name: string; debit: bigint; credit: bigint }[]): string =>
+  ['code,name,debit,credit', ...rows.map((r) => `${r.code},"${r.name.replace(/"/g, '""')}",${(Number(r.debit) / 100).toFixed(2)},${(Number(r.credit) / 100).toFixed(2)}`)].join('\n');
+
+export function multipartBody(filename: string, data: Buffer, fields: Record<string, string> = {}): { payload: Buffer; contentType: string } {
+  const boundary = '----auditos' + Math.random().toString(16).slice(2);
+  const parts: Buffer[] = [];
+  for (const [k, v] of Object.entries(fields)) parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`));
+  parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`));
+  parts.push(data, Buffer.from(`\r\n--${boundary}--\r\n`));
+  return { payload: Buffer.concat(parts), contentType: `multipart/form-data; boundary=${boundary}` };
+}
+
+export async function importTb(h: Harness, s: Session, engagementId: string, filename: string, data: Buffer, prior = false) {
+  const m = multipartBody(filename, data, prior ? { prior: 'true' } : {});
+  return h.app.inject({
+    method: 'POST',
+    url: `/engagements/${engagementId}/tb/import`,
+    headers: { ...s.headers, 'content-type': m.contentType },
+    payload: m.payload,
+  });
+}
