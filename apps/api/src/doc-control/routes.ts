@@ -94,7 +94,11 @@ export async function docControlRoutes(app: FastifyInstance): Promise<void> {
       if (!item) throw httpError(404, 'not_found');
       assertCan(req, 'engagement.read', { assigned: true });
       const signoffs = (
-        await tx.query('select id, level, user_id, version, content_hash, at, revoked_at, revoked_reason from signoffs where item_id = $1 order by at', [id])
+        await tx.query(
+          `select s.id, s.level, s.user_id, u.email as user_email, s.version, s.content_hash, s.at, s.revoked_at, s.revoked_reason
+             from signoffs s join users u on u.id = s.user_id where s.item_id = $1 order by s.at`,
+          [id],
+        )
       ).rows;
       const pending = (await tx.query("select id, requested_by, reason, created_at from deletion_requests where item_id = $1 and status = 'pending'", [id])).rows[0];
       return {
@@ -102,7 +106,7 @@ export async function docControlRoutes(app: FastifyInstance): Promise<void> {
         content: item.content,
         deletedReason: item.deleted_reason,
         signoffs: signoffs.map((s) => ({
-          id: s.id, level: s.level, userId: s.user_id, version: s.version, contentHash: s.content_hash, at: s.at,
+          id: s.id, level: s.level, userId: s.user_id, userEmail: s.user_email, version: s.version, contentHash: s.content_hash, at: s.at,
           revoked: s.revoked_at !== null, revokedReason: s.revoked_reason,
         })),
         pendingDeletion: pending ? { id: pending.id, requestedBy: pending.requested_by, reason: pending.reason, createdAt: pending.created_at } : null,

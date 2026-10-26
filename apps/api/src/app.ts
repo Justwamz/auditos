@@ -9,6 +9,7 @@ import { ZodError } from 'zod';
 import { createPools } from '@auditos/db';
 import { authRoutes } from './auth/routes';
 import { checklistRoutes } from './checklists/routes';
+import { dashboardRoutes } from './dashboard/routes';
 import { reviewNoteRoutes } from './review-notes/routes';
 import { docControlRoutes } from './doc-control/routes';
 import { evidenceRoutes } from './evidence/routes';
@@ -149,6 +150,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   await app.register(checklistRoutes);
   await app.register(reviewNoteRoutes);
   await app.register(financialRoutes);
+  await app.register(dashboardRoutes);
   for (const plugin of opts.routes ?? []) await app.register(plugin);
   return app;
 }
