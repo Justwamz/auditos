@@ -9,7 +9,7 @@ export interface AuthCtx {
   role: Role | null;
   grade: number | null;
   membershipActive: boolean;
-  stepUpAt: Date | null;
+  stepUpAgeSec: number | null;
 }
 
 export type Access = 'public' | 'user' | 'tenant';

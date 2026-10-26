@@ -7,6 +7,7 @@ import type { Pool } from 'pg';
 import { ZodError } from 'zod';
 import { createPools } from '@auditos/db';
 import { authRoutes } from './auth/routes';
+import { docControlRoutes } from './doc-control/routes';
 import { engagementRoutes } from './engagements/routes';
 import { tenantRoutes } from './tenants/routes';
 import { loadConfig } from './config';
@@ -100,14 +101,14 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
       role: row.role,
       grade: row.grade,
       membershipActive: row.membership_active === true,
-      stepUpAt: row.stepup_at,
+      stepUpAgeSec: row.stepup_age_seconds === null ? null : Number(row.stepup_age_seconds),
     };
     req.auth = auth;
     if (access === 'tenant' && (!auth.tenantId || !auth.membershipActive || !auth.role)) {
       return reply.code(403).send({ error: 'tenant_required' });
     }
     if (req.routeOptions.config?.stepUp) {
-      const fresh = auth.stepUpAt && app.now() - auth.stepUpAt.getTime() < cfg.stepUpMinutes * 60_000;
+      const fresh = auth.stepUpAgeSec !== null && auth.stepUpAgeSec < cfg.stepUpMinutes * 60;
       if (!fresh) return reply.code(401).send({ error: 'step_up_required' });
     }
   });
@@ -131,6 +132,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   await app.register(authRoutes);
   await app.register(tenantRoutes);
   await app.register(engagementRoutes);
+  await app.register(docControlRoutes);
   for (const plugin of opts.routes ?? []) await app.register(plugin);
   return app;
 }

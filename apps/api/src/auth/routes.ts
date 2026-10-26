@@ -185,7 +185,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       memberships,
       activeTenantId: a.tenantId,
       role: a.role,
-      stepUpValid: a.stepUpAt !== null && app.now() - a.stepUpAt.getTime() < cfg.stepUpMinutes * 60_000,
+      stepUpValid: a.stepUpAgeSec !== null && a.stepUpAgeSec < cfg.stepUpMinutes * 60,
     };
   });
 }

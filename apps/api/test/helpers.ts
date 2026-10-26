@@ -120,3 +120,10 @@ export async function ownerQuery(h: Harness, tenantId: string, sql: string, para
     c.release();
   }
 }
+
+/** Step-up needs a TOTP step newer than the one used to log in, so the shared test clock moves forward. */
+export async function stepUp(h: Harness, s: Session, u: TestUser): Promise<void> {
+  h.clock.t += 30_000;
+  const res = await h.app.inject({ method: 'POST', url: '/auth/stepup', headers: s.headers, payload: { code: codeNow(u.secret, h.clock) } });
+  if (res.statusCode !== 200) throw new Error(`step-up failed: ${res.statusCode} ${res.body}`);
+}
