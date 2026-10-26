@@ -30,3 +30,12 @@ describe('disclosure checklist', () => {
     expect(c.find((i) => i.id === 'related-parties')?.satisfied).toBe(false);
   });
 });
+
+describe('disclosure items expose the note they need', () => {
+  test('items that depend on a note carry its id so the UI can ask for it', () => {
+    const c = disclosureChecklist('IFRS_SME_2E', build('2026-01-01', '2026-12-31'));
+    expect(c.find((i) => i.id === 'related-parties')?.noteId).toBe('related-parties');
+    expect(c.find((i) => i.id === 'basis-of-preparation')?.noteId).toBe('policies');
+    expect(c.find((i) => i.id === 'sofp')?.noteId).toBeUndefined();
+  });
+});

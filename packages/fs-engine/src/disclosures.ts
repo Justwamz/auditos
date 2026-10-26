@@ -19,7 +19,7 @@ const CHECKLISTS: Record<FrameworkVersion, DisclosureItem[]> = {
 export function disclosureChecklist(
   version: FrameworkVersion,
   s: Statements,
-): { id: string; ref: string; text: string; satisfied: boolean }[] {
+): { id: string; ref: string; text: string; satisfied: boolean; noteId?: string }[] {
   const noteIds = new Set(s.notes.map((n) => n.id));
   return CHECKLISTS[version].map((i) => {
     let satisfied = false;
@@ -29,6 +29,6 @@ export function disclosureChecklist(
     else if (i.check === 'cashflow') satisfied = s.cashflow !== undefined;
     else if (i.check === 'comparatives') satisfied = s.hasComparatives;
     else if (i.noteId) satisfied = noteIds.has(i.noteId);
-    return { id: i.id, ref: i.ref, text: i.text, satisfied };
+    return { id: i.id, ref: i.ref, text: i.text, satisfied, ...(i.noteId ? { noteId: i.noteId } : {}) };
   });
 }
