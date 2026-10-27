@@ -72,6 +72,18 @@ export function describeEvent(e: AuditRow): string {
       return `${who} downloaded the evidence file "${e.itemTitle ?? ''}"${forClient}`;
     case 'export.created':
       return `${who} exported the ${d.draft ? 'draft ' : ''}financial statements as ${str(d.format).toUpperCase()}${forClient}`;
+    case 'prospect.created':
+      return `${who} added the prospect ${str(d.prospectName)}, owned by ${str(d.ownerName)}`;
+    case 'prospect.edited':
+      return `${who} edited the details of the prospect ${str(d.prospectName)}`;
+    case 'prospect.stage_changed': {
+      const reason = str(d.reason) ? `. Reason given: "${str(d.reason)}"` : '';
+      return `${who} moved the prospect ${str(d.prospectName)} from ${str(d.from)} to ${str(d.to)}${reason}`;
+    }
+    case 'prospect.reassigned':
+      return `${who} handed the prospect ${str(d.prospectName)} from ${str(d.from)} to ${str(d.to)}. Reason given: "${str(d.reason)}"`;
+    case 'prospect.won':
+      return `${who} converted the prospect ${str(d.prospectName)} into a client`;
     case 'auth.login':
       return `${who} signed in`;
     case 'auth.logout':
