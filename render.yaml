@@ -1,27 +1,26 @@
-# Render blueprint for the AuditOS demo. Create it from the repo: New > Blueprint.
+# Render blueprint for the AuditOS demo, on free plans. Create it from the repo: New > Blueprint.
 # Demo data only. Data residency in Kenya is NOT satisfied by these regions; settle that before real client data.
+#
+# Free-plan trade-offs: services sleep after 15 minutes idle (the first request then takes up to a minute),
+# uploaded evidence files are lost on every restart or deploy (no disk), and the free database is time-limited.
 databases:
   - name: auditos-db
     databaseName: auditos
-    plan: basic-256mb
+    plan: free
     region: frankfurt
     postgresMajorVersion: "16"
-    ipAllowList: []   # private network only; add your own IP here if you need psql from a laptop
+    ipAllowList: []
 
 services:
   - type: web
     name: auditos-api
     runtime: node
     region: frankfurt
-    plan: starter
+    plan: free
     buildCommand: corepack enable && pnpm install --frozen-lockfile
-    preDeployCommand: pnpm --filter @auditos/api prepare-db
-    startCommand: pnpm --filter @auditos/api start
+    # Free services have no pre-deploy step, so the database is prepared on every start (safe to repeat).
+    startCommand: pnpm --filter @auditos/api prepare-db && pnpm --filter @auditos/api start
     healthCheckPath: /health
-    disk:
-      name: evidence
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: 22
@@ -42,15 +41,15 @@ services:
       - key: PLATFORM_ADMIN_TOKEN
         generateValue: true
       - key: UPLOAD_DIR
-        value: /var/data/evidence
-      - key: TRUST_PROXY_HOPS   # Render's edge + the web app's proxy
+        value: ./storage       # temporary on the free plan
+      - key: TRUST_PROXY_HOPS
         value: 2
 
   - type: web
     name: auditos-web
     runtime: node
     region: frankfurt
-    plan: starter
+    plan: free
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @auditos/web build
     startCommand: pnpm --filter @auditos/web exec next start -p $PORT
     healthCheckPath: /login
@@ -59,8 +58,7 @@ services:
         value: 22
       - key: NODE_ENV
         value: production
-      - key: API_HOSTPORT
-        fromService:
-          type: web
-          name: auditos-api
-          property: hostport
+      - key: NODE_OPTIONS          # the free plan has 512 MB; keep the build inside it
+        value: --max-old-space-size=450
+      - key: API_URL
+        sync: false                # after the API deploys, paste its public address, e.g. https://auditos-api-xxxx.onrender.com
