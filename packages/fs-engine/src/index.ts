@@ -6,3 +6,4 @@ export * from './figures';
 export * from './cashflow';
 export * from './statements';
 export * from './disclosures';
+export * from './materiality';

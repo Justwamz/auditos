@@ -10,6 +10,7 @@ import { createPools } from '@auditos/db';
 import { authRoutes } from './auth/routes';
 import { checklistRoutes } from './checklists/routes';
 import { dashboardRoutes } from './dashboard/routes';
+import { materialityRoutes } from './materiality/routes';
 import { peopleRoutes } from './people/routes';
 import { reviewNoteRoutes } from './review-notes/routes';
 import { docControlRoutes } from './doc-control/routes';
@@ -157,6 +158,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   await app.register(financialRoutes);
   await app.register(dashboardRoutes);
   await app.register(peopleRoutes);
+  await app.register(materialityRoutes);
   for (const plugin of opts.routes ?? []) await app.register(plugin);
   return app;
 }
