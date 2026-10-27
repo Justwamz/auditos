@@ -36,7 +36,7 @@ Seeded roles per firm (`Demo Firm A` and `Demo Firm B`): `firm-admin`, `partner`
 pnpm test          # unit + API/database tests (needs the local Postgres running)
 pnpm typecheck
 pnpm lint
-pnpm --filter @auditos/e2e test    # Playwright, own database (auditos_e2e) and ports 3100/4110
+pnpm --filter @auditos/e2e e2e     # Playwright, own database (auditos_e2e) and ports 3100/4110
 ```
 
 ## Layout

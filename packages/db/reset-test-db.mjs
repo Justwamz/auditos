@@ -1,5 +1,9 @@
 import pg from 'pg';
-process.loadEnvFile(new URL('../../.env.local', import.meta.url));
+try {
+  process.loadEnvFile(new URL('../../.env.local', import.meta.url));
+} catch {
+  // no .env.local (for example in CI): the variables come from the environment
+}
 const u = new URL(process.env.PG_SUPERUSER_URL);
 const c = new pg.Client({ host: u.hostname, port: Number(u.port), user: u.username, password: decodeURIComponent(u.password), database: 'postgres' });
 await c.connect();

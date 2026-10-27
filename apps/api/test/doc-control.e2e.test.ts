@@ -52,7 +52,7 @@ const forceLock = async (id: string) => {
   const steps = ['planning', 'fieldwork', 'completion', 'review', 'partner_approved'];
   for (const s of steps) await ownerQuery(h, T.id, 'update engagements set state = $2 where id = $1', [id, s]);
   await ownerQuery(h, T.id, "update engagements set state = 'report_issued', report_date = current_date - 90 where id = $1", [id]);
-  expect(await lockDueEngagements(h.app.pools.app, new Date())).toBeGreaterThanOrEqual(1);
+  await lockDueEngagements(h.app.pools.app, new Date()); // other test files may lock it first, so the state is what counts
 };
 
 beforeAll(async () => {

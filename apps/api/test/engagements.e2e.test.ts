@@ -137,8 +137,7 @@ describe('state machine', () => {
 
   test('auto-lock locks engagements past the assembly deadline, logs it, and the lock is immutable', async () => {
     const id = await insertAt('report_issued', 61);
-    const locked = await lockDueEngagements(h.app.pools.app, new Date());
-    expect(locked).toBeGreaterThanOrEqual(1);
+    await lockDueEngagements(h.app.pools.app, new Date());
     const row = (await ownerQuery(h, T.id, 'select state, locked_at from engagements where id = $1', [id])).rows[0];
     expect(row.state).toBe('locked');
     expect(row.locked_at).not.toBeNull();
