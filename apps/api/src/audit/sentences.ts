@@ -84,6 +84,18 @@ export function describeEvent(e: AuditRow): string {
       return `${who} handed the prospect ${str(d.prospectName)} from ${str(d.from)} to ${str(d.to)}. Reason given: "${str(d.reason)}"`;
     case 'prospect.won':
       return `${who} converted the prospect ${str(d.prospectName)} into a client`;
+    case 'client.manager_changed':
+      return `${who} changed the account manager of ${str(d.clientName)} from ${str(d.from)} to ${str(d.to)}. Reason given: "${str(d.reason)}"`;
+    case 'member.handed_over': {
+      const n = (v: unknown, one: string, many: string) => `${String(v)} ${v === 1 ? one : many}`;
+      return `${who} handed over ${n(d.clients, 'client', 'clients')} and ${n(d.prospects, 'prospect', 'prospects')} from ${str(d.from)} to ${str(d.to)}. Reason given: "${str(d.reason)}"`;
+    }
+    case 'calendar.scheduled':
+      return `${who} scheduled the ${str(d.kind)} "${str(d.title)}"${forClient}`;
+    case 'calendar.changed':
+      return `${who} changed the ${str(d.kind)} "${str(d.title)}"${forClient}`;
+    case 'calendar.cancelled':
+      return `${who} cancelled the ${str(d.kind)} "${str(d.title)}"${forClient}`;
     case 'auth.login':
       return `${who} signed in`;
     case 'auth.logout':

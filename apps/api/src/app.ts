@@ -16,6 +16,8 @@ import { auditRoutes } from './audit/routes';
 import { contactRoutes } from './contacts/routes';
 import { helpRoutes } from './help/routes';
 import { pipelineRoutes } from './pipeline/routes';
+import { handoverRoutes } from './people/handover';
+import { calendarRoutes } from './calendar/routes';
 import { peopleRoutes } from './people/routes';
 import { reviewNoteRoutes } from './review-notes/routes';
 import { docControlRoutes } from './doc-control/routes';
@@ -172,6 +174,8 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   await app.register(contactRoutes);
   await app.register(helpRoutes);
   await app.register(pipelineRoutes);
+  await app.register(handoverRoutes);
+  await app.register(calendarRoutes);
   for (const plugin of opts.routes ?? []) await app.register(plugin);
   return app;
 }
