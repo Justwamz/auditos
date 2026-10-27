@@ -43,3 +43,25 @@ Stage 2 precedes the features that store more personal data. Each stage ships wi
 - Two sample bank statements for tuning the PDF parser were promised but have not arrived in the conversation. Redacted copies or synthetic ones only; no real client data. Needed before stage 6, not before.
 - VAT default rate and the tax list contents are the firm's to confirm.
 - Checklist wording needs the external auditor's review.
+
+## Platform administration (planned, not built)
+
+AuditOS is multi-tenant: audit firms are tenants. Today a firm is created with one protected API call and a shared platform token. That is acceptable for a demo and not for running a service. The operator of the platform needs its own application, separate from the firm-facing app.
+
+**Principles**
+- Platform operators are named people in their own table (`platform_users`), never members of a firm, with mandatory authenticator codes (the fixed demo code is never accepted there) and their own sessions.
+- Separate application (`apps/platform`) on its own hostname. It is not part of the firm app bundle and is reachable only by operators (optionally behind an IP allowlist).
+- Operators run as a separate database role (`auditos_platform`) that can call only `platform_*` functions. It has no table access to firm data, so row-level security keeps holding: operators see counts and status, never working papers, clients or personal data.
+- Everything operators do is written to a platform audit log (own hash chain), in plain English like the firm trail.
+
+**Capabilities, in build order**
+1. Firms: create (with a named first admin, as now), suspend and reactivate (a suspended firm cannot sign in; data is kept), rename, and see status.
+2. People support: re-send the first admin's invite, reset a locked-out admin's authenticator after a recorded identity check. Operators do not set passwords.
+3. Plans and limits: seats, storage, feature switches per firm (for example bank statement analysis, bookkeeping module).
+4. Health and usage: sign-ins, active users, storage used, errors; no content.
+5. Support access: a firm admin grants time-limited access to a named operator, with a reason; every action under it is visible to the firm in its own audit trail. No standing access.
+6. Subscription billing of firms and invoices to firms (a later stage, after practice invoicing).
+
+**Replaces:** `POST /platform/tenants` with `PLATFORM_ADMIN_TOKEN`. The token endpoint stays until the platform app exists, and is removed after.
+
+**Decisions needed before building:** who the first operators are (named people), and whether operators may ever read firm content (the plan says no; a regulator or firm contract might ask for support access, which is why item 5 exists).
