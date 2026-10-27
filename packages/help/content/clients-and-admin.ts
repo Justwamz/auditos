@@ -20,6 +20,9 @@ The client and its contacts, wherever they sit in the firm, even before any enga
 ## Opening an engagement
 After adding a client, open an engagement for each financial year from **Engagements**. You can only open one for a client you can see.
 
+## Changing the account manager
+A partner or a person with the administrator permission can change it, with a reason. See "Changing a client's account manager".
+
 ## The list
 The **Why you see it** column tells you whether you manage the client, are on its team, or see it as a partner or administrator.`,
   },

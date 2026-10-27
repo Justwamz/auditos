@@ -247,3 +247,107 @@ export async function seedDemoPortfolio(owner: Pool, firmName = DEMO_FIRMS[0]!.n
     c.release();
   }
 }
+
+const DEMO_MARK = 'Demo schedule';
+const addDaysStr = (date: string, n: number) => {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+const nairobiToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
+const mondayOfDate = (date: string) => {
+  const dow = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return addDaysStr(date, dow === 0 ? -6 : 1 - dow);
+};
+
+/**
+ * Idempotent. A pipeline spread across the team and a calendar for the current and next week, so the demo has something to
+ * show for each profile. Calendar events are re-created when the last demo events are in the past. Returns what was added.
+ */
+export async function seedDemoPractice(owner: Pool, firmName = DEMO_FIRMS[0]!.name): Promise<{ prospects: number; events: number }> {
+  const firm = DEMO_FIRMS.find((f) => f.name === firmName)!;
+  const c = await owner.connect();
+  const added = { prospects: 0, events: 0 };
+  try {
+    await c.query('BEGIN');
+    const tenantId = (await c.query('select id from tenants where name = $1', [firmName])).rows[0]?.id as string | undefined;
+    if (!tenantId) {
+      await c.query('ROLLBACK');
+      return added;
+    }
+    await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    const emails: Record<string, string> = { ...Object.fromEntries(Object.entries(firm.people).map(([k, v]) => [k, v.email])), ...Object.fromEntries(firm.extra.map((x) => [x.key, x.email])) };
+    const id: Record<string, string> = {};
+    for (const [key, email] of Object.entries(emails)) {
+      const row = (await c.query('select id from users where lower(email) = $1', [email.toLowerCase()])).rows[0];
+      if (row) id[key] = row.id as string;
+    }
+    if (!id.partner || !id.manager || !id.staff || !id.manager2 || !id.partner2 || !id.senior || !id.staff2) {
+      await c.query('ROLLBACK');
+      return added;
+    }
+
+    // Pipeline: a few prospects per person, at different stages.
+    await as(c, tenantId, id.partner);
+    if ((await c.query('select count(*)::int as n from prospects')).rows[0].n === 0) {
+      const prospects: { owner: string; name: string; sector: string; contact: string; fee: string; start: string; stage?: string; reason?: string; notes?: string }[] = [
+        { owner: 'staff', name: 'Baraka Hauliers Ltd', sector: 'trading', contact: 'Hassan Omondi', fee: '38000000', start: '2027-01-15', notes: 'Referred by an existing client. Fleet of 12 trucks.' },
+        { owner: 'senior', name: 'Zawadi Medical Centre', sector: 'consultancy', contact: 'Dr Ann Wekesa', fee: '62000000', start: '2027-02-01', stage: 'proposal', notes: 'Proposal sent on Monday. Wants a fixed fee.' },
+        { owner: 'manager', name: 'Mlima Coffee Cooperative', sector: 'farming', contact: 'Josephine Kamau', fee: '95000000', start: '2027-01-05', stage: 'loe_sent', notes: 'Engagement letter with the board for signature.' },
+        { owner: 'manager2', name: 'Tembo Apartments Ltd', sector: 'rental', contact: 'Vincent Okello', fee: '54000000', start: '2027-03-01' },
+        { owner: 'staff2', name: 'Kito Logistics Ltd', sector: 'trading', contact: 'Salma Hussein', fee: '30000000', start: '2027-02-15' },
+        { owner: 'manager2', name: 'Pwani Fisheries Ltd', sector: 'trading', contact: 'Mohamed Ali', fee: '41000000', start: '2027-01-10', stage: 'lost', reason: 'Chose a firm at the coast, closer to their office.' },
+      ];
+      for (const p of prospects) {
+        await as(c, tenantId, id[p.owner]!);
+        const pid = (await c.query('select prospect_create($1, $2, $3, $4, $5, $6, $7, $8) as id', [p.name, p.sector, p.contact, 'Demo data', id[p.owner], p.fee, p.start, p.notes ?? null])).rows[0].id as string;
+        if (p.stage) await c.query('select prospect_set_stage($1, $2, $3)', [pid, p.stage, p.reason ?? null]);
+        added.prospects += 1;
+      }
+    }
+
+    // Calendar: replaced when the demo events have all passed.
+    await as(c, tenantId, id.partner);
+    const upcoming = (await c.query("select count(*)::int as n from calendar_events where notes = $1 and ends_at > now()", [DEMO_MARK])).rows[0].n as number;
+    if (upcoming === 0) {
+      const monday = mondayOfDate(nairobiToday());
+      const eng = async (clientName: string, memberKey: string): Promise<string | null> => {
+        await as(c, tenantId, id[memberKey]!);
+        const r = await c.query('select e.id from engagements e join clients cl on cl.id = e.client_id where cl.name = $1 and e.period_end = $2', [clientName, '2026-12-31']);
+        return (r.rows[0]?.id as string | undefined) ?? null;
+      };
+      const mwangaza = await eng('Mwangaza Traders Ltd', 'manager');
+      const lakeview = await eng('Lakeview Rentals Ltd', 'manager');
+      const savannah = await eng('Savannah Farms Ltd', 'manager2');
+      type Ev = { by: string; title: string; kind: string; day: number; from: string; to: string; allDay?: boolean; days?: number; engagement?: string | null; with?: string[]; where?: string };
+      const events: Ev[] = [
+        { by: 'manager2', title: 'Pre-planning meeting: Savannah Farms', kind: 'meeting', day: 0, from: '09:00', to: '10:00', engagement: savannah, with: ['senior', 'partner2'], where: 'Boardroom' },
+        { by: 'manager', title: 'Pre-audit meeting at Mwangaza Traders', kind: 'meeting', day: 1, from: '10:00', to: '12:00', engagement: mwangaza, with: ['staff', 'senior'], where: 'Client premises, Industrial Area' },
+        { by: 'staff', title: 'Fieldwork: Mwangaza stock count', kind: 'fieldwork', day: 2, from: '08:00', to: '17:00', engagement: mwangaza, with: ['senior'], where: 'Client warehouse' },
+        { by: 'manager', title: 'Fieldwork: Lakeview rent roll and leases', kind: 'fieldwork', day: 3, from: '09:00', to: '16:00', engagement: lakeview, with: ['staff'] },
+        { by: 'partner2', title: 'Partner review: Savannah planning', kind: 'meeting', day: 2, from: '14:00', to: '15:30', with: ['manager2'] },
+        { by: 'senior', title: 'ICPAK CPD: ISA 315 workshop', kind: 'training', day: 4, from: '09:00', to: '13:00', where: 'ICPAK, Nairobi' },
+        { by: 'staff2', title: 'Annual leave', kind: 'leave', day: 3, from: '00:00', to: '23:59', allDay: true, days: 3 },
+        { by: 'partner', title: 'Management meeting', kind: 'meeting', day: 7, from: '08:30', to: '09:30', with: ['manager', 'manager2', 'partner2'], where: 'Boardroom' },
+        { by: 'manager', title: 'Mwangaza: draft financials due to partner', kind: 'deadline', day: 9, from: '17:00', to: '17:00', engagement: mwangaza },
+      ];
+      for (const e of events) {
+        await as(c, tenantId, id[e.by]!);
+        const date = addDaysStr(monday, e.day);
+        const endDate = addDaysStr(date, (e.days ?? 1) - 1);
+        await c.query('select calendar_create($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::uuid[])', [
+          e.title, e.kind, `${date}T${e.from}:00+03:00`, `${endDate}T${e.to}:00+03:00`, e.allDay ?? false, e.where ?? null, DEMO_MARK, null,
+          e.engagement ?? null, (e.with ?? []).map((k) => id[k]!),
+        ]);
+        added.events += 1;
+      }
+    }
+    await c.query('COMMIT');
+    return added;
+  } catch (e) {
+    await c.query('ROLLBACK');
+    throw e;
+  } finally {
+    c.release();
+  }
+}

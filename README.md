@@ -45,6 +45,12 @@ Four clients, three account managers and teams, so each profile sees something d
 | Mercy Achieng / Samuel Kariuki | Quality officer / EQR | Mwangaza | on its team |
 | Wanjiru Mugo | Firm administrator | all four (list only) | administrator; cannot open files or reveal personal details |
 
+**Pipeline.** Six prospects across the team. Staff and seniors see only what they own (Brian: Baraka Hauliers; Tom: Kito Logistics); managers and partners see all six and the totals by person. The firm administrator has no pipeline.
+
+**Calendar.** A week of events for the current and next week. Brian sees his fieldwork but not the Savannah meetings; Tom sees only his leave; Grace and Charles see everything; managers see the events of people on their teams.
+
+**Account managers.** Grace can change a client's account manager from the client page; Daniel cannot. Wanjiru cannot switch Ruth off while Ruth manages clients, and the Hand over panel lists what she holds.
+
 Waweru & Associates is a second firm with no clients, to show that firms never see each other.
 
 ## Tests

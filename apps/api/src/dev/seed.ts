@@ -6,7 +6,7 @@ import { bootstrap, createPools, loadEnv, migrate } from '@auditos/db';
 import { encrypt } from '../security/crypto';
 import { hashPassword } from '../security/password';
 import { generateSecret, otpauthUri } from '../security/totp';
-import { seedDemoContacts, seedDemoData, seedDemoPortfolio } from './demo-data';
+import { seedDemoContacts, seedDemoData, seedDemoPortfolio, seedDemoPractice } from './demo-data';
 import { DEMO_FIRMS, legacyEmail } from './people';
 
 const ROLES: Role[] = ['firm_admin', 'partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr'];
@@ -91,6 +91,8 @@ export async function seed(env: NodeJS.ProcessEnv = process.env): Promise<{ pass
     if (await seedDemoContacts(owner, env)) console.log('Seeded synthetic client contacts (personal details are fake and stored encrypted).');
     const portfolio = await seedDemoPortfolio(owner);
     if (portfolio > 0) console.log(`Seeded ${portfolio} more synthetic clients so each profile sees a different set.`);
+    const practice = await seedDemoPractice(owner);
+    if (practice.prospects + practice.events > 0) console.log(`Seeded ${practice.prospects} prospects and ${practice.events} calendar events.`);
   } finally {
     await owner.end();
     await app.end();

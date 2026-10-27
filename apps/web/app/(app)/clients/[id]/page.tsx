@@ -8,9 +8,47 @@ import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, Notice, StateBadge } from '@/components/bits';
 import { fmtDate, SECTOR_LABELS } from '@/lib/text';
 
+/** Partners and administrators can change who is accountable for the client. The old manager loses sight of it. */
+function ChangeManager({ clientId, currentId, onDone }: { clientId: string; currentId: string | null; onDone: () => void }) {
+  const people = useApi<{ people: { id: string; fullName: string | null; email: string; role: string }[] }>('/people');
+  const [to, setTo] = useState('');
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<unknown>();
+  const [done, setDone] = useState('');
+  async function go(ev: FormEvent) {
+    ev.preventDefault();
+    setError(undefined);
+    try {
+      await api.post(`/clients/${clientId}/account-manager`, { userId: to, reason });
+      setDone('The account manager was changed and the change recorded.');
+      setReason('');
+      onDone();
+    } catch (e) {
+      setError(e);
+    }
+  }
+  return (
+    <form className="sheet stack" onSubmit={go}>
+      <h2>Change the account manager</h2>
+      <p className="muted">The new manager gets the client; the previous one no longer sees it unless they are on an engagement team. You must give a reason.</p>
+      <div className="row">
+        <select aria-label="New account manager" required value={to} onChange={(e) => setTo(e.target.value)}>
+          <option value="">Choose a manager or partner</option>
+          {people.data?.people.filter((p) => (p.role === 'manager' || p.role === 'partner') && p.id !== currentId).map((p) => <option key={p.id} value={p.id}>{p.fullName ?? p.email}</option>)}
+        </select>
+        <input aria-label="Reason for the change" placeholder="Why? (recorded)" required minLength={5} value={reason} onChange={(e) => setReason(e.target.value)} style={{ minWidth: '18rem' }} />
+        <button className="secondary">Change</button>
+      </div>
+      <ErrorNote error={error} />
+      {done && <Notice>{done}</Notice>}
+    </form>
+  );
+}
+
 interface Client {
   id: string; name: string; sector: string; legalForm: string; framework: string; yearEndMonth: number;
   accountManagerName: string | null;
+  accountManagerId: string | null;
   engagements: { id: string; periodStart: string; periodEnd: string; state: string }[];
 }
 type Field = 'phone' | 'email' | 'idNumber' | 'kraPin';
@@ -75,6 +113,7 @@ export default function ClientPage() {
   const { id } = useParams<{ id: string }>();
   const client = useApi<Client>(`/clients/${id}`);
   const contacts = useApi<{ contacts: Contact[] }>(`/clients/${id}/contacts`);
+  const me = useApi<{ role: string; isAdmin: boolean }>('/me');
   const [form, setForm] = useState({ name: '', position: '', phone: '', email: '', idNumber: '', kraPin: '' });
   const [error, setError] = useState<unknown>();
   const [done, setDone] = useState('');
@@ -107,6 +146,10 @@ export default function ClientPage() {
           {SECTOR_LABELS[c.sector] ?? c.sector} · {c.legalForm} · {c.framework === 'IFRS_SME' ? 'IFRS for SMEs' : 'Full IFRS'} · account manager {c.accountManagerName ?? 'not set'}
         </p>
       </div>
+
+      {me.data && (me.data.role === 'partner' || me.data.isAdmin || me.data.role === 'firm_admin') && (
+        <ChangeManager clientId={c.id} currentId={c.accountManagerId} onDone={client.reload} />
+      )}
 
       <section className="sheet">
         <h2>Engagements you can open</h2>

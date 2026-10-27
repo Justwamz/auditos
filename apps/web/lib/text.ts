@@ -77,6 +77,15 @@ const MESSAGES: Record<string, string> = {
   too_many_rows: 'The file has more than 5,000 rows.',
   item_deleted: 'That paper was deleted.',
   evidence_immutable: 'Evidence cannot be edited. Upload a new file instead.',
+  has_responsibilities: 'This person still manages clients or owns open prospects. Hand them over first.',
+  invalid_account_manager: 'The account manager has to be an active manager or partner.',
+  invalid_owner: 'That person cannot own a prospect.',
+  invalid_attendee: 'One of the people invited is not an active member of the firm.',
+  prospect_closed: 'That prospect is already won or lost and cannot be changed.',
+  event_cancelled: 'That event was cancelled.',
+  sector_required: 'Choose the sector first.',
+  same_person: 'Choose a different person.',
+  last_admin: 'The firm must keep at least one administrator.',
 };
 
 export function explain(err: unknown): string {
