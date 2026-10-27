@@ -91,7 +91,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   });
   await app.register(cookie);
   await app.register(multipart, { limits: { fileSize: MAX_UPLOAD_BYTES, files: 1, fields: 5 } });
-  await app.register(rateLimit, { global: true, max: 300, timeWindow: '1 minute' });
+  await app.register(rateLimit, { global: true, max: cfg.globalRateLimit, timeWindow: '1 minute' });
 
   app.addHook('onSend', async (_req, reply) => {
     reply.header('cache-control', 'no-store');

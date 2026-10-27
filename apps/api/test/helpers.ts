@@ -26,7 +26,7 @@ async function testRoutes(app: FastifyInstance): Promise<void> {
 export async function harness(opts: { loginRateLimit?: number; env?: Record<string, string> } = {}): Promise<Harness> {
   const { owner, app: appPool } = createPools();
   const clock = { t: Date.now() };
-  const env = { ...process.env, LOGIN_RATE_LIMIT: String(opts.loginRateLimit ?? 1000), ...opts.env };
+  const env = { ...process.env, LOGIN_RATE_LIMIT: String(opts.loginRateLimit ?? 1000), GLOBAL_RATE_LIMIT: '100000', ...opts.env };
   const app = await buildApp({ env, pools: { app: appPool }, now: () => clock.t, routes: [testRoutes] });
   return {
     app,

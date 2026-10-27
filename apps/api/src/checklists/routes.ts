@@ -19,6 +19,8 @@ interface ChecklistItemState {
   response: 'yes' | 'no' | 'na' | null;
   rationale: string;
   evidenceIds: string[];
+  /** Last year's answer for the same client: a suggestion only, never counted as answered. */
+  prior: { response: 'yes' | 'no' | 'na'; rationale: string } | null;
 }
 interface ChecklistContent {
   templateId: string;
@@ -38,6 +40,19 @@ async function checklistRows(tx: PoolClient, engagementId: string): Promise<{ id
   return (
     await tx.query("select id, title, content from wp_items where engagement_id = $1 and kind = 'checklist' and deleted_at is null and content ? 'templateId' order by created_at", [engagementId])
   ).rows;
+}
+
+/** Answers from the previous engagement for the same client, by template and item id. Empty for a first engagement. */
+async function priorAnswers(tx: PoolClient, engagementId: string): Promise<Map<string, Map<string, { response: 'yes' | 'no' | 'na'; rationale: string }>>> {
+  const rows = (await tx.query('select kind, content from engagement_prior_snapshot($1)', [engagementId])).rows as { kind: string; content: ChecklistContent }[];
+  const out = new Map<string, Map<string, { response: 'yes' | 'no' | 'na'; rationale: string }>>();
+  for (const r of rows) {
+    if (r.kind !== 'checklist' || !r.content.templateId) continue;
+    const answers = new Map<string, { response: 'yes' | 'no' | 'na'; rationale: string }>();
+    for (const it of r.content.items) if (it.response) answers.set(it.id, { response: it.response, rationale: it.rationale });
+    out.set(r.content.templateId, answers);
+  }
+  return out;
 }
 
 export function computeCompleteness(rows: { id: string; title: string; content: ChecklistContent }[]) {
@@ -83,6 +98,7 @@ export async function checklistRoutes(app: FastifyInstance): Promise<void> {
         templates,
       );
       const existing = new Set((await checklistRows(tx, engagementId.data)).map((r) => r.content.templateId));
+      const prior = await priorAnswers(tx, engagementId.data);
       let created = 0;
       let skipped = 0;
       for (const c of checklists) {
@@ -96,7 +112,7 @@ export async function checklistRoutes(app: FastifyInstance): Promise<void> {
           phase: c.phase,
           items: c.items.map((i) => ({
             id: i.id, ref: i.ref, question: i.question, mandatory: i.mandatory, standardRefs: i.standardRefs,
-            response: null, rationale: '', evidenceIds: [],
+            response: null, rationale: '', evidenceIds: [], prior: prior.get(c.templateId)?.get(i.id) ?? null,
           })),
         };
         await tx.query("insert into wp_items (tenant_id, engagement_id, kind, title, content, created_by) values ($1, $2, 'checklist', $3, $4, $5)", [
@@ -129,6 +145,23 @@ export async function checklistRoutes(app: FastifyInstance): Promise<void> {
         if (ok.rows[0].n !== evidenceIds.length) throw httpError(422, 'invalid_evidence');
       }
       const items = content.items.map((i, n) => (n === idx ? { ...i, response: body.response, rationale: body.rationale.trim(), evidenceIds } : i));
+      return editItemTx(req, tx, item, { content: { ...content, items }, ...(body.reason ? { reason: body.reason } : {}) });
+    });
+  });
+
+  app.post<{ Params: { id: string; itemId: string } }>('/checklists/:id/items/:itemId/confirm-prior', { config: { access: 'tenant' } }, async (req) => {
+    const id = uuid.safeParse(req.params.id);
+    if (!id.success || req.params.itemId.length > 40) throw httpError(404, 'not_found');
+    const body = z.object({ reason: z.string().trim().min(5).max(500).optional() }).parse(req.body ?? {});
+    return withTenant(pool, tenantCtx(req), async (tx) => {
+      const item = await loadItem(tx, id.data, true);
+      if (!item || item.kind !== 'checklist') throw httpError(404, 'not_found');
+      const content = item.content as unknown as ChecklistContent;
+      const idx = content.items.findIndex((i) => i.id === req.params.itemId);
+      if (idx < 0) throw httpError(404, 'checklist_item_not_found');
+      const prior = content.items[idx]!.prior;
+      if (!prior) throw httpError(409, 'no_prior_answer');
+      const items = content.items.map((i, n) => (n === idx ? { ...i, response: prior.response, rationale: prior.rationale, evidenceIds: [] } : i));
       return editItemTx(req, tx, item, { content: { ...content, items }, ...(body.reason ? { reason: body.reason } : {}) });
     });
   });

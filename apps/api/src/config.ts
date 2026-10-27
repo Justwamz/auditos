@@ -8,6 +8,8 @@ export interface Config {
   maxFailedLogins: number;
   lockMinutes: number;
   loginRateLimit: number;
+  /** Requests per minute per client address, across all routes. */
+  globalRateLimit: number;
   uploadDir: string;
   /** Number of trusted reverse proxies in front of the API (1 = the web app's proxy; Render adds one more). */
   trustProxyHops: number;
@@ -33,6 +35,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     maxFailedLogins: 5,
     lockMinutes: 15,
     loginRateLimit: Number(env.LOGIN_RATE_LIMIT ?? 10),
+    globalRateLimit: Number(env.GLOBAL_RATE_LIMIT ?? 300),
     uploadDir: env.UPLOAD_DIR ?? './storage',
     trustProxyHops: Number(env.TRUST_PROXY_HOPS ?? 1),
     ...(devFixedOtp ? { devFixedOtp } : {}),
