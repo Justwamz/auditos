@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote } from '@/components/bits';
+import { HelpLink } from '@/components/HelpLink';
 
 export interface RoadmapStep {
   id: string;
@@ -47,6 +48,7 @@ export function Roadmap({ engagementId, locked, onGo, refreshKey }: { engagement
     <section className="sheet stack roadmap" aria-label="Audit roadmap">
       <div className="row between">
         <h2>Audit roadmap</h2>
+        <HelpLink topic="engagement.overview" label="How the roadmap works" />
         <span className="small muted">{percent}% of the steps done</span>
       </div>
       <div className="bar" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Audit progress"><span style={{ width: `${percent}%` }} /></div>

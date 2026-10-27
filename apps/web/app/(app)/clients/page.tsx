@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
+import { HelpLink } from '@/components/HelpLink';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, Notice } from '@/components/bits';
@@ -37,7 +38,7 @@ export default function ClientsPage() {
   return (
     <div className="stack-lg">
       <div className="page-head">
-        <h1>Clients</h1>
+        <div className="row between"><h1>Clients</h1><HelpLink topic="clients" /></div>
         <p>The clients you are assigned to. Each client has one account manager, who is accountable for the relationship. Partners and administrators see every client.</p>
       </div>
 

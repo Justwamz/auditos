@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
+import { HelpLink } from '@/components/HelpLink';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, StateBadge } from '@/components/bits';
@@ -36,7 +37,7 @@ export default function EngagementsPage() {
 
   return (
     <div className="stack-lg">
-      <div className="page-head"><h1>Engagements</h1><p>You only see engagements you are assigned to.</p></div>
+      <div className="page-head"><div className="row between"><h1>Engagements</h1><HelpLink topic="engagements.new" /></div><p>The engagements you can open: the ones you are on the team of. Partners also see, and can read, every other engagement of the firm.</p></div>
 
       {canCreate && (
         <section className="sheet">

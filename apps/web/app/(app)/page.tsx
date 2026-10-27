@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote, Empty, StateBadge } from '@/components/bits';
 import { fmtDate, SECTOR_LABELS } from '@/lib/text';
+import { HelpLink } from '@/components/HelpLink';
 import { WhatYouSee } from '@/components/WhatYouSee';
 
 interface Dash {
@@ -21,7 +22,7 @@ export default function Dashboard() {
   return (
     <div className="stack-lg">
       <div className="page-head">
-        <h1>Dashboard</h1>
+        <div className="row between"><h1>Dashboard</h1><HelpLink topic="dashboard" /></div>
         <p>{me.data ? `Signed in as ${me.data.email}.` : ''}</p>
       </div>
       <ErrorNote error={dash.error} />

@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote, Notice } from '@/components/bits';
+import { HelpLink } from '@/components/HelpLink';
 import type { Engagement } from '../page';
 
 const BENCHMARKS = [
@@ -56,7 +57,7 @@ export function Materiality({ engagement: e, locked }: { engagement: Engagement;
 
   return (
     <form className="sheet stack" onSubmit={save}>
-      <h2>Materiality</h2>
+      <div className="row between"><h2>Materiality</h2><HelpLink topic="engagement.papers.materiality" label="How to calculate it" /></div>
       <p className="muted">Pick a benchmark, enter its amount for the year and a percentage. The performance and clearly trivial amounts follow from it.</p>
       <div className="form-grid">
         <div className="field">

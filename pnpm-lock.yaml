@@ -51,6 +51,9 @@ importers:
       '@auditos/fs-engine':
         specifier: workspace:*
         version: link:../../packages/fs-engine
+      '@auditos/help':
+        specifier: workspace:*
+        version: link:../../packages/help
       '@auditos/standards':
         specifier: workspace:*
         version: link:../../packages/standards
@@ -170,6 +173,8 @@ importers:
       fast-check:
         specifier: ^3.23.0
         version: 3.23.2
+
+  packages/help: {}
 
   packages/standards: {}
 

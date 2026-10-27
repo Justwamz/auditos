@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { HelpLink } from '@/components/HelpLink';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, Notice } from '@/components/bits';
@@ -104,6 +105,7 @@ export function Checklists({ engagement: e, viewer }: { engagement: Engagement; 
       <section className="sheet stack">
         <div className="row between">
           <h2>Checklists</h2>
+          <HelpLink topic="engagement.checklists" label="How checklists work" />
           {!viewer.engagementLocked && <button onClick={generate}>Generate checklists</button>}
         </div>
         <p className="muted">Built from the client’s sector, framework and risk flags. The content is draft wording until your content owner reviews it. Questions marked * are mandatory.</p>

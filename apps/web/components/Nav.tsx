@@ -17,6 +17,7 @@ export function Nav({ name, role, isAdmin, firm, multiFirm }: { name: string; ro
     { href: '/independence', label: 'Independence', show: !admin },
     { href: '/audit-trail', label: 'Audit trail', show: seesTrail },
     { href: '/admin/users', label: 'People and access', show: holdsAdmin },
+    { href: '/help', label: 'Help', show: true },
   ];
   const current = (href: string) => (href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`));
 

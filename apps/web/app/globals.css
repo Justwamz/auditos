@@ -226,6 +226,12 @@ table.ledger td.num { min-width: 8.5rem; }
 .roadmap-steps li.done { color: var(--ledger-deep); }
 .roadmap-steps li.current { color: inherit; }
 .roadmap-steps .mark { width: 1.2rem; text-align: center; }
+.help-link { font-size: 0.85rem; color: var(--ledger-deep); text-decoration: none; border: 1px solid var(--rule-strong); border-radius: 99px; padding: 0.15rem 0.7rem; white-space: nowrap; }
+.help-link:hover { background: var(--ledger-wash); }
+.prose { max-width: 68ch; }
+.prose h3 { margin: 1.4rem 0 0.4rem; }
+.prose p, .prose li { line-height: 1.6; }
+.prose ul, .prose ol { padding-left: 1.3rem; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .prior { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; font-size: 0.85rem; color: var(--pencil); }
 

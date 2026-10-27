@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { HelpLink } from '@/components/HelpLink';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote } from '@/components/bits';
@@ -55,7 +56,7 @@ export default function AuditTrailPage() {
   return (
     <div className="stack-lg">
       <div className="page-head">
-        <h1>Audit trail</h1>
+        <div className="row between"><h1>Audit trail</h1><HelpLink topic="audit-trail" /></div>
         <p>Everything done on client files, in plain English: who viewed, changed, signed off, downloaded or revealed what, and when. Nothing here can be edited or deleted.</p>
       </div>
 

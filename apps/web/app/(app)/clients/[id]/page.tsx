@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
+import { HelpLink } from '@/components/HelpLink';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, Notice, StateBadge } from '@/components/bits';
@@ -101,7 +102,7 @@ export default function ClientPage() {
     <div className="stack-lg">
       <div className="page-head">
         <p className="small"><Link href="/clients">All clients</Link></p>
-        <h1>{c.name}</h1>
+        <div className="row between"><h1>{c.name}</h1><HelpLink topic="clients.contacts" /></div>
         <p>
           {SECTOR_LABELS[c.sector] ?? c.sector} · {c.legalForm} · {c.framework === 'IFRS_SME' ? 'IFRS for SMEs' : 'Full IFRS'} · account manager {c.accountManagerName ?? 'not set'}
         </p>

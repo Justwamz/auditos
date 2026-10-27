@@ -1,5 +1,6 @@
 'use client';
 import { useState, type FormEvent } from 'react';
+import { HelpLink } from '@/components/HelpLink';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote, Notice } from '@/components/bits';
@@ -40,7 +41,7 @@ export default function PeoplePage() {
   return (
     <div className="stack-lg">
       <div className="page-head">
-        <h1>People and access</h1>
+        <div className="row between"><h1>People and access</h1><HelpLink topic="admin.users" /></div>
         <p>Every account belongs to one named person. There are no shared logins. Administration is a permission you give to a named person, whatever their role.</p>
       </div>
       <form className="sheet stack" onSubmit={invite}>
