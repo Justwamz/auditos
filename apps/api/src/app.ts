@@ -21,6 +21,7 @@ import { calendarRoutes } from './calendar/routes';
 import { billingSettingsRoutes } from './billing/settings';
 import { timeRoutes } from './billing/time';
 import { invoiceRoutes } from './billing/invoices';
+import { quoteRoutes } from './billing/quotes';
 import { peopleRoutes } from './people/routes';
 import { reviewNoteRoutes } from './review-notes/routes';
 import { docControlRoutes } from './doc-control/routes';
@@ -182,6 +183,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   await app.register(billingSettingsRoutes);
   await app.register(timeRoutes);
   await app.register(invoiceRoutes);
+  await app.register(quoteRoutes);
   for (const plugin of opts.routes ?? []) await app.register(plugin);
   return app;
 }
