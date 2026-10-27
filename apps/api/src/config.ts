@@ -11,10 +11,17 @@ export interface Config {
   uploadDir: string;
   /** Number of trusted reverse proxies in front of the API (1 = the web app's proxy; Render adds one more). */
   trustProxyHops: number;
+  /** Development only: a fixed six-digit code accepted instead of the authenticator. Never set outside development. */
+  devFixedOtp?: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const nodeEnv = (env.NODE_ENV as Config['nodeEnv'] | undefined) ?? 'development';
+  const devFixedOtp = env.DEV_FIXED_OTP || undefined;
+  if (devFixedOtp !== undefined) {
+    if (nodeEnv === 'production') throw new Error('DEV_FIXED_OTP must never be set in production');
+    if (!/^\d{6}$/.test(devFixedOtp)) throw new Error('DEV_FIXED_OTP must be exactly six digits');
+  }
   return {
     nodeEnv,
     isProd: nodeEnv === 'production',
@@ -27,5 +34,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     loginRateLimit: Number(env.LOGIN_RATE_LIMIT ?? 10),
     uploadDir: env.UPLOAD_DIR ?? './storage',
     trustProxyHops: Number(env.TRUST_PROXY_HOPS ?? 1),
+    ...(devFixedOtp ? { devFixedOtp } : {}),
   };
 }

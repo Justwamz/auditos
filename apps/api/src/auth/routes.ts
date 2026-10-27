@@ -101,12 +101,12 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const body = verifyBody.parse(req.body);
     const u = await userFromChallenge(body.challengeId);
     if (!u || !u.mfa_secret_enc) return reply.code(401).send(GENERIC);
-    const step = verifyTotp(decrypt(u.mfa_secret_enc), body.code, app.now());
+    const step = cfg.devFixedOtp && body.code === cfg.devFixedOtp ? ('fixed' as const) : verifyTotp(decrypt(u.mfa_secret_enc), body.code, app.now());
     if (step === null) {
       await fail(u, 'auth.mfa_failed');
       return reply.code(401).send(GENERIC);
     }
-    const fresh = (await pool.query('select auth_accept_totp_step($1, $2) as ok', [u.id, step])).rows[0]?.ok;
+    const fresh = step === 'fixed' || (await pool.query('select auth_accept_totp_step($1, $2) as ok', [u.id, step])).rows[0]?.ok;
     if (!fresh) return reply.code(401).send(GENERIC);
     if (!u.mfa_enabled) await pool.query('select auth_enable_mfa($1)', [u.id]);
     await pool.query('select auth_record_success($1)', [u.id]);
@@ -134,12 +134,12 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const a = req.auth!;
     const u = (await pool.query('select * from auth_user_by_id($1)', [a.userId])).rows[0] as UserRow | undefined;
     if (!u?.mfa_secret_enc) return reply.code(401).send(GENERIC);
-    const step = verifyTotp(decrypt(u.mfa_secret_enc), code, app.now());
+    const step = cfg.devFixedOtp && code === cfg.devFixedOtp ? ('fixed' as const) : verifyTotp(decrypt(u.mfa_secret_enc), code, app.now());
     if (step === null) {
       await fail(u, 'auth.stepup_failed');
       return reply.code(401).send(GENERIC);
     }
-    const fresh = (await pool.query('select auth_accept_totp_step($1, $2) as ok', [u.id, step])).rows[0]?.ok;
+    const fresh = step === 'fixed' || (await pool.query('select auth_accept_totp_step($1, $2) as ok', [u.id, step])).rows[0]?.ok;
     if (!fresh) return reply.code(401).send({ error: 'code_already_used' });
     await pool.query('select session_stepup($1, $2)', [a.sessionId, a.userId]);
     return { ok: true };

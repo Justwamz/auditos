@@ -65,6 +65,9 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
     app.decorate('pools', { app: appPool });
   }
   app.decorate('cfg', cfg);
+  if (cfg.devFixedOtp) {
+    app.log.warn('DEV_FIXED_OTP is set: the authenticator is bypassed with a fixed code. Development only.');
+  }
   app.decorate('blobs', opts.blobs);
   app.decorate('scanner', opts.scanner);
   app.decorate('now', opts.now ?? Date.now);
