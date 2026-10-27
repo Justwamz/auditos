@@ -33,7 +33,7 @@ test('personal details are masked, revealing needs a reason, and the reveal show
 
 test('a paper keeps every version and shows what changed', async ({ page }) => {
   await signIn(page, 'daniel.otieno@kangethe.example.test');
-  await openDemoPaper(page, 'Understanding the business');
+  await openDemoPaper(page, 'Client acceptance and continuance');
   await page.getByRole('button', { name: 'Show history' }).click();
   await expect(page.getByText('Every version is kept for good')).toBeVisible();
   await expect(page.getByRole('button', { name: 'What changed' }).first()).toBeVisible();
