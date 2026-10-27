@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { withTenant } from '@auditos/db';
@@ -15,6 +16,7 @@ const clientBody = z.object({
   legalForm: z.string().trim().min(1).max(60),
   framework: z.enum(['IFRS_SME', 'FULL_IFRS']).default('IFRS_SME'),
   yearEndMonth: z.number().int().min(1).max(12),
+  accountManagerId: uuid.optional(),
 });
 const engagementBody = z
   .object({
@@ -75,24 +77,55 @@ export async function engagementRoutes(app: FastifyInstance): Promise<void> {
     assertCan(req, 'client.manage');
     const b = clientBody.parse(req.body);
     const ctx = tenantCtx(req);
-    const id = await withTenant(pool, ctx, async (tx) =>
-      (
-        await tx.query(
-          'insert into clients (tenant_id, name, sector, legal_form, framework, year_end_month, created_by) values ($1, $2, $3, $4, $5, $6, $7) returning id',
-          [ctx.tenantId, b.name, b.sector, b.legalForm, b.framework, b.yearEndMonth, ctx.userId],
-        )
-      ).rows[0].id as string,
-    );
+    const id = randomUUID();
+    const manager = b.accountManagerId ?? ctx.userId;
+    await withTenant(pool, ctx, async (tx) => {
+      if (!(await tx.query('select client_manager_valid($1) as ok', [manager])).rows[0].ok) throw httpError(400, 'invalid_account_manager');
+      // No RETURNING: the new client may belong to a colleague, whom the creator then cannot read back.
+      await tx.query(
+        'insert into clients (id, tenant_id, name, sector, legal_form, framework, year_end_month, created_by, account_manager_id) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [id, ctx.tenantId, b.name, b.sector, b.legalForm, b.framework, b.yearEndMonth, ctx.userId, manager],
+      );
+    });
     return reply.code(201).send({ id });
   });
 
   app.get('/clients', { config: { access: 'tenant' } }, async (req) => {
     const rows = await withTenant(pool, tenantCtx(req), async (tx) =>
-      (await tx.query('select id, name, sector, legal_form, framework, year_end_month from clients order by name')).rows,
+      (
+        await tx.query(
+          `select c.id, c.name, c.sector, c.legal_form, c.framework, c.year_end_month, c.account_manager_id, coalesce(u.full_name, u.email) as account_manager_name
+             from clients c left join users u on u.id = c.account_manager_id order by c.name`,
+        )
+      ).rows,
     );
     return {
-      clients: rows.map((r) => ({ id: r.id, name: r.name, sector: r.sector, legalForm: r.legal_form, framework: r.framework, yearEndMonth: r.year_end_month })),
+      clients: rows.map((r) => ({
+        id: r.id, name: r.name, sector: r.sector, legalForm: r.legal_form, framework: r.framework, yearEndMonth: r.year_end_month,
+        accountManagerId: r.account_manager_id as string | null, accountManagerName: r.account_manager_name as string | null,
+      })),
     };
+  });
+
+  app.get<{ Params: { id: string } }>('/clients/:id', { config: { access: 'tenant' } }, async (req) => {
+    const id = uuid.safeParse(req.params.id);
+    if (!id.success) throw httpError(404, 'not_found');
+    return withTenant(pool, tenantCtx(req), async (tx) => {
+      const c = (
+        await tx.query(
+          `select c.id, c.name, c.sector, c.legal_form, c.framework, c.year_end_month, c.account_manager_id, coalesce(u.full_name, u.email) as account_manager_name
+             from clients c left join users u on u.id = c.account_manager_id where c.id = $1`,
+          [id.data],
+        )
+      ).rows[0];
+      if (!c) throw httpError(404, 'not_found');
+      const engagements = (await listEngagements(tx)).filter((e) => e.client_id === id.data).map(present);
+      return {
+        id: c.id, name: c.name, sector: c.sector, legalForm: c.legal_form, framework: c.framework, yearEndMonth: c.year_end_month,
+        accountManagerId: c.account_manager_id as string | null, accountManagerName: c.account_manager_name as string | null,
+        engagements,
+      };
+    });
   });
 
   app.post('/engagements', { config: { access: 'tenant' } }, async (req, reply) => {

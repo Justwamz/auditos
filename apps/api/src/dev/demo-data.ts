@@ -78,7 +78,7 @@ export async function seedDemoData(owner: Pool, firmName = 'Kangethe & Associate
     await as(c, tenantId, manager!);
     const clientId = (
       await c.query(
-        "insert into clients (tenant_id, name, sector, legal_form, framework, year_end_month, created_by) values ($1, $2, 'trading', 'Limited company', 'IFRS_SME', 12, $3) returning id",
+        "insert into clients (tenant_id, name, sector, legal_form, framework, year_end_month, created_by, account_manager_id) values ($1, $2, 'trading', 'Limited company', 'IFRS_SME', 12, $3, $3) returning id",
         [tenantId, SYNTHETIC_CLIENT, manager],
       )
     ).rows[0].id as string;
