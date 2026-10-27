@@ -54,7 +54,8 @@ begin
   if not is_engagement_member(p_engagement) then raise exception 'not_found' using errcode = 'AO404'; end if;
   select role into caller_role from memberships where tenant_id = app_tenant() and user_id = app_user() and active;
   if caller_role is null or caller_role not in ('manager', 'partner') then raise exception 'forbidden' using errcode = 'AO403'; end if;
-  if p_to in ('partner_approved', 'report_issued', 'locked') and caller_role <> 'partner' then
+  if p_to in ('partner_approved', 'report_issued', 'locked')
+     and (caller_role <> 'partner' or app_user() is distinct from (select partner_id from engagements where id = p_engagement)) then
     raise exception 'forbidden' using errcode = 'AO403';
   end if;
   update engagements set state = p_to, report_date = coalesce(p_report_date, report_date)

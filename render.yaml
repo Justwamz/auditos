@@ -43,6 +43,8 @@ services:
         generateValue: true
       - key: UPLOAD_DIR
         value: /var/data/evidence
+      - key: TRUST_PROXY_HOPS   # Render's edge + the web app's proxy
+        value: 2
 
   - type: web
     name: auditos-web

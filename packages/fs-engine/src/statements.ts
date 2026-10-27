@@ -34,7 +34,7 @@ export interface Pl {
 }
 export type EquityColumn = 'share_capital' | 'other_reserves' | 'retained_earnings' | 'total';
 export interface EquityRow {
-  id: 'opening' | 'profit' | 'dividends' | 'closing';
+  id: 'opening' | 'issues' | 'profit' | 'dividends' | 'closing';
   label: string;
   values: Record<EquityColumn, Money>;
 }
@@ -153,15 +153,21 @@ function buildPl(f: Figures, p: Figures | undefined): Pl {
   return { rows, profit: f.get('profit') ?? 0n, ...(p ? { priorProfit: p.get('profit') ?? 0n } : {}) };
 }
 
-function buildEquity(f: Figures): EquityRow[] {
+function buildEquity(f: Figures, p?: Figures): EquityRow[] {
   const g = (id: string) => f.get(id) ?? 0n;
+  const pg = (id: string) => (p ? (p.get(id) ?? 0n) : g(id));
   const mk = (id: EquityRow['id'], label: string, sc: Money, or: Money, re: Money): EquityRow => ({
     id,
     label,
     values: { share_capital: sc, other_reserves: or, retained_earnings: re, total: sc + or + re },
   });
+  const issuedCapital = g('share_capital') - pg('share_capital');
+  const issuedReserves = g('other_reserves') - pg('other_reserves');
   return [
-    mk('opening', 'Balance at start of period', g('share_capital'), g('other_reserves'), g('retained_earnings')),
+    mk('opening', 'Balance at start of period', pg('share_capital'), pg('other_reserves'), g('retained_earnings')),
+    ...(issuedCapital !== 0n || issuedReserves !== 0n
+      ? [mk('issues', 'Shares issued and other movements', issuedCapital, issuedReserves, 0n)]
+      : []),
     mk('profit', 'Profit for the year', 0n, 0n, g('profit')),
     mk('dividends', 'Dividends declared', 0n, 0n, -g('dividends')),
     mk('closing', 'Balance at end of period', g('share_capital'), g('other_reserves'), g('closing_retained')),
@@ -203,7 +209,7 @@ export function buildStatements(m: MappedTb, opts: BuildOptions): BuildResult {
     hasComparatives: p !== undefined,
     sofp: buildSofp(f, p),
     pl: buildPl(f, p),
-    equity: { rows: buildEquity(f), ...(p ? { priorRows: buildEquity(p) } : {}) },
+    equity: { rows: buildEquity(f, p), ...(p ? { priorRows: buildEquity(p) } : {}) },
     ...(cf.statement ? { cashflow: cf.statement } : {}),
     notes: buildNotes(f, p),
   };

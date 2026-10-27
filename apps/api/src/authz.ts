@@ -19,6 +19,12 @@ export function assertCan(req: FastifyRequest, action: Action, ctx: PolicyCtx = 
   return actor;
 }
 
+/** For checks that only apply to some requests of a route (route-level `stepUp` applies to all of them). */
+export function requireFreshStepUp(req: FastifyRequest, maxMinutes = 5): void {
+  const age = req.auth?.stepUpAgeSec ?? null;
+  if (age === null || age >= maxMinutes * 60) throw httpError(401, 'step_up_required');
+}
+
 export const tenantCtx = (req: FastifyRequest) => {
   const a = actorOf(req);
   return { tenantId: a.tenantId, userId: a.userId };

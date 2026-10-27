@@ -23,6 +23,7 @@ export function exportPdf(s: Statements, meta: ExportMeta): Promise<Buffer> {
     doc.on('error', reject);
 
     const decorate = () => {
+      const cursorY = doc.y; // drawing the footer must not move where the content continues
       if (meta.draft) {
         doc.save();
         doc.rotate(-35, { origin: [300, 420] }).fontSize(110).fillColor('#e8b4b4').opacity(0.35).text('DRAFT', 90, 360, { lineBreak: false });
@@ -30,6 +31,7 @@ export function exportPdf(s: Statements, meta: ExportMeta): Promise<Buffer> {
       }
       doc.fontSize(8).fillColor('#666666').opacity(1).text(footerText(meta), LEFT, 800, { lineBreak: false });
       doc.fillColor('#000000');
+      doc.y = cursorY;
     };
     decorate();
     doc.on('pageAdded', decorate);

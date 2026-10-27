@@ -10,8 +10,12 @@ import { editItemTx, lastEditor, loadItem, memberGrade, ITEM_COLUMNS, type ItemR
 const uuid = z.string().uuid();
 const MAX_CONTENT_BYTES = 200_000;
 
+/** Kinds with their own endpoints and validation. They cannot be created or edited through the generic routes. */
+const RESERVED_KINDS = ['evidence', 'checklist', 'trial_balance', 'trial_balance_prior', 'fs_mapping', 'adjustments', 'fs_note'];
+const GENERIC_KINDS = ['acceptance', 'engagement_letter', 'materiality', 'risk_assessment', 'workpaper', 'eqr_review', 'addendum'] as const;
+
 const createBody = z.object({
-  kind: z.string().regex(/^[a-z0-9_]{1,60}$/),
+  kind: z.enum(GENERIC_KINDS),
   title: z.string().trim().min(1).max(300),
   content: z.record(z.string(), z.unknown()).default({}),
   addendumOf: uuid.optional(),
@@ -121,6 +125,7 @@ export async function docControlRoutes(app: FastifyInstance): Promise<void> {
     return withTenant(pool, tenantCtx(req), async (tx) => {
       const item = await loadItem(tx, id, true);
       if (!item) throw httpError(404, 'not_found');
+      if (RESERVED_KINDS.includes(item.kind)) throw httpError(409, 'dedicated_endpoint_required');
       return editItemTx(req, tx, item, body);
     });
   });

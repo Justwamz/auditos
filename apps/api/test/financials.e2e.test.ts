@@ -306,6 +306,7 @@ describe('financial gates', () => {
     const e = await newEngagement();
     await ownerQuery(h, T.id, "update engagements set risk_profile = '{\"riskFlags\":[\"eqr_required\"]}' where id = $1", [e]);
     for (const s of ['planning', 'fieldwork', 'completion', 'review']) await ownerQuery(h, T.id, 'update engagements set state = $2 where id = $1', [e, s]);
+    await stepUp(h, sP, P);
     const r = await call(sP, 'POST', `/engagements/${e}/transition`, { to: 'partner_approved' });
     expect(r.statusCode).toBe(409);
     expect(r.json().blockers.map((b: { gate: string }) => b.gate)).toContain('eqrSignedOffWhereRequired');

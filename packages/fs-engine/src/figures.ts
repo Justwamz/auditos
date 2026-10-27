@@ -8,7 +8,8 @@ export type FsExceptionCode =
   | 'no-comparatives'
   | 'reclassified-balance'
   | 'unusual-balance'
-  | 'retained-earnings-rollforward';
+  | 'retained-earnings-rollforward'
+  | 'cashflow-unreconciled';
 
 export interface FsException {
   code: FsExceptionCode;
@@ -32,14 +33,16 @@ export function computeFigures(m: MappedTb, exceptions?: FsException[]): Figures
   const g = (id: string) => f.get(id) ?? 0n;
 
   for (const [from, to] of [...ASSET_TO_LIABILITY, ...LIABILITY_TO_ASSET]) {
-    const v = g(from);
-    if (v < 0n) {
-      f.set(from, 0n);
-      f.set(to, g(to) - v);
+    // Account by account when the detail is known, so a good balance never hides an overdrawn one.
+    const opposite = m.accounts?.filter((a) => a.line === from && a.value < 0n);
+    const amount = opposite ? opposite.reduce((s, a) => s - a.value, 0n) : g(from) < 0n ? -g(from) : 0n;
+    if (amount > 0n) {
+      f.set(from, opposite ? g(from) + amount : 0n);
+      f.set(to, g(to) + amount);
       exceptions?.push({
         code: 'reclassified-balance',
-        message: `${from} has an opposite-sign balance and was presented under ${to}`,
-        detail: { from, to, amount: (-v).toString() },
+        message: `${opposite && opposite.length > 0 ? opposite.map((a) => `${a.code} ${a.name}`).join(', ') : from} has an opposite-sign balance and was presented under ${to}`,
+        detail: { from, to, amount: amount.toString(), accounts: opposite?.map((a) => a.code) },
       });
     }
   }

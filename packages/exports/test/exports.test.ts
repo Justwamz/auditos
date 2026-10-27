@@ -84,3 +84,28 @@ describe('pdf', () => {
     expect(final.toString('latin1')).not.toContain('DRAFT');
   });
 });
+
+describe('pdf pagination', () => {
+  test('a long statement flows across a sensible number of pages instead of one page per row', async () => {
+    const long: Statements = {
+      ...statements,
+      notes: [{ id: 'many', title: 'Many rows', rows: Array.from({ length: 170 }, (_, i) => ({ id: `r${i}`, label: `Account line ${i}`, current: BigInt(i) * 100n })) }],
+    };
+    const pdf = await exportPdf(long, meta({ draft: false }));
+    const pages = (pdf.toString('latin1').match(/\/Type \/Page\b(?!s)/g) ?? []).length;
+    expect(pages).toBeGreaterThanOrEqual(3);
+    expect(pages).toBeLessThan(12);
+  });
+
+  test('content never starts in the footer band after a page break', async () => {
+    const long: Statements = {
+      ...statements,
+      notes: [{ id: 'many', title: 'Many rows', rows: Array.from({ length: 120 }, (_, i) => ({ id: `r${i}`, label: `Line ${i}`, current: 100n })) }],
+    };
+    const text = (await exportPdf(long, meta({ draft: false }))).toString('latin1');
+    // Text positions are written as "1 0 0 1 x y Tm"; the footer sits at y = 792 - 800 mirrored. No body row may share its y.
+    const ys = [...text.matchAll(/1 0 0 1 [\d.]+ ([\d.]+) Tm/g)].map((m) => Number(m[1]));
+    const footerLike = ys.filter((y) => Math.abs(y - (842 - 800 - 8)) < 4).length;
+    expect(footerLike).toBeLessThanOrEqual(Math.ceil(ys.length / 40) + 1);
+  });
+});

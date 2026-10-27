@@ -105,7 +105,7 @@ describe('roles and memberships cannot be changed by their holders', () => {
 
   test('a deactivated partner can no longer act on items even through the database', async () => {
     const e = await newEngagement();
-    const it = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'checklist', title: 'Deactivation', content: {} })).json();
+    const it = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'workpaper', title: 'Deactivation', content: {} })).json();
     await signoff(sF, F, it.id, 'prepared');
     await signoff(sM, M, it.id, 'manager');
     await ownerQuery(h, T.id, 'update memberships set active = false where user_id = $1', [P2.id]);
@@ -117,7 +117,7 @@ describe('roles and memberships cannot be changed by their holders', () => {
 describe('separation of duties on sign-off', () => {
   test('one person cannot give both the review and the approval', async () => {
     const e = await newEngagement();
-    const it = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'checklist', title: 'One person', content: {} })).json();
+    const it = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'workpaper', title: 'One person', content: {} })).json();
     await signoff(sF, F, it.id, 'prepared');
     expect((await signoff(sP, P, it.id, 'manager')).statusCode).toBe(200);
     const again = await signoff(sP, P, it.id, 'partner');
@@ -127,7 +127,7 @@ describe('separation of duties on sign-off', () => {
 
   test('the reviewer must be of a higher grade than the last editor, checked in the database too', async () => {
     const e = await newEngagement();
-    const it = (await call(sM, 'POST', `/engagements/${e}/items`, { kind: 'checklist', title: 'Manager paper', content: {} })).json();
+    const it = (await call(sM, 'POST', `/engagements/${e}/items`, { kind: 'workpaper', title: 'Manager paper', content: {} })).json();
     await signoff(sM, M, it.id, 'prepared');
     const peer = await makeUser(h, T.id, 'manager', 3);
     const sPeer = await login(h, peer);
@@ -138,7 +138,7 @@ describe('separation of duties on sign-off', () => {
 
   test('a sign-off for an older version is refused even if the item has since been edited', async () => {
     const e = await newEngagement();
-    const it = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'checklist', title: 'Race', content: { v: 1 } })).json();
+    const it = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'workpaper', title: 'Race', content: { v: 1 } })).json();
     await signoff(sF, F, it.id, 'prepared');
     const stale = (await call(sM, 'GET', `/items/${it.id}`)).json().contentHash;
     await call(sF, 'PATCH', `/items/${it.id}`, { content: { v: 2 } });
@@ -151,9 +151,9 @@ describe('separation of duties on sign-off', () => {
 describe('addenda, the audit log and the lock job', () => {
   test('after locking, only a real addendum of an item in the same engagement can be added', async () => {
     const e = await newEngagement();
-    const target = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'checklist', title: 'Target', content: {} })).json();
+    const target = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'workpaper', title: 'Target', content: {} })).json();
     const other = await newEngagement();
-    const foreign = (await call(sF, 'POST', `/engagements/${other}/items`, { kind: 'checklist', title: 'Foreign', content: {} })).json();
+    const foreign = (await call(sF, 'POST', `/engagements/${other}/items`, { kind: 'workpaper', title: 'Foreign', content: {} })).json();
     for (const s of ['planning', 'fieldwork', 'completion', 'review', 'partner_approved']) await ownerQuery(h, T.id, 'update engagements set state = $2 where id = $1', [e, s]);
     await ownerQuery(h, T.id, "update engagements set state = 'report_issued', report_date = current_date - 90 where id = $1", [e]);
     await lockDueEngagements(h.app.pools.app, new Date());

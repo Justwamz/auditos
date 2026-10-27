@@ -27,7 +27,7 @@ const newEngagement = async (): Promise<string> => {
   return id;
 };
 
-const createItem = async (s: Session, engagementId: string, kind = 'checklist', content: object = { answer: 'yes' }) => {
+const createItem = async (s: Session, engagementId: string, kind = 'workpaper', content: object = { answer: 'yes' }) => {
   const res = await call(s, 'POST', `/engagements/${engagementId}/items`, { kind, title: `${kind} item`, content });
   expect(res.statusCode).toBe(201);
   return res.json() as { id: string; version: number; state: string; contentHash: string };
@@ -138,7 +138,7 @@ describe('editing and review', () => {
   });
 
   test('editing partner_approved needs a reason and the partner; it revokes both sign-offs and bumps the version', async () => {
-    const it = await approveFully(engId, 'checklist');
+    const it = await approveFully(engId, 'workpaper');
     expect((await call(sM, 'PATCH', `/items/${it.id}`, { content: { answer: 'x' }, reason: 'late adjustment needed' })).statusCode).toBe(403);
     expect((await call(sP, 'PATCH', `/items/${it.id}`, { content: { answer: 'x' } })).statusCode).toBe(400);
     const ok = await call(sP, 'PATCH', `/items/${it.id}`, { content: { answer: 'x' }, reason: 'late adjustment needed' });
@@ -263,7 +263,7 @@ describe('lock, unlock and addenda', () => {
 
   beforeAll(async () => {
     lockedEng = await newEngagement();
-    const it = await approveFully(lockedEng, 'checklist');
+    const it = await approveFully(lockedEng, 'workpaper');
     lockedItem = it.id;
     await forceLock(lockedEng);
   });
@@ -275,7 +275,7 @@ describe('lock, unlock and addenda', () => {
         tx.query("update wp_items set content = '{\"a\":1}' where id = $1", [lockedItem]),
       ),
     ).rejects.toThrow(/locked/);
-    expect((await call(sF, 'POST', `/engagements/${lockedEng}/items`, { kind: 'checklist', title: 'new', content: {} })).statusCode).toBe(403);
+    expect((await call(sF, 'POST', `/engagements/${lockedEng}/items`, { kind: 'workpaper', title: 'new', content: {} })).statusCode).toBe(403);
   });
 
   test('deleting on a locked engagement is refused', async () => {
@@ -321,7 +321,7 @@ describe('lock, unlock and addenda', () => {
 
   test('a second partner can approve an unlock', async () => {
     const e = await newEngagement();
-    await approveFully(e, 'checklist');
+    await approveFully(e, 'workpaper');
     await forceLock(e);
     await stepUp(h, sP, P);
     const rid = (await call(sP, 'POST', `/engagements/${e}/unlock-requests`, { reason: 'Correction to comparatives needed' })).json().requestId;

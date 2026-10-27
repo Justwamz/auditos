@@ -19,8 +19,18 @@ export interface TaxonomyLine {
 export const TAXONOMY: TaxonomyLine[] = taxonomy.lines as TaxonomyLine[];
 const BY_ID = new Map(TAXONOMY.map((l) => [l.id, l]));
 
+export interface MappedAccount {
+  code: string;
+  name: string;
+  line: string;
+  /** Value in the line's natural direction; negative means the account has the opposite balance. */
+  value: Money;
+}
+
 export interface MappedTb {
   lines: Map<string, Money>;
+  /** Per-account values, so opposite-sign balances can be reclassified account by account. */
+  accounts?: MappedAccount[];
   unmapped: TbLine[];
   totalDebit: Money;
   totalCredit: Money;
@@ -31,6 +41,7 @@ export interface MappedTb {
 export function mapTrialBalance(tb: TbLine[], mapping: Mapping): MappedTb {
   const lines = new Map<string, Money>();
   const unmapped: TbLine[] = [];
+  const accounts: MappedAccount[] = [];
   let totalDebit = 0n;
   let totalCredit = 0n;
   for (const row of tb) {
@@ -43,13 +54,17 @@ export function mapTrialBalance(tb: TbLine[], mapping: Mapping): MappedTb {
     }
     const natural = line.side === 'debit' ? row.debit - row.credit : row.credit - row.debit;
     lines.set(line.id, (lines.get(line.id) ?? 0n) + natural);
+    accounts.push({ code: row.code, name: row.name, line: line.id, value: natural });
   }
   const empty = tb.every((r) => r.debit === 0n && r.credit === 0n);
-  return { lines, unmapped, totalDebit, totalCredit, balanced: totalDebit === totalCredit, empty };
+  return { lines, accounts, unmapped, totalDebit, totalCredit, balanced: totalDebit === totalCredit, empty };
 }
 
 const KEYWORDS: [RegExp, string][] = [
   [/overdraft/i, 'bank_overdraft'],
+  [/bank charge|interest (paid|expense)|finance (cost|charge)/i, 'finance_costs'],
+  [/accumulated (depreciation|amortisation|amortization)/i, 'ppe'],
+  [/depreciation|amortisation|amortization/i, 'depreciation'],
   [/rent(al)?\s+(income|received)|rental income/i, 'rental_income'],
   [/investment propert/i, 'investment_property'],
   [/stock|inventor|goods for resale/i, 'inventories'],
@@ -62,13 +77,11 @@ const KEYWORDS: [RegExp, string][] = [
   [/loan|borrowing|mortgage/i, 'borrowings_nc'],
   [/deferred tax/i, 'deferred_tax'],
   [/income tax|corporation tax|tax expense/i, 'income_tax'],
-  [/depreciation|amortisation|amortization/i, 'depreciation'],
   [/fixed asset|property|plant|equipment|motor vehicle|furniture|computer/i, 'ppe'],
-  [/interest (paid|expense)|finance (cost|charge)|bank charge/i, 'finance_costs'],
   [/cost of (sales|goods)|purchases/i, 'cost_of_sales'],
-  [/sales|revenue|fees|turnover/i, 'revenue'],
-  [/salar|wage|rent|utilit|office|admin|audit fee|insurance|repair|travel|stationery/i, 'admin_expenses'],
+  [/audit fee|accountancy|legal fee|salar|wage|rent|utilit|office|admin|insurance|repair|travel|stationery/i, 'admin_expenses'],
   [/advertis|marketing|distribution|delivery/i, 'selling_expenses'],
+  [/sales|revenue|fees|turnover/i, 'revenue'],
 ];
 
 export function suggestMapping(tb: TbLine[], prior: Mapping = {}): Mapping {

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { withTenant } from '@auditos/db';
-import { assertCan, httpError, tenantCtx } from '../authz';
+import { assertCan, httpError, requireFreshStepUp, tenantCtx } from '../authz';
 import { evaluateGates } from './gates';
 import { ENGAGEMENT_STATES, listEngagements, loadEngagement, nextState, type EngagementRow, type EngagementState } from './service';
 
@@ -154,8 +154,9 @@ export async function engagementRoutes(app: FastifyInstance): Promise<void> {
       const actor = assertCan(req, 'engagement.transition', { assigned: true });
       const to = body.to as EngagementState;
       if (nextState(e.state) !== to) throw httpError(409, 'invalid_transition');
-      if ((to === 'partner_approved' || to === 'report_issued' || to === 'locked') && actor.role !== 'partner') {
-        throw httpError(403, 'partner_required');
+      if (to === 'partner_approved' || to === 'report_issued' || to === 'locked') {
+        if (actor.role !== 'partner' || actor.userId !== e.partner_id) throw httpError(403, 'partner_required');
+        requireFreshStepUp(req);
       }
       if (to === 'report_issued' && !body.reportDate) throw httpError(400, 'report_date_required');
       const blockers = await evaluateGates(tx, id.data, e.state, to);

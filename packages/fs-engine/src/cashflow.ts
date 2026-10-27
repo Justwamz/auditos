@@ -71,13 +71,17 @@ export function buildCashFlowIndirect(
     { id: 'cff', label: 'Net cash from financing activities', current: cff, subtotal: true },
   ];
 
-  return {
-    statement: {
-      rows,
-      netMovement: net,
-      openingCash: p.get('net_cash') ?? 0n,
-      closingCash: cur('net_cash'),
-    },
-    exceptions,
-  };
+  const openingCash = p.get('net_cash') ?? 0n;
+  const closingCash = cur('net_cash');
+  const gap = closingCash - openingCash - net;
+  if (gap !== 0n) {
+    rows.push({ id: 'unreconciled', label: 'Unreconciled difference (investigate before issue)', current: gap });
+    exceptions.push({
+      code: 'cashflow-unreconciled',
+      message: 'The cash flow statement does not explain the whole movement in cash; the difference is shown on its own line',
+      detail: { difference: gap.toString() },
+    });
+  }
+
+  return { statement: { rows, netMovement: net + gap, openingCash, closingCash }, exceptions };
 }

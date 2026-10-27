@@ -39,11 +39,12 @@ export interface Financials {
   notes: ItemRow[];
 }
 
-export async function loadFinancials(tx: PoolClient, engagementId: string): Promise<Financials> {
+/** `lock` takes row locks so concurrent writers of the same paper queue instead of overwriting each other. */
+export async function loadFinancials(tx: PoolClient, engagementId: string, lock = false): Promise<Financials> {
   const rows = (
     await tx.query(
       `select ${ITEM_COLUMNS} from wp_items where engagement_id = $1 and deleted_at is null
-         and kind in ('trial_balance','trial_balance_prior','fs_mapping','adjustments','fs_note') order by created_at`,
+         and kind in ('trial_balance','trial_balance_prior','fs_mapping','adjustments','fs_note') order by created_at${lock ? ' for update' : ''}`,
       [engagementId],
     )
   ).rows as ItemRow[];

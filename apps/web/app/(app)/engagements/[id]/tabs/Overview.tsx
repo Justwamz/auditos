@@ -50,10 +50,12 @@ export function Overview({ engagement: e, me, onChanged }: { engagement: Engagem
     setError(undefined);
     setInfo('');
     try {
-      await api.post(`/engagements/${e.id}/transition`, { to: next, ...(next === 'report_issued' ? { reportDate } : {}) });
+      // The last steps (approve, issue, lock) ask for a fresh authenticator code first.
+      await withStepUp(() => api.post(`/engagements/${e.id}/transition`, { to: next, ...(next === 'report_issued' ? { reportDate } : {}) }));
       setInfo(`Moved to ${STATE_LABELS[next!]}.`);
       onChanged();
     } catch (err) {
+      if (err instanceof Error && err.message === 'cancelled') return;
       if (err instanceof ApiError && err.code === 'gate_blocked') setBlockers((err.body.blockers as { gate: string; message: string }[]) ?? []);
       else setError(err);
     }
@@ -86,10 +88,10 @@ export function Overview({ engagement: e, me, onChanged }: { engagement: Engagem
                 <input id="rd" type="date" value={reportDate} onChange={(e2) => setReportDate(e2.target.value)} />
               </div>
             )}
-            <button onClick={move} disabled={(partnerOnly && me.role !== 'partner') || (next === 'report_issued' && !reportDate)}>
+            <button onClick={move} disabled={(partnerOnly && me.userId !== e.partnerId) || (next === 'report_issued' && !reportDate)}>
               Move to {STATE_LABELS[next]}
             </button>
-            {partnerOnly && me.role !== 'partner' && <span className="muted small">Only a partner can do this step.</span>}
+            {partnerOnly && me.userId !== e.partnerId && <span className="muted small">Only the engagement partner can do this step.</span>}
           </div>
         )}
         {e.state === 'locked' && <p className="muted">The file is locked. Nothing can be edited or deleted. Late information goes in as an addendum paper.</p>}

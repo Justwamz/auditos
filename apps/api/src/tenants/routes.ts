@@ -21,8 +21,12 @@ export async function tenantRoutes(app: FastifyInstance): Promise<void> {
   const fingerprint = async (userId: string): Promise<string | null> =>
     ((await pool.query('select auth_user_fingerprint($1) as f', [userId])).rows[0]?.f as string | null) ?? null;
 
-  const inviteTokenFor = async (userId: string): Promise<string> =>
-    signToken({ uid: userId, purpose: 'invite', fp: await fingerprint(userId) }, app.now() + INVITE_MS);
+  const needsInvite = async (userId: string): Promise<boolean> =>
+    (await pool.query('select auth_needs_invite($1) as n', [userId])).rows[0]?.n === true;
+
+  /** Only accounts that have never had a password get a token. Existing accounts are added to the firm without one. */
+  const inviteTokenFor = async (userId: string): Promise<string | null> =>
+    (await needsInvite(userId)) ? signToken({ uid: userId, purpose: 'invite', fp: await fingerprint(userId) }, app.now() + INVITE_MS) : null;
 
   app.get('/admin/users', { config: { access: 'tenant' } }, async (req) => {
     assertCan(req, 'tenant.admin');
@@ -73,7 +77,7 @@ export async function tenantRoutes(app: FastifyInstance): Promise<void> {
     const body = acceptBody.parse(req.body);
     const t = verifyToken<{ uid: string; purpose: string; fp: string | null }>(body.token, app.now());
     if (!t || t.purpose !== 'invite' || typeof t.uid !== 'string') return reply.code(401).send({ error: 'invalid_invite' });
-    if ((await fingerprint(t.uid)) !== t.fp) return reply.code(401).send({ error: 'invalid_invite' });
+    if ((await fingerprint(t.uid)) !== t.fp || !(await needsInvite(t.uid))) return reply.code(401).send({ error: 'invalid_invite' });
     await pool.query('select auth_set_password($1, $2)', [t.uid, await hashPassword(body.password)]);
     return { ok: true };
   });

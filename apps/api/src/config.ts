@@ -9,6 +9,8 @@ export interface Config {
   lockMinutes: number;
   loginRateLimit: number;
   uploadDir: string;
+  /** Number of trusted reverse proxies in front of the API (1 = the web app's proxy; Render adds one more). */
+  trustProxyHops: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -24,5 +26,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     lockMinutes: 15,
     loginRateLimit: Number(env.LOGIN_RATE_LIMIT ?? 10),
     uploadDir: env.UPLOAD_DIR ?? './storage',
+    trustProxyHops: Number(env.TRUST_PROXY_HOPS ?? 1),
   };
 }

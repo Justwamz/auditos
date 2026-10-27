@@ -102,7 +102,7 @@ export async function financialRoutes(app: FastifyInstance): Promise<void> {
     }
     const kind = prior ? 'trial_balance_prior' : 'trial_balance';
     const out = await withTenant(pool, ctx, async (tx) => {
-      const f = await loadFinancials(tx, engagementId);
+      const f = await loadFinancials(tx, engagementId, true);
       const saved = await upsertSingleton(
         req, tx, ctx, engagementId, kind, prior ? 'Prior-year trial balance' : 'Trial balance',
         { lines: parsed.lines, source: 'import', importedAt: new Date().toISOString() },
@@ -155,7 +155,7 @@ export async function financialRoutes(app: FastifyInstance): Promise<void> {
       const eng = await loadEngagement(tx, engagementId);
       if (!eng) throw httpError(404, 'not_found');
       assertCan(req, 'item.edit', { assigned: true, engagementState: eng.state });
-      const f = await loadFinancials(tx, engagementId);
+      const f = await loadFinancials(tx, engagementId, true);
       const saved = await upsertSingleton(req, tx, ctx, engagementId, 'fs_mapping', 'Statement mapping', { mapping }, f.mapping);
       return { version: saved.version };
     });
@@ -196,7 +196,7 @@ export async function financialRoutes(app: FastifyInstance): Promise<void> {
     const engagementId = parse(req.params.id);
     return withTenant(pool, tenantCtx(req), async (tx) => {
       if (!(await loadEngagement(tx, engagementId))) throw httpError(404, 'not_found');
-      const f = await loadFinancials(tx, engagementId);
+      const f = await loadFinancials(tx, engagementId, true);
       const entries = entriesOf(f.adjustments);
       return { entries, unadjustedTotal: unadjustedTotal(entries), version: f.adjustments?.version ?? 0 };
     });
@@ -210,7 +210,8 @@ export async function financialRoutes(app: FastifyInstance): Promise<void> {
       const eng = await loadEngagement(tx, engagementId);
       if (!eng) throw httpError(404, 'not_found');
       assertCan(req, 'item.edit', { assigned: true, engagementState: eng.state });
-      const f = await loadFinancials(tx, engagementId);
+      if (body.status === 'agreed') assertCan(req, 'engagement.transition', { assigned: true });
+      const f = await loadFinancials(tx, engagementId, true);
       const known = new Set(tbOf(f.tb).map((l) => l.code));
       let debit = 0n;
       let credit = 0n;
@@ -245,7 +246,7 @@ export async function financialRoutes(app: FastifyInstance): Promise<void> {
       const eng = await loadEngagement(tx, engagementId);
       if (!eng) throw httpError(404, 'not_found');
       assertCan(req, 'engagement.transition', { assigned: true });
-      const f = await loadFinancials(tx, engagementId);
+      const f = await loadFinancials(tx, engagementId, true);
       const entries = entriesOf(f.adjustments);
       if (!entries.some((e) => e.id === req.params.entryId)) throw httpError(404, 'not_found');
       const next = entries.map((e) => (e.id === req.params.entryId ? { ...e, status } : e));
@@ -289,6 +290,7 @@ export async function financialRoutes(app: FastifyInstance): Promise<void> {
     const engagementId = parse(req.params.id);
     return withTenant(pool, tenantCtx(req), async (tx) => {
       if (!(await loadEngagement(tx, engagementId))) throw httpError(404, 'not_found');
+      assertCan(req, 'engagement.read', { assigned: true });
       const f = await loadFinancials(tx, engagementId);
       return { notes: f.notes.map((n) => ({ id: n.id, noteId: n.content.noteId, title: n.title, text: n.content.text, state: n.state })) };
     });
@@ -302,7 +304,7 @@ export async function financialRoutes(app: FastifyInstance): Promise<void> {
       const eng = await loadEngagement(tx, engagementId);
       if (!eng) throw httpError(404, 'not_found');
       assertCan(req, 'item.edit', { assigned: true, engagementState: eng.state });
-      const f = await loadFinancials(tx, engagementId);
+      const f = await loadFinancials(tx, engagementId, true);
       const existing = f.notes.find((n) => n.content.noteId === body.noteId);
       const content = { noteId: body.noteId, text: body.text };
       if (existing) {

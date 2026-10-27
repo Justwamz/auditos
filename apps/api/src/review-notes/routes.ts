@@ -69,6 +69,7 @@ export async function reviewNoteRoutes(app: FastifyInstance): Promise<void> {
     const status = ['open', 'cleared', 'accepted'].includes(String(req.query.status)) ? String(req.query.status) : null;
     return withTenant(pool, tenantCtx(req), async (tx) => {
       if (!(await loadEngagement(tx, id))) throw httpError(404, 'not_found');
+      assertCan(req, 'engagement.read', { assigned: true });
       const rows = (
         await tx.query(`select ${COLUMNS} from review_notes where engagement_id = $1 and ($2::text is null or status = $2) order by created_at`, [id, status])
       ).rows;

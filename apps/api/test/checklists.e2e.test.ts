@@ -134,7 +134,7 @@ describe('answering', () => {
   });
 
   test('evidence links must point at evidence in the same engagement', async () => {
-    const paper = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'checklist', title: 'not evidence', content: {} })).json();
+    const paper = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'workpaper', title: 'not evidence', content: {} })).json();
     const res = await call(sF, 'PATCH', `/checklists/${cl}/items/${items[2]!.id}`, { response: 'yes', evidenceIds: [paper.id] });
     expect(res.statusCode).toBe(422);
   });
@@ -172,7 +172,7 @@ describe('review notes', () => {
 
   beforeAll(async () => {
     e = await newEngagement(tradingClient);
-    paper = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'checklist', title: 'Bank reconciliation', content: { a: 1 } })).json().id;
+    paper = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'workpaper', title: 'Bank reconciliation', content: { a: 1 } })).json().id;
     await signoff(sF, F, paper, 'prepared');
     await signoff(sM, M, paper, 'manager');
   });
@@ -196,7 +196,7 @@ describe('review notes', () => {
   });
 
   test('a reviewer cannot clear a note on an item they last edited, but can accept via another reviewer', async () => {
-    const own = (await call(sM, 'POST', `/engagements/${e}/items`, { kind: 'checklist', title: 'Manager prepared', content: {} })).json().id;
+    const own = (await call(sM, 'POST', `/engagements/${e}/items`, { kind: 'workpaper', title: 'Manager prepared', content: {} })).json().id;
     const note = await call(sP, 'POST', `/items/${own}/review-notes`, { text: 'Support missing for this balance' });
     expect((await call(sM, 'POST', `/review-notes/${note.json().id}/clear`, { response: 'fixed' })).statusCode).toBe(403);
     expect((await call(sM, 'POST', `/review-notes/${note.json().id}/accept`, { justification: 'Immaterial amount' })).statusCode).toBe(403);
@@ -206,7 +206,7 @@ describe('review notes', () => {
   });
 
   test('a cleared note cannot be cleared twice', async () => {
-    const it = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'checklist', title: 'Another', content: {} })).json().id;
+    const it = (await call(sF, 'POST', `/engagements/${e}/items`, { kind: 'workpaper', title: 'Another', content: {} })).json().id;
     const n = (await call(sM, 'POST', `/items/${it}/review-notes`, { text: 'Please add a reference' })).json().id;
     expect((await call(sM, 'POST', `/review-notes/${n}/clear`, { response: 'Reference added' })).statusCode).toBe(200);
     expect((await call(sM, 'POST', `/review-notes/${n}/clear`, { response: 'again' })).statusCode).toBe(409);

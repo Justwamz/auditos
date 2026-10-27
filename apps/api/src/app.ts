@@ -50,7 +50,8 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
       cfg.nodeEnv === 'test'
         ? false
         : { level: 'info', redact: ['req.headers.cookie', 'req.headers.authorization', 'req.headers["x-csrf-token"]'] },
-    trustProxy: true,
+    // Trust only the configured number of proxies, never the left-most (client-supplied) forwarded address.
+    trustProxy: (_address: string, hop: number) => hop < cfg.trustProxyHops,
     bodyLimit: 1_048_576,
   });
 

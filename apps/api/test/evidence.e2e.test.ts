@@ -153,7 +153,7 @@ describe('evidence upload and download', () => {
   });
 
   test('evidence content cannot be edited, and it can be linked to a working paper item', async () => {
-    const paper = await h.app.inject({ method: 'POST', url: `/engagements/${engId}/items`, headers: sF.headers, payload: { kind: 'checklist', title: 'Bank', content: {} } });
+    const paper = await h.app.inject({ method: 'POST', url: `/engagements/${engId}/items`, headers: sF.headers, payload: { kind: 'workpaper', title: 'Bank', content: {} } });
     const res = await upload(sF, 'link.pdf', PDF, { itemId: paper.json().id });
     expect(res.statusCode).toBe(201);
     const got = (await h.app.inject({ method: 'GET', url: `/items/${res.json().id}`, headers: sF.headers })).json();

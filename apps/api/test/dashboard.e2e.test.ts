@@ -35,10 +35,10 @@ const signoff = async (s: Session, u: TestUser, id: string, level: string) => {
 
 describe('dashboard', () => {
   test('shows the right review queue for each role and my drafts', async () => {
-    const draft = (await call(sF, 'POST', `/engagements/${engId}/items`, { kind: 'checklist', title: 'Draft paper', content: {} })).json().id;
-    const prepared = (await call(sF, 'POST', `/engagements/${engId}/items`, { kind: 'checklist', title: 'Prepared paper', content: {} })).json().id;
+    const draft = (await call(sF, 'POST', `/engagements/${engId}/items`, { kind: 'workpaper', title: 'Draft paper', content: {} })).json().id;
+    const prepared = (await call(sF, 'POST', `/engagements/${engId}/items`, { kind: 'workpaper', title: 'Prepared paper', content: {} })).json().id;
     await signoff(sF, F, prepared, 'prepared');
-    const reviewed = (await call(sF, 'POST', `/engagements/${engId}/items`, { kind: 'checklist', title: 'Reviewed paper', content: {} })).json().id;
+    const reviewed = (await call(sF, 'POST', `/engagements/${engId}/items`, { kind: 'workpaper', title: 'Reviewed paper', content: {} })).json().id;
     await signoff(sF, F, reviewed, 'prepared');
     await signoff(sM, M, reviewed, 'manager');
 
@@ -55,20 +55,20 @@ describe('dashboard', () => {
   });
 
   test('items the viewer last edited are never in their own review queue', async () => {
-    const own = (await call(sM, 'POST', `/engagements/${engId}/items`, { kind: 'checklist', title: 'Manager prepared', content: {} })).json().id;
+    const own = (await call(sM, 'POST', `/engagements/${engId}/items`, { kind: 'workpaper', title: 'Manager prepared', content: {} })).json().id;
     await signoff(sM, M, own, 'prepared');
     const manager = (await call(sM, 'GET', '/dashboard')).json();
     expect(manager.awaitingReview.map((i: { id: string }) => i.id)).not.toContain(own);
   });
 
   test('counts open review notes across my engagements', async () => {
-    const it = (await call(sF, 'POST', `/engagements/${engId}/items`, { kind: 'checklist', title: 'Needs review', content: {} })).json().id;
+    const it = (await call(sF, 'POST', `/engagements/${engId}/items`, { kind: 'workpaper', title: 'Needs review', content: {} })).json().id;
     await call(sM, 'POST', `/items/${it}/review-notes`, { text: 'Please add support' });
     expect((await call(sF, 'GET', '/dashboard')).json().openNotes).toBeGreaterThanOrEqual(1);
   });
 
   test('sign-offs in the item view carry the signer email', async () => {
-    const it = (await call(sF, 'POST', `/engagements/${engId}/items`, { kind: 'checklist', title: 'Signer', content: {} })).json().id;
+    const it = (await call(sF, 'POST', `/engagements/${engId}/items`, { kind: 'workpaper', title: 'Signer', content: {} })).json().id;
     await signoff(sF, F, it, 'prepared');
     const got = (await call(sF, 'GET', `/items/${it}`)).json();
     expect(got.signoffs[0].userEmail).toBe(F.email);
