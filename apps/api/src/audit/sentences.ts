@@ -115,6 +115,30 @@ export function describeEvent(e: AuditRow): string {
     const prev = d.old as Record<string, unknown> | undefined;
     if (e.action === 'UPDATE' && next?.revoked_at && !prev?.revoked_at) return `A ${str(next.level)} sign-off on ${item} was removed because the paper changed`;
   }
+  if (e.entityType === 'billing_rates') {
+    const role = (r: unknown) => str(r).replace(/_/g, ' ');
+    const kes = (v: unknown) => `KES ${(Number(v) / 100).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (e.action === 'INSERT') return `${who} set the hourly rate for ${role(d.role)} to ${kes(d.rate_cents)}`;
+    const next = d.new as Record<string, unknown> | undefined;
+    const prev = d.old as Record<string, unknown> | undefined;
+    if (e.action === 'UPDATE' && next && prev) return `${who} changed the hourly rate for ${role(next.role)} from ${kes(prev.rate_cents)} to ${kes(next.rate_cents)}`;
+  }
+  if (e.entityType === 'tax_rates') {
+    const rate = (v: unknown) => (Number(v) / 100).toFixed(2);
+    if (e.action === 'INSERT') return `${who} added the tax ${str(d.name)} at ${rate(d.rate_bp)}%`;
+    const next = d.new as Record<string, unknown> | undefined;
+    const prev = d.old as Record<string, unknown> | undefined;
+    if (e.action === 'UPDATE' && next && prev) {
+      if (next.active !== prev.active) return `${who} switched ${next.active ? 'on' : 'off'} the tax ${str(next.name)}`;
+      return `${who} changed the tax ${str(next.name)} to ${rate(next.rate_bp)}%`;
+    }
+  }
+  if (e.entityType === 'billing_settings') return `${who} updated the invoice details of the firm`;
+  if (e.entityType === 'engagement_fees') {
+    const row = (e.action === 'UPDATE' ? (d.new as Record<string, unknown> | undefined) : d) ?? {};
+    const kes = (v: unknown) => `KES ${(Number(v) / 100).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${who} set the fee for ${e.clientName ?? 'an engagement'} to ${row.basis === 'flat' ? `a flat ${kes(row.flat_fee_cents)}` : 'hourly billing'}`;
+  }
   if (e.entityType === 'engagement_members' && e.action === 'INSERT') return `${who} added a team member`;
   if (e.entityType === 'engagements' && e.action === 'INSERT') return `${who} opened a new engagement${forClient}`;
   if (e.entityType === 'clients' && e.action === 'INSERT') return `${who} added the client ${str(d.name)}`;

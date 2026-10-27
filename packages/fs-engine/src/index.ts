@@ -7,3 +7,4 @@ export * from './cashflow';
 export * from './statements';
 export * from './disclosures';
 export * from './materiality';
+export * from './tax';
