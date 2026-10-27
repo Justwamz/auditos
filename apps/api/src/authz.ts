@@ -27,5 +27,6 @@ export function requireFreshStepUp(req: FastifyRequest, maxMinutes = 5): void {
 
 export const tenantCtx = (req: FastifyRequest) => {
   const a = actorOf(req);
-  return { tenantId: a.tenantId, userId: a.userId };
+  // Reads may see more than writes can touch (a partner can read every engagement of the firm).
+  return { tenantId: a.tenantId, userId: a.userId, readOnly: req.method === 'GET' || req.method === 'HEAD' };
 };

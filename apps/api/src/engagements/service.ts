@@ -22,11 +22,14 @@ export interface EngagementRow {
   report_date: string | null;
   locked_at: Date | null;
   risk_profile: { riskFlags?: string[] };
+  /** On the engagement team. A partner who is not can read the file but not change it. */
+  member: boolean;
 }
 
 const SELECT = `select e.id, e.tenant_id, e.client_id, c.name as client_name, c.sector, c.framework,
        to_char(e.period_start, 'YYYY-MM-DD') as period_start, to_char(e.period_end, 'YYYY-MM-DD') as period_end,
-       e.state, e.partner_id, e.eqr_id, to_char(e.report_date, 'YYYY-MM-DD') as report_date, e.locked_at, e.risk_profile
+       e.state, e.partner_id, e.eqr_id, to_char(e.report_date, 'YYYY-MM-DD') as report_date, e.locked_at, e.risk_profile,
+       is_engagement_member(e.id) as member
   from engagements e join clients c on c.id = e.client_id`;
 
 /** Visible only to members (row-level security); undefined means "not found". */

@@ -23,6 +23,8 @@ export interface Engagement {
   eqrId: string | null;
   reportDate: string | null;
   riskFlags: string[];
+  /** On the engagement team. A partner who is not can read but not change. */
+  member: boolean;
 }
 export interface Me { userId: string; email: string; role: string }
 
@@ -48,7 +50,7 @@ function Workspace() {
   if (eng.error) return <ErrorNote error={eng.error} />;
   if (!eng.data || !me.data) return <p className="muted">Loading engagement…</p>;
   const e = eng.data;
-  const viewer: Viewer = { userId: me.data.userId, role: me.data.role, engagementLocked: e.state === 'locked' };
+  const viewer: Viewer = { userId: me.data.userId, role: me.data.role, engagementLocked: e.state === 'locked' || !e.member };
 
   return (
     <div className="stack">
@@ -61,6 +63,12 @@ function Workspace() {
           {SECTOR_LABELS[e.sector] ?? e.sector} · year ended {fmtDate(e.periodEnd)} · {e.framework === 'IFRS_SME' ? 'IFRS for SMEs' : 'Full IFRS'}
         </p>
       </div>
+
+      {!e.member && (
+        <div className="notice warn" role="status">
+          You are viewing this engagement as a partner. You are not on its team, so you can read everything but cannot change anything. Ask the manager to add you if you need to work on it. Your viewing is recorded in the audit trail.
+        </div>
+      )}
 
       <div className="tabs" role="tablist" aria-label="Engagement sections">
         {TABS.map((t) => (

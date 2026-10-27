@@ -3,6 +3,8 @@ import type { Pool, PoolClient } from 'pg';
 export interface TenantCtx {
   tenantId: string;
   userId: string;
+  /** Set for read requests: partners may then read engagements they are not on. Never set for writes. */
+  readOnly?: boolean;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -18,6 +20,7 @@ export async function withTenant<T>(pool: Pool, ctx: TenantCtx, fn: (tx: PoolCli
       ctx.tenantId,
       ctx.userId,
     ]);
+    if (ctx.readOnly) await client.query("select set_config('app.view_all', 'on', true)");
     const result = await fn(client);
     await client.query('COMMIT');
     return result;

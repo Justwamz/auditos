@@ -64,7 +64,7 @@ export function Overview({ engagement: e, me, onChanged, onGo }: { engagement: E
 
   return (
     <div className="stack-lg">
-      <Roadmap engagementId={e.id} locked={e.state === 'locked'} onGo={onGo} refreshKey={e.state} />
+      <Roadmap engagementId={e.id} locked={e.state === 'locked' || !e.member} onGo={onGo} refreshKey={e.state} />
       <section className="sheet">
         <h2>Engagement stage</h2>
         <ol className="stages" aria-label="Engagement stages">

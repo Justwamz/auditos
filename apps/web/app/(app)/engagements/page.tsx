@@ -7,7 +7,7 @@ import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, StateBadge } from '@/components/bits';
 import { fmtDate, SECTOR_LABELS } from '@/lib/text';
 
-interface Eng { id: string; clientName: string; sector: string; periodStart: string; periodEnd: string; state: string }
+interface Eng { id: string; clientName: string; sector: string; periodStart: string; periodEnd: string; state: string; member: boolean }
 interface Me { role: string }
 
 export default function EngagementsPage() {
@@ -83,7 +83,7 @@ export default function EngagementsPage() {
             <tbody>
               {list.data.engagements.map((e) => (
                 <tr key={e.id}>
-                  <td><Link href={`/engagements/${e.id}`}>{e.clientName}</Link></td>
+                  <td><Link href={`/engagements/${e.id}`}>{e.clientName}</Link>{!e.member && <span className="small muted"> · view only</span>}</td>
                   <td>{SECTOR_LABELS[e.sector] ?? e.sector}</td>
                   <td>{fmtDate(e.periodStart)} to {fmtDate(e.periodEnd)}</td>
                   <td><StateBadge state={e.state} /></td>

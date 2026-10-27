@@ -144,6 +144,8 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
     if (typeof dbCode === 'string' && /^AO\d{3}$/.test(dbCode)) {
       return reply.code(Number(dbCode.slice(2))).send({ error: err.message });
     }
+    // Row-level security refused a write: the person can read the record but is not on the team that may change it.
+    if (dbCode === '42501') return reply.code(403).send({ error: 'forbidden' });
     const status = (err as FastifyError).statusCode ?? 500;
     if (status >= 400 && status < 500) {
       return reply.code(status).send({ error: status === 429 ? 'rate_limited' : ((err as FastifyError).code ?? 'bad_request').toLowerCase() });

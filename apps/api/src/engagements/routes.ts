@@ -51,6 +51,7 @@ function present(e: EngagementRow) {
     reportDate: e.report_date,
     lockedAt: e.locked_at,
     riskFlags: e.risk_profile.riskFlags ?? [],
+    member: e.member,
   };
 }
 
