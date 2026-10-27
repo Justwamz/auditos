@@ -29,6 +29,24 @@ While testing locally you can skip the authenticator: set `DEV_FIXED_OTP=123456`
 
 Seeded people are named, one account each (no shared logins). Kangethe & Associates: Wanjiru Mugo (firm administrator), Grace Kangethe (partner), Daniel Otieno (manager), Faith Njeri (senior), Brian Kiptoo (staff), Mercy Achieng (quality officer), Samuel Kariuki (EQR). Waweru & Associates: Peter Maina, Joseph Waweru, Esther Wairimu, Kevin Mutua, Lucy Chebet, Hassan Abdi, Alice Nduta. Emails are `firstname.lastname@kangethe.example.test` and `...@waweru.example.test`.
 
+## Demo guide: who sees what (Kangethe & Associates)
+
+Four clients, three account managers and teams, so each profile sees something different. Every profile also has a "What you can see" panel on its dashboard.
+
+| Person | Role | Clients they see | Why |
+|---|---|---|---|
+| Grace Kangethe | Partner | all four | partner; engaged on Mwangaza and Lakeview, view only on the other two |
+| Charles Kamau | Partner | all four | partner; engaged on Savannah and Umoja, view only on the other two |
+| Daniel Otieno | Manager | Mwangaza, Lakeview | manages Mwangaza, on the Lakeview team |
+| Ruth Wambui | Manager | Savannah, Umoja | manages both |
+| Faith Njeri | Senior | Mwangaza, Savannah | on both teams |
+| Brian Kiptoo | Staff | Mwangaza, Lakeview | on both teams |
+| Tom Odhiambo | Staff | none | on no team |
+| Mercy Achieng / Samuel Kariuki | Quality officer / EQR | Mwangaza | on its team |
+| Wanjiru Mugo | Firm administrator | all four (list only) | administrator; cannot open files or reveal personal details |
+
+Waweru & Associates is a second firm with no clients, to show that firms never see each other.
+
 ## Tests
 
 ```powershell
