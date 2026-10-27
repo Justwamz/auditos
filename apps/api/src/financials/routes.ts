@@ -6,6 +6,7 @@ import { withTenant } from '@auditos/db';
 import { exportDocx, exportPdf, exportXlsx, type ExportMeta } from '@auditos/exports';
 import { formatMoney, mapTrialBalance, parseMoney, suggestMapping, TAXONOMY, UnsupportedFrameworkError } from '@auditos/fs-engine';
 import { assertCan, httpError, tenantCtx } from '../authz';
+import { recordView } from '../audit/views';
 import { registerGate } from '../engagements/gates';
 import { loadEngagement } from '../engagements/service';
 import { parseTbUpload } from './parse';
@@ -187,6 +188,7 @@ export async function financialRoutes(app: FastifyInstance): Promise<void> {
       const eng = await loadEngagement(tx, engagementId);
       if (!eng) throw httpError(404, 'not_found');
       assertCan(req, 'engagement.read', { assigned: true });
+      await recordView(req, tx, { type: 'statements', id: eng.id, label: eng.client_name, engagementId: eng.id });
       return { eng, f: await loadFinancials(tx, engagementId) };
     });
     return respondStatements(loaded.eng, loaded.f, reply);

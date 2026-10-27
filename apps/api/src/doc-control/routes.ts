@@ -4,6 +4,7 @@ import { can, GRADE } from '@auditos/authz';
 import { withTenant } from '@auditos/db';
 import { actorOf, assertCan, httpError, tenantCtx } from '../authz';
 import { loadEngagement } from '../engagements/service';
+import { recordView } from '../audit/views';
 import { registerDocControlGates } from './gates';
 import { diffContent } from './versions';
 import { editItemTx, lastEditor, loadItem, memberGrade, ITEM_COLUMNS, type ItemRow } from './service';
@@ -98,6 +99,7 @@ export async function docControlRoutes(app: FastifyInstance): Promise<void> {
       const item = await loadItem(tx, id);
       if (!item) throw httpError(404, 'not_found');
       assertCan(req, 'engagement.read', { assigned: true });
+      await recordView(req, tx, { type: 'paper', id: item.id, label: item.title, kind: item.kind, engagementId: item.engagement_id });
       const signoffs = (
         await tx.query(
           `select s.id, s.level, s.user_id, u.email as user_email, s.version, s.content_hash, s.at, s.revoked_at, s.revoked_reason

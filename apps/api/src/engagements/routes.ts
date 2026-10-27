@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { withTenant } from '@auditos/db';
 import { assertCan, httpError, requireFreshStepUp, tenantCtx } from '../authz';
+import { recordView } from '../audit/views';
 import { evaluateGates } from './gates';
 import { ENGAGEMENT_STATES, listEngagements, loadEngagement, nextState, type EngagementRow, type EngagementState } from './service';
 
@@ -119,6 +120,7 @@ export async function engagementRoutes(app: FastifyInstance): Promise<void> {
         )
       ).rows[0];
       if (!c) throw httpError(404, 'not_found');
+      await recordView(req, tx, { type: 'client', id: c.id, label: c.name });
       const engagements = (await listEngagements(tx)).filter((e) => e.client_id === id.data).map(present);
       return {
         id: c.id, name: c.name, sector: c.sector, legalForm: c.legal_form, framework: c.framework, yearEndMonth: c.year_end_month,
@@ -149,7 +151,11 @@ export async function engagementRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { id: string } }>('/engagements/:id', { config: { access: 'tenant' } }, async (req) => {
     const id = uuid.safeParse(req.params.id);
     if (!id.success) throw httpError(404, 'not_found');
-    const e = await withTenant(pool, tenantCtx(req), (tx) => loadEngagement(tx, id.data));
+    const e = await withTenant(pool, tenantCtx(req), async (tx) => {
+      const found = await loadEngagement(tx, id.data);
+      if (found) await recordView(req, tx, { type: 'engagement', id: found.id, label: found.client_name, engagementId: found.id });
+      return found;
+    });
     if (!e) throw httpError(404, 'not_found');
     assertCan(req, 'engagement.read', { assigned: true });
     return present(e);

@@ -12,6 +12,7 @@ import { checklistRoutes } from './checklists/routes';
 import { dashboardRoutes } from './dashboard/routes';
 import { materialityRoutes } from './materiality/routes';
 import { roadmapRoutes } from './engagements/roadmap-routes';
+import { auditRoutes } from './audit/routes';
 import { peopleRoutes } from './people/routes';
 import { reviewNoteRoutes } from './review-notes/routes';
 import { docControlRoutes } from './doc-control/routes';
@@ -162,6 +163,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   await app.register(peopleRoutes);
   await app.register(materialityRoutes);
   await app.register(roadmapRoutes);
+  await app.register(auditRoutes);
   for (const plugin of opts.routes ?? []) await app.register(plugin);
   return app;
 }
