@@ -11,3 +11,4 @@ coverage/
 .pgdata/
 .seed-credentials.local.json
 .e2e-credentials.local.json
+e2e/test-results/
