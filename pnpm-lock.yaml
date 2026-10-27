@@ -42,6 +42,9 @@ importers:
       '@auditos/authz':
         specifier: workspace:*
         version: link:../../packages/authz
+      '@auditos/bank-statements':
+        specifier: workspace:*
+        version: link:../../packages/bank-statements
       '@auditos/db':
         specifier: workspace:*
         version: link:../../packages/db

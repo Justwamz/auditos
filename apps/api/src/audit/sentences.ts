@@ -53,6 +53,16 @@ export function describeEvent(e: AuditRow): string {
       return `${who} opened the audit file${forClient}`;
     case 'view.statements':
       return `${who} viewed the draft financial statements${forClient}`;
+    case 'view.statement':
+      return `${who} viewed the bank statement "${str(d.label)}"${forClient}`;
+    case 'evidence.statement_uploaded':
+      return `${who} uploaded the bank statement "${str(d.label)}"${forClient}`;
+    case 'evidence.statement_confirmed':
+      return str(d.reason)
+        ? `${who} accepted the bank statement "${str(d.label)}"${forClient} although it does not fully add up. Reason given: "${str(d.reason)}"`
+        : `${who} confirmed the bank statement "${str(d.label)}"${forClient} was read completely`;
+    case 'evidence.statement_discarded':
+      return `${who} discarded the unconfirmed bank statement "${str(d.label)}"${forClient}`;
     case 'pii.revealed': {
       const field = FIELD_LABELS[str(d.field)] ?? 'personal detail';
       const at = e.clientName ? ` at ${e.clientName}` : '';

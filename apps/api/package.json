@@ -6,6 +6,7 @@
   "main": "src/app.ts",
   "dependencies": {
     "@auditos/audit-log": "workspace:*",
+    "@auditos/bank-statements": "workspace:*",
     "@auditos/authz": "workspace:*",
     "@auditos/db": "workspace:*",
     "@auditos/exports": "workspace:*",
