@@ -67,6 +67,17 @@ export function createApiClient(deps: ApiDeps) {
     post: <T = Record<string, unknown>>(path: string, body: unknown = {}) => request<T>('POST', path, body),
     put: <T = Record<string, unknown>>(path: string, body: unknown) => request<T>('PUT', path, body),
     patch: <T = Record<string, unknown>>(path: string, body: unknown) => request<T>('PATCH', path, body),
+    del: <T = Record<string, unknown>>(path: string) => request<T>('DELETE', path),
+    /** A file the server builds on request (an invoice PDF), fetched with a plain GET. */
+    async downloadGet(path: string): Promise<{ blob: Blob; filename: string }> {
+      const res = await deps.fetchFn(`${BASE}${path}`, { credentials: 'same-origin' });
+      if (!res.ok) {
+        const data = await parse(res);
+        throw new ApiError(res.status, typeof data.error === 'string' ? data.error : `http_${res.status}`, data);
+      }
+      const match = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '');
+      return { blob: await res.blob(), filename: match?.[1] ?? 'download' };
+    },
     upload: <T = Record<string, unknown>>(path: string, form: FormData) => request<T>('POST', path, undefined, form),
     /** For exports: returns the file as a blob. */
     async download(path: string, body: unknown): Promise<{ blob: Blob; filename: string }> {

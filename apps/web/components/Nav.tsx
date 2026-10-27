@@ -11,12 +11,17 @@ export function Nav({ name, role, isAdmin, firm, multiFirm }: { name: string; ro
   const holdsAdmin = admin || isAdmin;
   const seesTrail = holdsAdmin || role === 'manager' || role === 'partner';
   const works = ['partner', 'manager', 'senior', 'staff'].includes(role);
+  const billing = role === 'partner' || role === 'manager' || holdsAdmin;
   const items: { href: string; label: string; show: boolean }[] = [
     { href: '/', label: 'Dashboard', show: !admin },
     { href: '/engagements', label: 'Engagements', show: !admin },
     { href: '/clients', label: 'Clients', show: true },
     { href: '/pipeline', label: 'Pipeline', show: works },
     { href: '/calendar', label: 'Calendar', show: !admin },
+    { href: '/timesheet', label: 'Timesheet', show: !admin },
+    { href: '/billing', label: 'Billing', show: billing },
+    { href: '/invoices', label: 'Invoices', show: billing },
+    { href: '/quotes', label: 'Quotations', show: billing },
     { href: '/independence', label: 'Independence', show: !admin },
     { href: '/audit-trail', label: 'Audit trail', show: seesTrail },
     { href: '/admin/users', label: 'People and access', show: holdsAdmin },

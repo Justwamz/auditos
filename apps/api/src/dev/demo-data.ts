@@ -1,4 +1,7 @@
 import type { Pool, PoolClient } from 'pg';
+import { computeTotals } from '@auditos/fs-engine';
+import { SimulationTaxProvider } from '../billing/providers';
+import { timeValue } from '../billing/time';
 import { encrypt } from '../security/crypto';
 import { DEMO_FIRMS } from './people';
 
@@ -344,6 +347,203 @@ export async function seedDemoPractice(owner: Pool, firmName = DEMO_FIRMS[0]!.na
     }
     await c.query('COMMIT');
     return added;
+  } catch (e) {
+    await c.query('ROLLBACK');
+    throw e;
+  } finally {
+    c.release();
+  }
+}
+
+/**
+ * Idempotent. Rates, taxes, fees, a few weeks of time and expenses, invoices in different states and quotations, so the billing screens
+ * have something to show for each profile. Skipped when rates already exist.
+ */
+export async function seedDemoBilling(owner: Pool, firmName = DEMO_FIRMS[0]!.name): Promise<boolean> {
+  const firm = DEMO_FIRMS.find((f) => f.name === firmName)!;
+  const c = await owner.connect();
+  try {
+    await c.query('BEGIN');
+    const tenantId = (await c.query('select id from tenants where name = $1', [firmName])).rows[0]?.id as string | undefined;
+    if (!tenantId) {
+      await c.query('ROLLBACK');
+      return false;
+    }
+    await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    const emails: Record<string, string> = { ...Object.fromEntries(Object.entries(firm.people).map(([k, v]) => [k, v.email])), ...Object.fromEntries(firm.extra.map((x) => [x.key, x.email])) };
+    const id: Record<string, string> = {};
+    for (const [key, email] of Object.entries(emails)) {
+      const row = (await c.query('select id from users where lower(email) = $1', [email.toLowerCase()])).rows[0];
+      if (row) id[key] = row.id as string;
+    }
+    if (!id.partner || !id.manager || !id.manager2 || !id.partner2 || !id.senior || !id.staff) {
+      await c.query('ROLLBACK');
+      return false;
+    }
+    await as(c, tenantId, id.partner);
+    if ((await c.query('select count(*)::int as n from billing_rates')).rows[0].n > 0) {
+      await c.query('ROLLBACK');
+      return false;
+    }
+
+    const engagementOf = async (clientName: string, as_: string): Promise<string | null> => {
+      await as(c, tenantId, id[as_]!);
+      return ((await c.query('select e.id from engagements e join clients cl on cl.id = e.client_id where cl.name = $1 and e.period_end = $2', [clientName, '2026-12-31'])).rows[0]?.id as string | undefined) ?? null;
+    };
+    const mwangaza = await engagementOf('Mwangaza Traders Ltd', 'manager');
+    const lakeview = await engagementOf('Lakeview Rentals Ltd', 'manager');
+    const savannah = await engagementOf('Savannah Farms Ltd', 'manager2');
+    if (!mwangaza || !lakeview || !savannah) {
+      await c.query('ROLLBACK');
+      return false;
+    }
+
+    // Firm-wide: rates, taxes, invoice details.
+    await as(c, tenantId, id.partner);
+    for (const [role, rate] of [['partner', 900000], ['manager', 450000], ['senior', 250000], ['staff', 150000], ['quality_officer', 450000], ['eqr', 900000]] as const) {
+      await c.query('insert into billing_rates (tenant_id, role, rate_cents) values ($1, $2, $3)', [tenantId, role, rate]);
+    }
+    const taxIds: Record<string, string> = {};
+    for (const [name, bp, onPrev] of [['VAT', 1600, false], ['Excise duty', 1000, false], ['VAT on excise duty', 1600, true]] as const) {
+      taxIds[name] = (await c.query('insert into tax_rates (tenant_id, name, rate_bp, on_previous) values ($1, $2, $3, $4) returning id', [tenantId, name, bp, onPrev])).rows[0].id as string;
+    }
+    await c.query(
+      "insert into billing_settings (tenant_id, legal_name, address, kra_pin, bank_details, invoice_prefix, quote_prefix, payment_terms_days) values ($1, 'Kangethe & Associates', 'Kangethe House, Westlands, Nairobi', 'P051234567Q', 'Demo Bank, Westlands branch, account 0123456789 (demo)', 'KA', 'KQ', 14)",
+      [tenantId],
+    );
+
+    // How each job is billed.
+    for (const [eng, by, basis, flat, hours] of [[mwangaza, 'manager', 'flat', 48000000, 120], [lakeview, 'manager', 'hourly', null, 80], [savannah, 'manager2', 'flat', 35000000, 90]] as const) {
+      await as(c, tenantId, id[by]!);
+      await c.query('insert into engagement_fees (engagement_id, tenant_id, basis, flat_fee_cents, budget_hours) values ($1, $2, $3, $4, $5)', [eng, tenantId, basis, flat, hours]);
+    }
+
+    // Time: weekdays over the last three weeks.
+    const today = nairobiToday();
+    const weekday = (back: number) => {
+      let d = addDaysStr(today, -back);
+      while ([0, 6].includes(new Date(`${d}T00:00:00Z`).getUTCDay())) d = addDaysStr(d, -1);
+      return d;
+    };
+    const plan: [string, string | null, number, number, string, boolean][] = [
+      // who, engagement, days ago, minutes, what, billable
+      ['staff', mwangaza, 21, 480, 'Stock count attendance and test counts', true],
+      ['staff', mwangaza, 20, 450, 'Receivables confirmations and cut-off testing', true],
+      ['senior', mwangaza, 20, 300, 'Review of stock count and receivables', true],
+      ['manager', mwangaza, 19, 120, 'Planning review and client meeting', true],
+      ['staff', mwangaza, 13, 420, 'Payables and accruals testing', true],
+      ['senior', mwangaza, 12, 360, 'Revenue testing and analytical review', true],
+      ['staff', lakeview, 11, 400, 'Rent roll and lease agreements', true],
+      ['manager', lakeview, 10, 180, 'Review of rental income', true],
+      ['staff', mwangaza, 6, 360, 'Fixed assets additions and depreciation', true],
+      ['manager', mwangaza, 5, 150, 'Review of draft financial statements', true],
+      ['senior', savannah, 5, 420, 'Planning: understanding the business and risks', true],
+      ['manager2', savannah, 4, 240, 'Planning review', true],
+      ['staff', lakeview, 3, 300, 'Bank reconciliations', true],
+      ['senior', mwangaza, 2, 240, 'Going concern assessment', true],
+      ['staff', null, 2, 120, 'Firm training: ISA 315 workshop', false],
+      ['staff2', null, 1, 90, 'Firm meeting', false],
+    ];
+    const entryIds: Record<string, string[]> = { mwangazaOld: [] };
+    for (const [who, eng, back, minutes, what, billable] of plan) {
+      await as(c, tenantId, id[who]!);
+      const r = await c.query(
+        'insert into time_entries (tenant_id, engagement_id, work_date, minutes, description, billable) values ($1, $2, $3, $4, $5, $6) returning id',
+        [tenantId, eng, weekday(back), minutes, what, billable],
+      );
+      if (eng === mwangaza && back >= 19) entryIds.mwangazaOld!.push(r.rows[0].id as string);
+    }
+
+    // Expenses on the jobs.
+    for (const [who, eng, back, category, what, cents] of [['staff', mwangaza, 21, 'fuel', 'Fuel to the client warehouse, Industrial Area', 420000], ['manager', lakeview, 10, 'accommodation', 'Overnight stay for the Lakeview site visit', 1250000]] as const) {
+      await as(c, tenantId, id[who]!);
+      await c.query('insert into engagement_expenses (tenant_id, engagement_id, spent_on, category, description, amount_cents, rebillable) values ($1, $2, $3, $4, $5, $6, true)', [tenantId, eng, weekday(back), category, what, cents]);
+    }
+
+    // Invoices. Totals come from the same engine the application uses.
+    const lineRow = (description: string, quantity: string, unit: bigint, amount: bigint, source: string, ids: string[]) => ({ description, quantity, unit, amount, source, ids });
+    const insertInvoice = async (by: string, clientName: string, eng: string | null, mode: 'exclusive' | 'inclusive', taxes: string[], lines: ReturnType<typeof lineRow>[], notes: string | null): Promise<string> => {
+      await as(c, tenantId, id[by]!);
+      const clientId = (await c.query('select id from clients where name = $1', [clientName])).rows[0].id as string;
+      const specs = taxes.map((name, i) => ({ name, rateBp: name === 'Excise duty' ? 1000 : 1600, onPrevious: i > 0 && name === 'VAT on excise duty' }));
+      const t = computeTotals(lines.map((l) => ({ quantity: '1', unitCents: l.amount })), specs, mode);
+      const invId = (
+        await c.query(
+          'insert into invoices (tenant_id, client_id, engagement_id, notes, tax_mode, taxes, subtotal_cents, tax_cents, total_cents, created_by) values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10) returning id',
+          [tenantId, clientId, eng, notes, mode, JSON.stringify(t.taxes.map((x) => ({ name: x.name, rateBp: x.rateBp, onPrevious: x.onPrevious, amountCents: x.amountCents.toString() }))), t.subtotalCents.toString(), t.taxCents.toString(), t.totalCents.toString(), id[by]],
+        )
+      ).rows[0].id as string;
+      let pos = 0;
+      for (const l of lines) {
+        await c.query('insert into invoice_lines (tenant_id, invoice_id, position, description, quantity, unit_cents, amount_cents, source, source_ids) values ($1, $2, $3, $4, $5, $6, $7, $8, $9::uuid[])', [tenantId, invId, pos++, l.description, l.quantity, l.unit.toString(), l.amount.toString(), l.source, l.ids]);
+      }
+      return invId;
+    };
+    const issue = async (invId: string, by: string): Promise<void> => {
+      await as(c, tenantId, id[by]!);
+      const n = (await c.query('select number from invoice_issue($1, $2, $3)', [invId, 'KA', 14])).rows[0].number as string;
+      const row = (await c.query("select i.total_cents::text as total, to_char(i.issue_date, 'YYYY-MM-DD') as issued, cl.name from invoices i join clients cl on cl.id = i.client_id where i.id = $1", [invId])).rows[0];
+      const sim = await new SimulationTaxProvider().submit({ id: invId, tenantId, number: n, totalCents: BigInt(row.total), issueDate: row.issued, clientName: row.name, clientPin: null });
+      await c.query('select invoice_set_etims($1, $2::jsonb)', [invId, JSON.stringify(sim)]);
+    };
+
+    // 1. Mwangaza: early-stage time and the fuel, billed, part paid.
+    await as(c, tenantId, id.manager!);
+    const billedTime = (await c.query('select t.id, t.user_id, coalesce(u.full_name, u.email) as name, t.minutes, t.rate_cents::text as rate from time_entries t join users u on u.id = t.user_id where t.id = any($1::uuid[])', [entryIds.mwangazaOld])).rows;
+    const groups = new Map<string, { name: string; rate: bigint; minutes: number; amount: bigint; ids: string[] }>();
+    for (const r of billedTime) {
+      const k = `${r.user_id}|${r.rate}`;
+      const g = groups.get(k) ?? { name: r.name as string, rate: BigInt(r.rate), minutes: 0, amount: 0n, ids: [] };
+      g.minutes += r.minutes as number;
+      g.amount += timeValue(r.minutes, g.rate);
+      g.ids.push(r.id as string);
+      groups.set(k, g);
+    }
+    const expenseRow = (await c.query("select id, amount_cents::text as amount, description from engagement_expenses where engagement_id = $1 and category = 'fuel'", [mwangaza])).rows[0];
+    const lines1 = [...groups.values()].map((g) => lineRow(`Professional time: ${g.name}`, (g.minutes / 60).toFixed(3), g.rate, g.amount, 'time', g.ids));
+    lines1.push(lineRow(`Expense (fuel): ${expenseRow.description}`, '1.000', BigInt(expenseRow.amount), BigInt(expenseRow.amount), 'expense', [expenseRow.id as string]));
+    const inv1 = await insertInvoice('manager', 'Mwangaza Traders Ltd', mwangaza, 'exclusive', ['VAT'], lines1, 'Interim billing for the first phase of the FY2026 audit.');
+    await issue(inv1, 'partner');
+    await as(c, tenantId, id.partner);
+    const total1 = BigInt((await c.query('select total_cents::text as t from invoices where id = $1', [inv1])).rows[0].t);
+    await c.query('select invoice_record_payment($1, $2, $3, $4, $5)', [inv1, (total1 / 2n).toString(), weekday(8), 'bank', 'RTGS 20260918']);
+
+    // 2. Lakeview: an instalment, VAT included in the price, now overdue.
+    const inv2 = await insertInvoice('manager', 'Lakeview Rentals Ltd', lakeview, 'inclusive', ['VAT'], [lineRow('Audit fee: first instalment', '1.000', 17400000n, 17400000n, 'manual', [])], 'Instalment 1 of 3 under the engagement letter.');
+    await issue(inv2, 'partner');
+    await c.query("select set_config('app.invoicing', 'on', true)");
+    await c.query("update invoices set due_date = (now() at time zone 'Africa/Nairobi')::date - 20, issue_date = (now() at time zone 'Africa/Nairobi')::date - 34 where id = $1", [inv2]);
+    await c.query("select set_config('app.invoicing', 'off', true)");
+
+    // 3. Savannah: a draft waiting for a partner to issue it.
+    await insertInvoice('manager2', 'Savannah Farms Ltd', savannah, 'exclusive', ['VAT'], [lineRow('Audit fee (fixed): planning phase', '1.000', 10500000n, 10500000n, 'manual', [])], null);
+
+    // Quotations: one sent to a prospect, one still a draft.
+    const prospectId = async (name: string, by: string): Promise<string> => {
+      await as(c, tenantId, id[by]!);
+      return (await c.query('select id from prospects where name = $1', [name])).rows[0].id as string;
+    };
+    const quote = async (by: string, subject: { prospect?: string }, title: string, lines: [string, bigint][], taxes: string[], send: boolean): Promise<void> => {
+      await as(c, tenantId, id[by]!);
+      const specs = taxes.map((name) => ({ name, rateBp: 1600, onPrevious: false }));
+      const t = computeTotals(lines.map(([, a]) => ({ quantity: '1', unitCents: a })), specs, 'exclusive');
+      const qid = (
+        await c.query(
+          "insert into quotes (tenant_id, prospect_id, title, valid_until, tax_mode, taxes, subtotal_cents, tax_cents, total_cents, created_by) values ($1, $2, $3, (now() at time zone 'Africa/Nairobi')::date + 30, 'exclusive', $4::jsonb, $5, $6, $7, $8) returning id",
+          [tenantId, subject.prospect, title, JSON.stringify(t.taxes.map((x) => ({ name: x.name, rateBp: x.rateBp, onPrevious: x.onPrevious, amountCents: x.amountCents.toString() }))), t.subtotalCents.toString(), t.taxCents.toString(), t.totalCents.toString(), id[by]],
+        )
+      ).rows[0].id as string;
+      let pos = 0;
+      for (const [d, a] of lines) await c.query('insert into quote_lines (tenant_id, quote_id, position, description, quantity, unit_cents, amount_cents) values ($1, $2, $3, $4, 1, $5, $5)', [tenantId, qid, pos++, d, a.toString()]);
+      if (send) await c.query('select quote_send($1, $2)', [qid, 'KQ']);
+    };
+    const mlima = await prospectId('Mlima Coffee Cooperative', 'manager');
+    await quote('manager', { prospect: mlima }, 'Statutory audit, year ending 31 December 2026', [['Statutory audit of the cooperative', 8500000n], ['Preparation of the tax computation', 1000000n]], ['VAT'], true);
+    const tembo = await prospectId('Tembo Apartments Ltd', 'manager2');
+    await quote('manager2', { prospect: tembo }, 'Audit and tax computation, FY2026', [['Statutory audit', 5400000n]], ['VAT'], false);
+
+    await c.query('COMMIT');
+    return true;
   } catch (e) {
     await c.query('ROLLBACK');
     throw e;

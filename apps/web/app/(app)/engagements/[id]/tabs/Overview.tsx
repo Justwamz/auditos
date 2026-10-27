@@ -5,6 +5,7 @@ import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, Notice } from '@/components/bits';
 import { useStepUp } from '@/components/StepUp';
 import { Roadmap } from '@/components/Roadmap';
+import { FeeCard } from '@/components/FeeCard';
 import { fmtDate, GATE_LABELS, ROLE_LABELS, STAGES, STATE_LABELS } from '@/lib/text';
 import type { Engagement, Me } from '../page';
 
@@ -65,6 +66,7 @@ export function Overview({ engagement: e, me, onChanged, onGo }: { engagement: E
   return (
     <div className="stack-lg">
       <Roadmap engagementId={e.id} locked={e.state === 'locked' || !e.member} onGo={onGo} refreshKey={e.state} />
+      {(me.role === 'manager' || me.role === 'partner') && <FeeCard engagementId={e.id} canEdit={e.member} />}
       <section className="sheet">
         <h2>Engagement stage</h2>
         <ol className="stages" aria-label="Engagement stages">

@@ -51,6 +51,12 @@ Four clients, three account managers and teams, so each profile sees something d
 
 **Account managers.** Grace can change a client's account manager from the client page; Daniel cannot. Wanjiru cannot switch Ruth off while Ruth manages clients, and the Hand over panel lists what she holds.
 
+**Time and billing.** Rates (staff 1,500, senior 2,500, manager 4,500, partner 9,000 per hour), taxes (VAT 16%, excise duty 10%, VAT on excise), fees per job, three weeks of time and expenses, and invoices in different states.
+- Brian and the other staff log time and expenses on the **Timesheet** and see no rates, values, invoices or billing.
+- Daniel (manager) sees **Billing** for his own engagements, the Mwangaza invoice (issued, part paid, marked SIMULATION), the overdue Lakeview invoice, and quotations; he cannot see Ruth's draft Savannah invoice.
+- Grace (partner) sees the whole firm, issues invoices and records payments, and sets rates and taxes. Wanjiru (administrator) sees invoicing but not hours.
+- Invoices are issued through a simulated KRA connection and say so everywhere. Email is simulated too: see **Billing > Outbox**.
+
 Waweru & Associates is a second firm with no clients, to show that firms never see each other.
 
 ## Tests

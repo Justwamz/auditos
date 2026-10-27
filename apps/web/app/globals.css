@@ -254,3 +254,11 @@ table.ledger td.num { min-width: 8.5rem; }
 .changes { margin: 0.4rem 0 0; padding-left: 1rem; }
 .changes del { color: var(--red-pen); }
 .changes ins { color: var(--ledger-deep); text-decoration: none; font-weight: 600; }
+
+/* Billing */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.8rem; }
+.tile { border: 1px solid var(--rule-strong); background: #fff; padding: 0.7rem 0.9rem; }
+.tile-value { font-size: 1.35rem; font-weight: 600; font-family: var(--font-serif, Georgia, serif); }
+.sim-warning { border: 2px solid var(--red-pen); background: var(--red-wash); padding: 0.6rem 0.8rem; font-weight: 600; max-width: 70ch; }
+.lines td.num, .lines th.num { text-align: right; }
+.mail { white-space: pre-wrap; background: #fafaf6; border: 1px solid var(--rule); padding: 0.6rem 0.8rem; margin: 0; font-family: inherit; }

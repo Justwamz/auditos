@@ -40,11 +40,11 @@ describe('help content', () => {
 
   test('guidance is role-specific: staff do not get approval or administration guides, administrators do not get review guides', () => {
     const staff = visibleTo(ARTICLES, { role: 'staff', isAdmin: false }).map((a) => a.id);
-    for (const hidden of ['review-sign-off', 'approve-issue-lock', 'engagement-stages', 'people-and-access', 'audit-trail-reading', 'partner-view-only', 'handover-leavers', 'change-account-manager']) {
+    for (const hidden of ['review-sign-off', 'approve-issue-lock', 'engagement-stages', 'people-and-access', 'audit-trail-reading', 'partner-view-only', 'handover-leavers', 'change-account-manager', 'invoices-and-tax', 'billing-dashboard', 'quotations-using', 'rates-taxes-settings']) {
       expect(staff, hidden).not.toContain(hidden);
     }
     const admin = visibleTo(ARTICLES, { role: 'firm_admin', isAdmin: true }).map((a) => a.id);
-    for (const hidden of ['review-sign-off', 'approve-issue-lock', 'papers-prepare', 'checklists-answering', 'personal-details', 'pipeline-prospects', 'calendar-using']) {
+    for (const hidden of ['review-sign-off', 'approve-issue-lock', 'papers-prepare', 'checklists-answering', 'personal-details', 'pipeline-prospects', 'calendar-using', 'timesheet-time-expenses']) {
       expect(admin, hidden).not.toContain(hidden);
     }
     expect(admin).toContain('people-and-access');
@@ -71,6 +71,13 @@ describe('help content', () => {
       { topic: 'calendar', roles: ['partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr'] },
       { topic: 'clients.manager', roles: ['partner'] },
       { topic: 'admin.handover', roles: ['firm_admin'] },
+      { topic: 'timesheet', roles: ['partner', 'manager', 'senior', 'staff'] },
+      { topic: 'billing', roles: ['partner', 'manager', 'firm_admin'] },
+      { topic: 'invoices', roles: ['partner', 'manager', 'firm_admin'] },
+      { topic: 'quotes', roles: ['partner', 'manager', 'firm_admin'] },
+      { topic: 'billing.settings', roles: ['partner', 'manager', 'firm_admin'] },
+      { topic: 'billing.fee', roles: ['partner', 'manager'] },
+      { topic: 'invoices.tax', roles: ['partner', 'manager', 'firm_admin'] },
     ];
     for (const p of pages) {
       for (const role of p.roles) {
@@ -88,6 +95,9 @@ describe('help content', () => {
     expect(top('staff', 'reveal phone number')).toBe('personal-details');
     expect(top('manager', 'cannot move to the next stage')).toBe('cannot-move-stage');
     expect(top('staff', 'what is materiality')).toBe('materiality');
+    expect(top('staff', 'how do I log my hours')).toBe('timesheet-time-expenses');
+    expect(top('manager', 'add VAT to an invoice')).toBe('invoices-and-tax');
+    expect(top('partner', 'is the invoice a valid KRA tax invoice')).toBe('kra-etims-simulation');
     expect(top('manager', 'convert a prospect into a client')).toBe('pipeline-prospects');
     expect(top('staff', 'schedule fieldwork on the calendar')).toBe('calendar-using');
     expect(top('firm_admin', 'someone is leaving, switch them off', true)).toBe('handover-leavers');
