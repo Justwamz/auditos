@@ -93,11 +93,14 @@ export async function engagementRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get('/clients', { config: { access: 'tenant' } }, async (req) => {
-    const rows = await withTenant(pool, tenantCtx(req), async (tx) =>
+    const ctx = tenantCtx(req);
+    const rows = await withTenant(pool, ctx, async (tx) =>
       (
         await tx.query(
-          `select c.id, c.name, c.sector, c.legal_form, c.framework, c.year_end_month, c.account_manager_id, coalesce(u.full_name, u.email) as account_manager_name
+          `select c.id, c.name, c.sector, c.legal_form, c.framework, c.year_end_month, c.account_manager_id, coalesce(u.full_name, u.email) as account_manager_name,
+                  case when c.account_manager_id = $1 then 'account_manager' when client_has_my_engagement(c.id) then 'team' else 'oversight' end as relationship
              from clients c left join users u on u.id = c.account_manager_id order by c.name`,
+          [ctx.userId],
         )
       ).rows,
     );
@@ -105,6 +108,8 @@ export async function engagementRoutes(app: FastifyInstance): Promise<void> {
       clients: rows.map((r) => ({
         id: r.id, name: r.name, sector: r.sector, legalForm: r.legal_form, framework: r.framework, yearEndMonth: r.year_end_month,
         accountManagerId: r.account_manager_id as string | null, accountManagerName: r.account_manager_name as string | null,
+        /** Why this client is visible: you manage it, you are on its team, or you see it as partner or administrator. */
+        relationship: r.relationship as 'account_manager' | 'team' | 'oversight',
       })),
     };
   });

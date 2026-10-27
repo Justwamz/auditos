@@ -6,7 +6,8 @@ import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, Notice } from '@/components/bits';
 import { SECTOR_LABELS } from '@/lib/text';
 
-interface Client { id: string; name: string; sector: string; legalForm: string; framework: string; yearEndMonth: number; accountManagerName: string | null }
+interface Client { id: string; name: string; sector: string; legalForm: string; framework: string; yearEndMonth: number; accountManagerName: string | null; relationship: 'account_manager' | 'team' | 'oversight' }
+const WHY = { account_manager: 'You manage it', team: 'You are on the team', oversight: 'Partner or administrator view' } as const;
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export default function ClientsPage() {
@@ -87,11 +88,11 @@ export default function ClientsPage() {
         {list.data && list.data.clients.length === 0 && <Empty>No clients assigned to you yet.</Empty>}
         {list.data && list.data.clients.length > 0 && (
           <table>
-            <thead><tr><th>Name</th><th>Account manager</th><th>Sector</th><th>Legal form</th><th>Framework</th><th>Year end</th></tr></thead>
+            <thead><tr><th>Name</th><th>Why you see it</th><th>Account manager</th><th>Sector</th><th>Legal form</th><th>Framework</th><th>Year end</th></tr></thead>
             <tbody>
               {list.data.clients.map((c) => (
                 <tr key={c.id}>
-                  <td><Link href={`/clients/${c.id}`}>{c.name}</Link></td><td>{c.accountManagerName ?? 'Not set'}</td><td>{SECTOR_LABELS[c.sector] ?? c.sector}</td><td>{c.legalForm}</td>
+                  <td><Link href={`/clients/${c.id}`}>{c.name}</Link></td><td>{WHY[c.relationship]}</td><td>{c.accountManagerName ?? 'Not set'}</td><td>{SECTOR_LABELS[c.sector] ?? c.sector}</td><td>{c.legalForm}</td>
                   <td>{c.framework === 'IFRS_SME' ? 'IFRS for SMEs' : 'Full IFRS'}</td><td>{MONTHS[c.yearEndMonth - 1]}</td>
                 </tr>
               ))}

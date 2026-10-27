@@ -158,3 +158,92 @@ export async function seedDemoContacts(owner: Pool, env: NodeJS.ProcessEnv, firm
     c.release();
   }
 }
+
+interface PortfolioClient {
+  name: string;
+  sector: string;
+  legalForm: string;
+  /** Who is accountable for the client (a manager or partner). */
+  accountManager: string;
+  /** Who creates the engagement, and who signs as engagement partner. */
+  creator: string;
+  partner: string;
+  team: string[];
+  note: string;
+}
+
+/** Keys: the base roles (partner, manager, senior, staff, quality_officer, eqr) and the extras (partner2, manager2, staff2). */
+const PORTFOLIO: PortfolioClient[] = [
+  { name: 'Savannah Farms Ltd', sector: 'farming', legalForm: 'Limited company', accountManager: 'manager2', creator: 'manager2', partner: 'partner2', team: ['senior'], note: 'Horticulture exporter in Naivasha. Ruth manages the relationship; Charles is the engagement partner.' },
+  { name: 'Lakeview Rentals Ltd', sector: 'rental', legalForm: 'Limited company', accountManager: 'partner', creator: 'partner', partner: 'partner', team: ['manager', 'staff'], note: 'Residential rental portfolio in Kilimani. Grace manages the relationship herself, with Daniel and Brian on the team.' },
+  { name: 'Umoja Staff Pension Scheme', sector: 'pension', legalForm: 'Trust', accountManager: 'manager2', creator: 'manager2', partner: 'partner2', team: [], note: 'Retirement benefits scheme. Ruth and Charles only.' },
+];
+
+/**
+ * Idempotent. Extra synthetic clients so every profile sees something different: who sees all clients, only their own,
+ * their team's, or none. Returns the number of clients added.
+ */
+export async function seedDemoPortfolio(owner: Pool, firmName = DEMO_FIRMS[0]!.name): Promise<number> {
+  const firm = DEMO_FIRMS.find((f) => f.name === firmName)!;
+  const c = await owner.connect();
+  let added = 0;
+  try {
+    await c.query('BEGIN');
+    const tenantId = (await c.query('select id from tenants where name = $1', [firmName])).rows[0]?.id as string | undefined;
+    if (!tenantId) {
+      await c.query('ROLLBACK');
+      return 0;
+    }
+    await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    const emails: Record<string, string> = { ...Object.fromEntries(Object.entries(firm.people).map(([k, v]) => [k, v.email])), ...Object.fromEntries(firm.extra.map((x) => [x.key, x.email])) };
+    const ids: Record<string, string> = {};
+    for (const [key, email] of Object.entries(emails)) {
+      const id = (await c.query('select id from users where lower(email) = $1', [email.toLowerCase()])).rows[0]?.id as string | undefined;
+      if (id) ids[key] = id;
+    }
+    if (!ids.partner2 || !ids.manager2) {
+      await c.query('ROLLBACK');
+      return 0;
+    }
+    // Everyone who will be on a team has declared independence.
+    for (const key of Object.keys(ids)) {
+      if (key === 'firm_admin') continue;
+      await as(c, tenantId, ids[key]!);
+      await c.query(
+        "insert into independence_declarations (tenant_id, user_id, statement) select $1, $2, 'Synthetic demo declaration: no relationships that impair independence.' where not exists (select 1 from independence_declarations where user_id = $2 and engagement_id is null)",
+        [tenantId, ids[key]],
+      );
+    }
+    for (const p of PORTFOLIO) {
+      await as(c, tenantId, ids[p.creator]!);
+      if ((await c.query('select 1 from clients where name = $1', [p.name])).rowCount) continue;
+      const clientId = (
+        await c.query(
+          'insert into clients (tenant_id, name, sector, legal_form, framework, year_end_month, created_by, account_manager_id) values ($1, $2, $3, $4, $5, 12, $6, $7) returning id',
+          [tenantId, p.name, p.sector, p.legalForm, 'IFRS_SME', ids[p.creator], ids[p.accountManager]],
+        )
+      ).rows[0].id as string;
+      const eng = (
+        await c.query('select engagement_create($1, $2, $3, $4, $5) as id', [clientId, '2026-01-01', '2026-12-31', ids[p.partner], JSON.stringify({ riskFlags: [] })])
+      ).rows[0].id as string;
+      for (const m of p.team) await c.query('select engagement_add_member($1, $2)', [eng, ids[m]]);
+      await as(c, tenantId, ids[p.creator]!);
+      for (const [kind, title, content] of [
+        ['acceptance', 'Client acceptance and continuance', { notes: p.note }],
+        ['workpaper', 'Understanding the business', { notes: p.note }],
+      ] as const) {
+        await c.query('insert into wp_items (tenant_id, engagement_id, kind, title, content, created_by) values ($1, $2, $3, $4, $5, $6)', [
+          tenantId, eng, kind, title, JSON.stringify(content), ids[p.creator],
+        ]);
+      }
+      added += 1;
+    }
+    await c.query('COMMIT');
+    return added;
+  } catch (e) {
+    await c.query('ROLLBACK');
+    throw e;
+  } finally {
+    c.release();
+  }
+}

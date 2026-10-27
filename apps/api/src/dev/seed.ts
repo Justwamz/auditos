@@ -6,7 +6,7 @@ import { bootstrap, createPools, loadEnv, migrate } from '@auditos/db';
 import { encrypt } from '../security/crypto';
 import { hashPassword } from '../security/password';
 import { generateSecret, otpauthUri } from '../security/totp';
-import { seedDemoContacts, seedDemoData } from './demo-data';
+import { seedDemoContacts, seedDemoData, seedDemoPortfolio } from './demo-data';
 import { DEMO_FIRMS, legacyEmail } from './people';
 
 const ROLES: Role[] = ['firm_admin', 'partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr'];
@@ -49,10 +49,13 @@ export async function seed(env: NodeJS.ProcessEnv = process.env): Promise<{ pass
         }
         tenantId ??= (await c.query('insert into tenants (name) values ($1) returning id', [firm.name])).rows[0].id as string;
         await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
-        for (const role of ROLES) {
-          const { fullName, email } = firm.people[role];
+        const everyone = [
+          ...ROLES.map((role) => ({ role, legacy: true, ...firm.people[role] })),
+          ...firm.extra.map((x) => ({ role: x.role, legacy: false, fullName: x.fullName, email: x.email })),
+        ];
+        for (const { role, legacy, fullName, email } of everyone) {
           // Role-named accounts from earlier seeds (two address generations) become this named person.
-          for (const old of [legacyEmail(role, firm.formerSlug), legacyEmail(role, firm.slug)]) {
+          for (const old of legacy ? [legacyEmail(role, firm.formerSlug), legacyEmail(role, firm.slug)] : []) {
             await c.query(
               'update users set email = $1, full_name = $2 where lower(email) = $3 and not exists (select 1 from users where lower(email) = $1)',
               [email, fullName, old],
@@ -86,6 +89,8 @@ export async function seed(env: NodeJS.ProcessEnv = process.env): Promise<{ pass
     const created = await seedDemoData(owner);
     if (created) console.log('Seeded a synthetic client with FY2025 and FY2026 engagements in Kangethe & Associates.');
     if (await seedDemoContacts(owner, env)) console.log('Seeded synthetic client contacts (personal details are fake and stored encrypted).');
+    const portfolio = await seedDemoPortfolio(owner);
+    if (portfolio > 0) console.log(`Seeded ${portfolio} more synthetic clients so each profile sees a different set.`);
   } finally {
     await owner.end();
     await app.end();

@@ -74,6 +74,16 @@ describe('who sees which client', () => {
   });
 });
 
+describe('why each client is visible', () => {
+  const relationships = async (sess: Session) => Object.fromEntries(((await call(sess, 'GET', '/clients')).json().clients as { name: string; relationship: string }[]).map((c) => [c.name, c.relationship]));
+  test('the account manager, a team member and an overseeing partner each see their own reason', async () => {
+    expect(await relationships(sM1)).toMatchObject({ 'Alpha Traders Ltd': 'account_manager' });
+    expect(await relationships(sS1)).toMatchObject({ 'Alpha Traders Ltd': 'team' });
+    expect(await relationships(sP)).toMatchObject({ 'Beta Rentals Ltd': 'oversight' });
+    expect(await relationships(sA)).toMatchObject({ 'Alpha Traders Ltd': 'oversight' });
+  });
+});
+
 describe('the account manager', () => {
   test('defaults to the manager or partner who creates the client', async () => {
     const list = (await call(sP, 'GET', '/clients')).json().clients as { name: string; accountManagerId: string }[];

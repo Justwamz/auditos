@@ -8,6 +8,8 @@ export interface DemoFirm {
   formerName: string;
   formerSlug: string;
   people: Record<Role, { fullName: string; email: string }>;
+  /** More named people, so the demo shows profiles with different views (a second partner and manager, a colleague with no clients). */
+  extra: { key: string; role: Role; fullName: string; email: string }[];
 }
 
 const person = (slug: string, fullName: string) => ({ fullName, email: `${fullName.toLowerCase().replace(/[^a-z ]/g, '').trim().replace(/\s+/g, '.')}@${slug}.example.test` });
@@ -24,6 +26,11 @@ export const DEMO_FIRMS: DemoFirm[] = [
       quality_officer: person('kangethe', 'Mercy Achieng'),
       eqr: person('kangethe', 'Samuel Kariuki'),
     },
+    extra: [
+      { key: 'partner2', role: 'partner', ...person('kangethe', 'Charles Kamau') },
+      { key: 'manager2', role: 'manager', ...person('kangethe', 'Ruth Wambui') },
+      { key: 'staff2', role: 'staff', ...person('kangethe', 'Tom Odhiambo') },
+    ],
   },
   {
     name: 'Waweru & Associates', slug: 'waweru', formerName: 'Demo Firm B', formerSlug: 'firm-b',
@@ -36,6 +43,7 @@ export const DEMO_FIRMS: DemoFirm[] = [
       quality_officer: person('waweru', 'Hassan Abdi'),
       eqr: person('waweru', 'Alice Nduta'),
     },
+    extra: [],
   },
 ];
 

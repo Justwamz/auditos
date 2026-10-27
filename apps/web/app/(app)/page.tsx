@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote, Empty, StateBadge } from '@/components/bits';
 import { fmtDate, SECTOR_LABELS } from '@/lib/text';
+import { WhatYouSee } from '@/components/WhatYouSee';
 
 interface Dash {
   engagements: { id: string; clientName: string; sector: string; periodEnd: string; state: string }[];
@@ -24,6 +25,7 @@ export default function Dashboard() {
         <p>{me.data ? `Signed in as ${me.data.email}.` : ''}</p>
       </div>
       <ErrorNote error={dash.error} />
+      <WhatYouSee />
 
       {d && d.openNotes > 0 && (
         <div className="notice warn">
