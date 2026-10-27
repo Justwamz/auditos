@@ -36,7 +36,7 @@ const answerBody = z.object({
   reason: z.string().trim().min(5).max(500).optional(),
 });
 
-async function checklistRows(tx: PoolClient, engagementId: string): Promise<{ id: string; title: string; content: ChecklistContent }[]> {
+export async function checklistRows(tx: PoolClient, engagementId: string): Promise<{ id: string; title: string; content: ChecklistContent }[]> {
   return (
     await tx.query("select id, title, content from wp_items where engagement_id = $1 and kind = 'checklist' and deleted_at is null and content ? 'templateId' order by created_at", [engagementId])
   ).rows;
