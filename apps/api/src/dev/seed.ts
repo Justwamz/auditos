@@ -6,7 +6,7 @@ import { bootstrap, createPools, loadEnv, migrate } from '@auditos/db';
 import { encrypt } from '../security/crypto';
 import { hashPassword } from '../security/password';
 import { generateSecret, otpauthUri } from '../security/totp';
-import { seedDemoBilling, seedDemoContacts, seedDemoData, seedDemoPortfolio, seedDemoPractice } from './demo-data';
+import { seedDemoAuditWork, seedDemoBilling, seedDemoContacts, seedDemoData, seedDemoPortfolio, seedDemoPractice } from './demo-data';
 import { DEMO_FIRMS, legacyEmail } from './people';
 
 const ROLES: Role[] = ['firm_admin', 'partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr'];
@@ -94,6 +94,7 @@ export async function seed(env: NodeJS.ProcessEnv = process.env): Promise<{ pass
     const practice = await seedDemoPractice(owner);
     if (practice.prospects + practice.events > 0) console.log(`Seeded ${practice.prospects} prospects and ${practice.events} calendar events.`);
     if (await seedDemoBilling(owner)) console.log('Seeded rates, taxes, fees, time, expenses, invoices and quotations.');
+    if (await seedDemoAuditWork(owner)) console.log('Seeded a bank statement and a sampling schedule.');
   } finally {
     await owner.end();
     await app.end();

@@ -10,6 +10,8 @@ import { Papers } from './tabs/Papers';
 import { Checklists } from './tabs/Checklists';
 import { Evidence } from './tabs/Evidence';
 import { Financials } from './tabs/Financials';
+import { BankStatements } from './tabs/BankStatements';
+import { Sampling } from './tabs/Sampling';
 
 export interface Engagement {
   id: string;
@@ -34,6 +36,8 @@ const TABS = [
   { id: 'checklists', label: 'Checklists' },
   { id: 'evidence', label: 'Evidence' },
   { id: 'financials', label: 'Financial statements' },
+  { id: 'bank', label: 'Bank statements' },
+  { id: 'sampling', label: 'Sampling' },
 ] as const;
 
 function Workspace() {
@@ -81,6 +85,8 @@ function Workspace() {
       {tab === 'checklists' && <Checklists engagement={e} viewer={viewer} />}
       {tab === 'evidence' && <Evidence engagement={e} viewer={viewer} />}
       {tab === 'financials' && <Financials engagement={e} viewer={viewer} onChanged={eng.reload} />}
+      {tab === 'bank' && <BankStatements engagement={e} viewer={viewer} />}
+      {tab === 'sampling' && <Sampling engagement={e} viewer={viewer} />}
     </div>
   );
 }

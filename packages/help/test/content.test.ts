@@ -78,6 +78,8 @@ describe('help content', () => {
       { topic: 'billing.settings', roles: ['partner', 'manager', 'firm_admin'] },
       { topic: 'billing.fee', roles: ['partner', 'manager'] },
       { topic: 'invoices.tax', roles: ['partner', 'manager', 'firm_admin'] },
+      { topic: 'engagement.bank-statements', roles: ['partner', 'manager', 'senior', 'staff'] },
+      { topic: 'engagement.sampling', roles: ['partner', 'manager', 'senior', 'staff'] },
     ];
     for (const p of pages) {
       for (const role of p.roles) {
@@ -101,6 +103,9 @@ describe('help content', () => {
     expect(top('manager', 'convert a prospect into a client')).toBe('pipeline-prospects');
     expect(top('staff', 'schedule fieldwork on the calendar')).toBe('calendar-using');
     expect(top('firm_admin', 'someone is leaving, switch them off', true)).toBe('handover-leavers');
+    expect(top('staff', 'the bank statement pdf asks for a password')).toBe('bank-statements-upload');
+    expect(top('manager', 'duplicate payments and returned cheques on the bank statement')).toBe('bank-statements-analysis');
+    expect(top('senior', 'how do I pick a random sample of invoices to test')).toBe('sampling-using');
   });
 
   test('a search by staff never returns the partner-only or admin-only guides', () => {

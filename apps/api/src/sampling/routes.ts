@@ -177,7 +177,7 @@ export async function samplingRoutes(app: FastifyInstance): Promise<void> {
     const body = resultBody.parse(req.body);
     let misstatement: bigint | null = null;
     if (body.misstatement) {
-      try { misstatement = parseMoney(body.misstatement.replace(/[,\s]/g, '')); } catch { throw httpError(422, 'invalid_amount'); }
+      try { misstatement = parseMoney(body.misstatement.replace(/[,\s]/g, '')); } catch { throw httpError(422, 'invalid_misstatement'); }
     }
     const ctx = tenantCtx(req);
     return withTenant(pool, ctx, async (tx) => {

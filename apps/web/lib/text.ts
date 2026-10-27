@@ -86,12 +86,30 @@ const MESSAGES: Record<string, string> = {
   sector_required: 'Choose the sector first.',
   same_person: 'Choose a different person.',
   last_admin: 'The firm must keep at least one administrator.',
+  not_confirmed: 'Confirm the statement was read completely before analysing it.',
+  statement_confirmed: 'A confirmed statement can no longer be changed or deleted.',
+  acknowledgement_required: 'This statement does not fully add up. Give a reason to confirm it anyway.',
+  invalid_ledger_amount: 'The bank balance in the books is not a valid amount.',
+  unsupported_type: 'That file type is not supported. Use a PDF, CSV or Excel (.xlsx) file.',
+  no_amount_column: 'The file needs a heading row with an Amount column.',
+  empty_population: 'The file has no rows under the heading.',
+  unreadable_rows: 'Some amounts could not be read, so nothing was drawn. See the rows listed below.',
+  nothing_selected: 'Nothing could be selected from that population.',
+  schedule_in_use: 'Results have been recorded, so this schedule cannot be deleted.',
+  note_required: 'Add a note: it is required for exceptions and items not tested.',
+  misstatement_required: 'Enter the misstatement amount for an exception.',
+  invalid_misstatement: 'The misstatement is not a valid amount.',
+  invalid_evidence: 'That evidence belongs to a different engagement.',
 };
+
+const READER_CODES = new Set(['password_required', 'password_incorrect', 'scanned_pdf', 'not_a_pdf', 'no_table_found', 'unreadable_file']);
 
 export function explain(err: unknown): string {
   if (err instanceof ApiError) {
     const raw = err.body.reason;
     if (typeof raw === 'string' && err.code === 'invalid_file') return raw;
+    // The statement reader says exactly what was wrong with the file (password, scanned, not a PDF…).
+    if (READER_CODES.has(err.code) && typeof err.body.message === 'string') return err.body.message;
     return MESSAGES[err.code] ?? `Something went wrong (${err.code}).`;
   }
   return 'Something went wrong. Check your connection and try again.';

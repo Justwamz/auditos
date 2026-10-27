@@ -551,3 +551,88 @@ export async function seedDemoBilling(owner: Pool, firmName = DEMO_FIRMS[0]!.nam
     c.release();
   }
 }
+
+const DEMO_STATEMENT_CSV = [
+  'Date,Description,Debit,Credit,Balance',
+  ',Balance brought forward,,,"100,000.00"',
+  '02/03/2026,"ATM WITHDRAWAL WESTLANDS","5,000.00",,"95,000.00"',
+  '03/03/2026,"SALARY MARCH ACME TRADERS LTD",,"150,000.00","245,000.00"',
+  '05/03/2026,"CHEQUE 000123 JANE WANJIKU","20,000.00",,"225,000.00"',
+  '10/03/2026,"MPESA PAYBILL 247247 KPLC","3,450.50",,"221,549.50"',
+  '15/03/2026,"TRANSFER FROM MWANGAZA TRADERS",,"500,000.00","721,549.50"',
+  '15/03/2026,"TRANSFER FROM MWANGAZA TRADERS",,"500,000.00","1,221,549.50"',
+  '21/03/2026,"CASH DEPOSIT",,"75,000.00","1,296,549.50"',
+  '28/03/2026,"CHEQUE 000124 RETURNED UNPAID","20,000.00",,"1,276,549.50"',
+  '30/03/2026,"SUPPLIER PAYMENT KIPROP HARDWARE","1,100,000.00",,"176,549.50"',
+  '31/03/2026,"BANK CHARGES","1,200.00",,"175,349.50"',
+  ',Closing balance,,,"175,349.50"',
+].join('\n');
+
+/**
+ * One synthetic bank statement (confirmed, so the analysis can be shown) and one sampling schedule with a few results,
+ * on the Mwangaza engagement. Every name and figure is made up.
+ */
+export async function seedDemoAuditWork(owner: Pool, firmName = DEMO_FIRMS[0]!.name): Promise<boolean> {
+  const { readStatement, checkIntegrity } = await import('@auditos/bank-statements');
+  const { selectMonetaryUnit } = await import('@auditos/fs-engine');
+  const { pack } = await import('../statements/store');
+  const firm = DEMO_FIRMS.find((f) => f.name === firmName)!;
+  const c = await owner.connect();
+  try {
+    await c.query('BEGIN');
+    const tenantId = (await c.query('select id from tenants where name = $1', [firmName])).rows[0]?.id as string | undefined;
+    if (!tenantId) {
+      await c.query('ROLLBACK');
+      return false;
+    }
+    await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
+    const managerId = (await c.query('select id from users where lower(email) = $1', [firm.people.manager!.email.toLowerCase()])).rows[0]?.id as string | undefined;
+    if (!managerId) {
+      await c.query('ROLLBACK');
+      return false;
+    }
+    await as(c, tenantId, managerId);
+    const eng = (await c.query('select e.id from engagements e join clients cl on cl.id = e.client_id where cl.name = $1 and e.period_end = $2', [SYNTHETIC_CLIENT, '2026-12-31'])).rows[0]?.id as string | undefined;
+    if (!eng || (await c.query('select 1 from bank_statements where engagement_id = $1', [eng])).rowCount) {
+      await c.query('ROLLBACK');
+      return false;
+    }
+
+    const parsed = await readStatement({ kind: 'csv', text: DEMO_STATEMENT_CSV });
+    const integrity = checkIntegrity(parsed);
+    const sid = (
+      await c.query(
+        `insert into bank_statements (tenant_id, engagement_id, filename, source, bank_name, account_last4, period_from, period_to, opening_cents, closing_cents, txn_count, integrity_status, integrity_messages, content_enc)
+         values ($1, $2, 'demo-bank-statement-march.csv', 'csv', 'Demo Bank', '6789', '2026-03-01', '2026-03-31', $3, $4, $5, $6, '[]'::jsonb, $7) returning id`,
+        [tenantId, eng, parsed.openingCents?.toString(), parsed.closingCents?.toString(), parsed.transactions.length, integrity.status, pack(parsed)],
+      )
+    ).rows[0].id as string;
+    await c.query('update bank_statements set acknowledged_reason = null where id = $1', [sid]);
+
+    // A sample of trade payables: 40 synthetic suppliers.
+    const population = Array.from({ length: 40 }, (_, i) => ({ ref: `PINV-${String(i + 1).padStart(3, '0')}`, description: `Supplier ${i + 1} invoice`, amountCents: BigInt(150_000 + ((i * 7919) % 90) * 25_000) }));
+    const total = population.reduce((a, p) => a + p.amountCents, 0n);
+    const picked = selectMonetaryUnit(population, 8, 'demo-seed');
+    const sch = (
+      await c.query(
+        `insert into sampling_schedules (tenant_id, engagement_id, title, objective, method, seed, requested_size, population_count, population_total_cents, population_hash, interval_cents)
+         values ($1, $2, 'Trade payables at year end', 'Existence and completeness of payables', 'monetary_unit', 'demo-seed', 8, 40, $3, $4, $5) returning id`,
+        [tenantId, eng, total.toString(), '0'.repeat(64), picked.intervalCents.toString()],
+      )
+    ).rows[0].id as string;
+    const itemIds: string[] = [];
+    for (const [position, s] of picked.selected.entries()) {
+      const p = population[s.index]!;
+      itemIds.push((await c.query('insert into sample_items (tenant_id, schedule_id, position, ref, description, amount_cents, reason) values ($1, $2, $3, $4, $5, $6, $7) returning id', [tenantId, sch, position + 1, p.ref, p.description, p.amountCents.toString(), s.reason])).rows[0].id as string);
+    }
+    await c.query("update sample_items set result = 'supported' where id = any($1::uuid[])", [itemIds.slice(0, 2)]);
+    await c.query("update sample_items set result = 'exception', misstatement_cents = 250000, note = 'Invoice dated after year end; belongs to the next period' where id = $1", [itemIds[2]]);
+    await c.query('COMMIT');
+    return true;
+  } catch (e) {
+    await c.query('ROLLBACK');
+    throw e;
+  } finally {
+    c.release();
+  }
+}

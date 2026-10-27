@@ -8,7 +8,8 @@ import { assertCan, httpError, tenantCtx } from '../authz';
 import { recordView } from '../audit/views';
 import { loadEngagement } from '../engagements/service';
 import { bigintJson } from '../financials/service';
-import { decrypt, encrypt } from '../security/crypto';
+import { decrypt } from '../security/crypto';
+import { pack, type Stored } from './store';
 
 const uuid = z.string().uuid();
 const confirmBody = z.object({ reason: z.string().trim().min(5).max(500).optional() });
@@ -19,21 +20,6 @@ const analysisQuery = z.object({
 const pageQuery = z.object({ offset: z.coerce.number().int().min(0).default(0), limit: z.coerce.number().int().min(1).max(500).default(200) });
 
 const ERROR_STATUS: Record<string, number> = { not_a_pdf: 415, unreadable_file: 415 };
-
-/** What is kept, encrypted: the entries and what could not be read. The account number is never in it. */
-interface Stored {
-  transactions: { date: string; description: string; amountCents: string; balanceCents: string | null; reference?: string }[];
-  issues: { code: string; message: string; line?: string }[];
-  columns: Record<string, string>;
-}
-
-const pack = (p: ParsedStatement): string =>
-  encrypt(JSON.stringify({
-    transactions: p.transactions.map((t) => ({ date: t.date, description: t.description, amountCents: t.amountCents.toString(), balanceCents: t.balanceCents === null ? null : t.balanceCents.toString(), ...(t.reference ? { reference: t.reference } : {}) })),
-    // The raw line of an unreadable row can carry account details; it is kept short and only inside the encrypted blob.
-    issues: p.issues.map((i) => ({ code: i.code, message: i.message, ...(i.line ? { line: i.line.slice(0, 200) } : {}) })),
-    columns: p.columns,
-  } satisfies Stored));
 
 const unpack = (blob: string): Stored => JSON.parse(decrypt(blob)) as Stored;
 
