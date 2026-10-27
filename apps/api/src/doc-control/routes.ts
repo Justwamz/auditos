@@ -5,6 +5,7 @@ import { withTenant } from '@auditos/db';
 import { actorOf, assertCan, httpError, tenantCtx } from '../authz';
 import { loadEngagement } from '../engagements/service';
 import { registerDocControlGates } from './gates';
+import { diffContent } from './versions';
 import { editItemTx, lastEditor, loadItem, memberGrade, ITEM_COLUMNS, type ItemRow } from './service';
 
 const uuid = z.string().uuid();
@@ -187,6 +188,63 @@ export async function docControlRoutes(app: FastifyInstance): Promise<void> {
       });
       await tx.query('select deletion_request_approve($1)', [id]);
       return { deleted: true };
+    });
+  });
+
+  app.get<{ Params: { id: string } }>('/items/:id/versions', { config: { access: 'tenant' } }, async (req) => {
+    const id = parseId(req.params.id);
+    return withTenant(pool, tenantCtx(req), async (tx) => {
+      const item = await loadItem(tx, id);
+      if (!item) throw httpError(404, 'not_found');
+      assertCan(req, 'engagement.read', { assigned: true });
+      const rows = (
+        await tx.query(
+          `select v.version, v.title, v.content_hash, v.edited_by, u.email as edited_by_name, v.edited_at, v.reason
+             from wp_item_versions v left join users u on u.id = v.edited_by where v.item_id = $1 order by v.version desc`,
+          [id],
+        )
+      ).rows;
+      return {
+        versions: rows.map((v) => ({
+          version: v.version as number, title: v.title as string, contentHash: v.content_hash as string, editedBy: v.edited_by as string | null,
+          editedByName: v.edited_by_name as string | null, at: v.edited_at as string, reason: v.reason as string | null,
+        })),
+      };
+    });
+  });
+
+  app.get<{ Params: { id: string; n: string } }>('/items/:id/versions/:n/changes', { config: { access: 'tenant' } }, async (req) => {
+    const id = parseId(req.params.id);
+    const n = Number(req.params.n);
+    if (!Number.isInteger(n) || n < 1) throw httpError(404, 'not_found');
+    return withTenant(pool, tenantCtx(req), async (tx) => {
+      const item = await loadItem(tx, id);
+      if (!item) throw httpError(404, 'not_found');
+      assertCan(req, 'engagement.read', { assigned: true });
+      const rows = (await tx.query('select version, title, content from wp_item_versions where item_id = $1 and version in ($2, $2 - 1)', [id, n])).rows;
+      const current = rows.find((r) => r.version === n);
+      if (!current) throw httpError(404, 'not_found');
+      const before = rows.find((r) => r.version === n - 1);
+      const changes = diffContent(before?.content ?? undefined, current.content);
+      if (before && before.title !== current.title) changes.unshift({ path: 'title', before: before.title, after: current.title });
+      return { version: n, changes };
+    });
+  });
+
+  app.post<{ Params: { id: string } }>('/items/:id/restore', { config: { access: 'tenant' } }, async (req) => {
+    const id = parseId(req.params.id);
+    const body = z.object({ version: z.number().int().min(1), reason: z.string().trim().min(5).max(500) }).parse(req.body);
+    return withTenant(pool, tenantCtx(req), async (tx) => {
+      const item = await loadItem(tx, id, true);
+      if (!item) throw httpError(404, 'not_found');
+      if (RESERVED_KINDS.includes(item.kind)) throw httpError(409, 'dedicated_endpoint_required');
+      const old = (await tx.query('select title, content from wp_item_versions where item_id = $1 and version = $2', [id, body.version])).rows[0];
+      if (!old) throw httpError(404, 'not_found');
+      return editItemTx(req, tx, item, {
+        title: old.title as string,
+        content: old.content as Record<string, unknown>,
+        reason: `Restored version ${body.version}: ${body.reason}`,
+      });
     });
   });
 
