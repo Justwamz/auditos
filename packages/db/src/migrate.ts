@@ -8,17 +8,21 @@ import { requireEnv } from './env';
 const MIGRATIONS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../migrations');
 const LOCK_KEY = 726_001;
 
-async function ensureRole(su: pg.Pool, name: string, password: string): Promise<void> {
+/**
+ * Creates the role with no special powers, or refreshes the password of an existing one. Existing roles are not
+ * re-altered: changing SUPERUSER or BYPASSRLS needs a superuser, which hosted databases do not give you.
+ */
+export async function ensureRole(su: pg.Pool, name: string, password: string): Promise<void> {
   const exists = await su.query('select 1 from pg_roles where rolname = $1', [name]);
   const pw = pg.escapeLiteral(password);
   if (exists.rowCount === 0) {
     await su.query(`create role ${name} login nosuperuser nocreatedb nocreaterole nobypassrls password ${pw}`);
   } else {
-    await su.query(`alter role ${name} login nosuperuser nobypassrls password ${pw}`);
+    await su.query(`alter role ${name} with password ${pw}`);
   }
 }
 
-/** Creates roles, the database and extensions. Needs a role that may create roles (local superuser). */
+/** Creates roles, the database and extensions. Needs a role that may create roles (a local superuser, or a hosted database owner). */
 export async function bootstrap(env: NodeJS.ProcessEnv): Promise<void> {
   const dbName = env.DB_NAME ?? 'auditos';
   if (!/^[a-z_][a-z0-9_]*$/.test(dbName)) throw new Error('invalid DB_NAME');
