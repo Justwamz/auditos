@@ -1,0 +1,95 @@
+{
+  "id": "client-meeting",
+  "title": "Pre-audit meeting with the client",
+  "phase": "planning",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    {
+      "id": "cm-01",
+      "ref": "CM1",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 300 (Revised)"
+      ],
+      "question": "Was a meeting held with the client at the start of the audit, and the date and attendees recorded?"
+    },
+    {
+      "id": "cm-02",
+      "ref": "CM2",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Has the team recorded its understanding of the client business: what it sells, to whom, how it earns money, and where it operates?"
+    },
+    {
+      "id": "cm-03",
+      "ref": "CM3",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)",
+        "ISA 260 (Revised)"
+      ],
+      "question": "Has the team recorded who owns and manages the client, who is charged with governance, and how decisions are made?"
+    },
+    {
+      "id": "cm-04",
+      "ref": "CM4",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "For an existing client, has the team recorded what changed in operations, people, products, locations, systems, financing or the law since last year?"
+    },
+    {
+      "id": "cm-05",
+      "ref": "CM5",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 300 (Revised)",
+        "ISA 580"
+      ],
+      "question": "Has the client confirmed which accounting records, bank statements, agreements and other documents will be provided, and by what date?"
+    },
+    {
+      "id": "cm-06",
+      "ref": "CM6",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 300 (Revised)"
+      ],
+      "question": "Has the client confirmed the key contacts for each area, including who can explain the accounting system?"
+    },
+    {
+      "id": "cm-07",
+      "ref": "CM7",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)",
+        "ISA 540 (Revised)"
+      ],
+      "question": "Have the significant accounting policies of the client and any changes in them been discussed and recorded?"
+    },
+    {
+      "id": "cm-08",
+      "ref": "CM8",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 240",
+        "ISA 250 (Revised)"
+      ],
+      "question": "Has the client been asked about known or suspected fraud, non-compliance with laws, litigation and disputes with tax or other authorities?"
+    },
+    {
+      "id": "cm-09",
+      "ref": "CM9",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 300 (Revised)"
+      ],
+      "question": "Has the client been told the agreed fieldwork dates and what late or incomplete records will do to the time budget?"
+    }
+  ]
+}

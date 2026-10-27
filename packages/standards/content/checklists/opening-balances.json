@@ -1,0 +1,103 @@
+{
+  "id": "opening-balances",
+  "title": "Opening balances",
+  "phase": "fieldwork",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    {
+      "id": "ob-01",
+      "ref": "OB1",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 510"
+      ],
+      "question": "Were the prior-year financial statements audited, and by whom? For an audit by another firm, has the report of the previous auditor been read?"
+    },
+    {
+      "id": "ob-02",
+      "ref": "OB2",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 510"
+      ],
+      "question": "Have the opening balances been agreed to the audited closing balances of last year and to the opening trial balance of this year, and any difference explained?"
+    },
+    {
+      "id": "ob-03",
+      "ref": "OB3",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 510"
+      ],
+      "question": "Have the accounting policies of the current year been compared with last year, and the effect of any change recorded?"
+    },
+    {
+      "id": "ob-04",
+      "ref": "OB4",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 510"
+      ],
+      "question": "Has the team confirmed that last year closing balances were correctly carried forward, including equity and retained earnings?"
+    },
+    {
+      "id": "ob-05",
+      "ref": "OB5",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 510",
+        "IFRS for SMEs Section 10"
+      ],
+      "question": "Have prior-year adjustments or restatements been identified and agreed to the comparative figures?"
+    },
+    {
+      "id": "ob-06",
+      "ref": "OB6",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 510"
+      ],
+      "question": "Has the team reviewed last year file for unresolved matters, unadjusted differences and management letter points?"
+    },
+    {
+      "id": "ob-07",
+      "ref": "OB7",
+      "mandatory": true,
+      "when": {
+        "riskFlag": "first_year"
+      },
+      "standardRefs": [
+        "ISA 510"
+      ],
+      "question": "First-year audit: has enough evidence been obtained that the opening balances do not contain misstatements that materially affect the current period?"
+    },
+    {
+      "id": "ob-08",
+      "ref": "OB8",
+      "mandatory": true,
+      "when": {
+        "riskFlag": "first_year"
+      },
+      "standardRefs": [
+        "ISA 510",
+        "ISA 300 (Revised)"
+      ],
+      "question": "First-year audit: has the team communicated with the previous auditor and reviewed their working papers where available?"
+    },
+    {
+      "id": "ob-09",
+      "ref": "OB9",
+      "mandatory": true,
+      "when": {
+        "riskFlag": "first_year"
+      },
+      "standardRefs": [
+        "ISA 510",
+        "ISA 705 (Revised)"
+      ],
+      "question": "First-year audit: if enough evidence over opening balances could not be obtained, has the effect on the audit report been assessed?"
+    }
+  ]
+}

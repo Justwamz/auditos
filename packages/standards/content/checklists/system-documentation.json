@@ -1,0 +1,85 @@
+{
+  "id": "system-documentation",
+  "title": "Documenting the client systems and controls",
+  "phase": "planning",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    {
+      "id": "sys-01",
+      "ref": "SYS1",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Has the accounting system or method been described (software, spreadsheets, manual books), including who enters and who approves transactions?"
+    },
+    {
+      "id": "sys-02",
+      "ref": "SYS2",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Has the revenue cycle been documented, from order or contract to invoice, receipt of money and recording?"
+    },
+    {
+      "id": "sys-03",
+      "ref": "SYS3",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Has the purchases and payments cycle been documented, from approval to payment and recording?"
+    },
+    {
+      "id": "sys-04",
+      "ref": "SYS4",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Has the payroll process been documented, including statutory deductions and who approves the payroll?"
+    },
+    {
+      "id": "sys-05",
+      "ref": "SYS5",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Has the cash and bank process been documented, including who signs, who reconciles and how often?"
+    },
+    {
+      "id": "sys-06",
+      "ref": "SYS6",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)",
+        "ISA 240"
+      ],
+      "question": "Has the month-end and year-end close process been documented, including how journals are prepared and approved?"
+    },
+    {
+      "id": "sys-07",
+      "ref": "SYS7",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)",
+        "ISA 330"
+      ],
+      "question": "Has the team noted which controls are designed well enough to rely on, and which are missing or weak, with a walkthrough performed for key ones?"
+    },
+    {
+      "id": "sys-08",
+      "ref": "SYS8",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)",
+        "ISA 265"
+      ],
+      "question": "Has the team recorded any weakness in segregation of duties and what the team will do about it?"
+    }
+  ]
+}

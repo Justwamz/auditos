@@ -1,0 +1,76 @@
+{
+  "id": "going-concern",
+  "title": "Going concern",
+  "phase": "fieldwork",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    {
+      "id": "gc-01",
+      "ref": "GC1",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 570 (Revised)"
+      ],
+      "question": "Has the team asked management for a going concern assessment covering at least twelve months from the date of the financial statements, and obtained it?"
+    },
+    {
+      "id": "gc-02",
+      "ref": "GC2",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 570 (Revised)"
+      ],
+      "question": "Has the team looked for warning signs: losses, negative cash flow, net current liabilities, loan defaults, lost customers or licences, litigation or unpaid statutory dues?"
+    },
+    {
+      "id": "gc-03",
+      "ref": "GC3",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 570 (Revised)"
+      ],
+      "question": "Has the forecast or cash flow of management been obtained, and are its assumptions reasonable and supported?"
+    },
+    {
+      "id": "gc-04",
+      "ref": "GC4",
+      "mandatory": false,
+      "standardRefs": [
+        "ISA 570 (Revised)"
+      ],
+      "question": "Has the team checked the support from owners, banks or lenders where the entity relies on it, and obtained written confirmation where needed?"
+    },
+    {
+      "id": "gc-05",
+      "ref": "GC5",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 570 (Revised)",
+        "ISA 560"
+      ],
+      "question": "Has the team considered events after the year-end that bear on the ability of the entity to continue?"
+    },
+    {
+      "id": "gc-06",
+      "ref": "GC6",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 570 (Revised)",
+        "IFRS for SMEs Section 3"
+      ],
+      "question": "Has the team concluded whether a material uncertainty exists, and is the disclosure in the financial statements adequate?"
+    },
+    {
+      "id": "gc-07",
+      "ref": "GC7",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 570 (Revised)",
+        "ISA 706 (Revised)"
+      ],
+      "question": "Has the effect on the audit report been decided (no change, emphasis of matter or material uncertainty paragraph, or modified opinion)?"
+    }
+  ]
+}

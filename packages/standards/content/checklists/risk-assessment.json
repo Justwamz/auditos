@@ -1,0 +1,84 @@
+{
+  "id": "risk-assessment",
+  "title": "Risk assessment and responses",
+  "phase": "planning",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    {
+      "id": "rsk-01",
+      "ref": "RSK1",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Has the team listed the risks of material misstatement for the financial statements as a whole, and for each significant class of transactions, balance and disclosure?"
+    },
+    {
+      "id": "rsk-02",
+      "ref": "RSK2",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "For each risk, has the team assessed how likely it is and how large it could be, and recorded the basis?"
+    },
+    {
+      "id": "rsk-03",
+      "ref": "RSK3",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 240"
+      ],
+      "question": "Has revenue been considered as a fraud risk, and the conclusion recorded?"
+    },
+    {
+      "id": "rsk-04",
+      "ref": "RSK4",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 240"
+      ],
+      "question": "Has the risk of management override of controls been addressed, including journal entries, estimates and unusual transactions?"
+    },
+    {
+      "id": "rsk-05",
+      "ref": "RSK5",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)",
+        "ISA 330"
+      ],
+      "question": "Has the team identified significant risks that need special attention, and linked each one to specific audit work?"
+    },
+    {
+      "id": "rsk-06",
+      "ref": "RSK6",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 330"
+      ],
+      "question": "For each assessed risk, has a response been planned (controls testing, detailed testing or analytical procedures) and cross-referred to the work program?"
+    },
+    {
+      "id": "rsk-07",
+      "ref": "RSK7",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 240"
+      ],
+      "question": "Has the team considered the risk that the financial statements are misstated because of management pay, pressure to meet targets or loan terms?"
+    },
+    {
+      "id": "rsk-08",
+      "ref": "RSK8",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)",
+        "ISA 330"
+      ],
+      "question": "Has the risk assessment been updated after the planning discussion and again at the end of fieldwork, with changes recorded?"
+    }
+  ]
+}

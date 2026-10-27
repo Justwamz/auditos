@@ -1,0 +1,76 @@
+{
+  "id": "laws-regulations",
+  "title": "Laws and regulations",
+  "phase": "planning",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    {
+      "id": "lr-01",
+      "ref": "LR1",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 250 (Revised)"
+      ],
+      "question": "Has the team identified the laws and regulations with a direct effect on the financial statements, such as the Companies Act, tax, VAT, PAYE, NSSF, SHIF and the housing levy?"
+    },
+    {
+      "id": "lr-02",
+      "ref": "LR2",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 250 (Revised)"
+      ],
+      "question": "Has the team identified other laws that may matter to the business or its licences (sector regulators, county permits, data protection, anti-money-laundering)?"
+    },
+    {
+      "id": "lr-03",
+      "ref": "LR3",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 250 (Revised)",
+        "ISA 580"
+      ],
+      "question": "Has management been asked, in writing or in a recorded meeting, whether the entity complies and whether there are any known breaches, notices or penalties?"
+    },
+    {
+      "id": "lr-04",
+      "ref": "LR4",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 250 (Revised)"
+      ],
+      "question": "Have tax assessments, penalty notices and correspondence with KRA and other authorities been inspected?"
+    },
+    {
+      "id": "lr-05",
+      "ref": "LR5",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 250 (Revised)"
+      ],
+      "question": "Have statutory returns and payments been checked for the year, and any late or missing ones noted?"
+    },
+    {
+      "id": "lr-06",
+      "ref": "LR6",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 250 (Revised)",
+        "ISA 705 (Revised)"
+      ],
+      "question": "Where a breach or suspected breach was found, has its effect on the financial statements and on the audit report been assessed?"
+    },
+    {
+      "id": "lr-07",
+      "ref": "LR7",
+      "mandatory": false,
+      "standardRefs": [
+        "ISA 250 (Revised)",
+        "ISA 260 (Revised)"
+      ],
+      "question": "Has the team considered whether a breach needs to be reported to a regulator or to those charged with governance?"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "id": "it-environment",
+  "title": "IT environment",
+  "phase": "planning",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    {
+      "id": "it-01",
+      "ref": "IT1",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Has the team described the IT environment of the client, including the systems used for accounting, payroll, stock, invoicing and banking, including mobile money and online banking?"
+    },
+    {
+      "id": "it-02",
+      "ref": "IT2",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Has the team recorded who looks after the systems, whether in-house or outsourced, and who can change data or settings?"
+    },
+    {
+      "id": "it-03",
+      "ref": "IT3",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Is access to the accounting system controlled (individual logins, passwords, removal of leavers), and is that appropriate for the size of the client?"
+    },
+    {
+      "id": "it-04",
+      "ref": "IT4",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Are data backups taken and tested, and is the recovery process known?"
+    },
+    {
+      "id": "it-05",
+      "ref": "IT5",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Were there significant system changes, migrations or failures during the year, and how did they affect the records?"
+    },
+    {
+      "id": "it-06",
+      "ref": "IT6",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 500",
+        "ISA 330"
+      ],
+      "question": "Does the team plan to rely on system reports or spreadsheets, and has the completeness and accuracy of those reports been tested?"
+    },
+    {
+      "id": "it-07",
+      "ref": "IT7",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)",
+        "ISA 265"
+      ],
+      "question": "Has the team concluded whether IT weaknesses change the audit approach, and recorded any points for the management letter?"
+    }
+  ]
+}

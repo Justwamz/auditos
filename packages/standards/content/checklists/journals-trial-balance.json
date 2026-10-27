@@ -1,0 +1,84 @@
+{
+  "id": "journals-trial-balance",
+  "title": "Trial balance and journal entries",
+  "phase": "fieldwork",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    {
+      "id": "jnl-01",
+      "ref": "JNL1",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 500",
+        "ISA 330"
+      ],
+      "question": "Has the trial balance been agreed to the accounting records, and does it balance?"
+    },
+    {
+      "id": "jnl-02",
+      "ref": "JNL2",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 510"
+      ],
+      "question": "Has the opening trial balance been agreed to the closing balances of last year?"
+    },
+    {
+      "id": "jnl-03",
+      "ref": "JNL3",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 240"
+      ],
+      "question": "Has the population of journal entries for the year been obtained, and has its completeness been checked to the trial balance?"
+    },
+    {
+      "id": "jnl-04",
+      "ref": "JNL4",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 240"
+      ],
+      "question": "Have journals been selected for testing using risk criteria (round amounts, period-end, unusual accounts, unusual users, weekends and holidays)?"
+    },
+    {
+      "id": "jnl-05",
+      "ref": "JNL5",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 240"
+      ],
+      "question": "Have the selected journals been agreed to supporting documents and the business reason understood?"
+    },
+    {
+      "id": "jnl-06",
+      "ref": "JNL6",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 240",
+        "ISA 330"
+      ],
+      "question": "Have post-closing and year-end adjusting entries been reviewed and approved by someone other than the preparer?"
+    },
+    {
+      "id": "jnl-07",
+      "ref": "JNL7",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 450"
+      ],
+      "question": "Have all audit adjustments been listed, agreed with management and posted, or the unadjusted ones recorded with a reason?"
+    },
+    {
+      "id": "jnl-08",
+      "ref": "JNL8",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 330"
+      ],
+      "question": "Have the accounts been mapped to the financial statement lines, and any unmapped or oddly signed accounts explained?"
+    }
+  ]
+}

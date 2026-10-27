@@ -1,0 +1,75 @@
+{
+  "id": "related-parties",
+  "title": "Related parties",
+  "phase": "planning",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    {
+      "id": "rp-01",
+      "ref": "RP1",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 550"
+      ],
+      "question": "Has management given a complete list of related parties (owners, directors, their close family and businesses they control), and has the team checked it against registers and prior-year files?"
+    },
+    {
+      "id": "rp-02",
+      "ref": "RP2",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 550"
+      ],
+      "question": "Has the team asked management and those charged with governance about related party relationships and transactions, and recorded the answers?"
+    },
+    {
+      "id": "rp-03",
+      "ref": "RP3",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 550"
+      ],
+      "question": "Has the team looked for related party transactions in the records (loans to or from directors, unusual sales or purchases, rent, guarantees)?"
+    },
+    {
+      "id": "rp-04",
+      "ref": "RP4",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 550"
+      ],
+      "question": "Have significant transactions outside the normal course of business been identified and their business reason understood?"
+    },
+    {
+      "id": "rp-05",
+      "ref": "RP5",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 550"
+      ],
+      "question": "Have the terms of related party transactions been compared with market terms where the client says they are on arm-length terms?"
+    },
+    {
+      "id": "rp-06",
+      "ref": "RP6",
+      "mandatory": false,
+      "standardRefs": [
+        "ISA 550",
+        "ISA 505"
+      ],
+      "question": "Are related party balances and transactions agreed to supporting documents and to confirmation from the related party where possible?"
+    },
+    {
+      "id": "rp-07",
+      "ref": "RP7",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 550",
+        "IFRS for SMEs Section 33"
+      ],
+      "question": "Are the related party disclosures in the financial statements complete and agreed to the evidence?"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "id": "preplanning-meeting",
+  "title": "Pre-planning meeting (auditor and manager)",
+  "phase": "acceptance",
+  "version": 1,
+  "status": "unreviewed-placeholder",
+  "effectiveFrom": "2026-01-01",
+  "items": [
+    {
+      "id": "pre-01",
+      "ref": "PRE1",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 300 (Revised)"
+      ],
+      "question": "Was a pre-planning meeting held between the engagement manager and the auditor, and the date and attendees recorded?"
+    },
+    {
+      "id": "pre-02",
+      "ref": "PRE2",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 220 (Revised)",
+        "ISQM 1"
+      ],
+      "question": "Did the meeting agree who is on the team, who leads the fieldwork, and who reviews each area?"
+    },
+    {
+      "id": "pre-03",
+      "ref": "PRE3",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 300 (Revised)"
+      ],
+      "question": "Did the meeting agree the audit timetable, including the fieldwork dates, the draft financials date and the report date?"
+    },
+    {
+      "id": "pre-04",
+      "ref": "PRE4",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 300 (Revised)",
+        "ISQM 1"
+      ],
+      "question": "Has a time budget been agreed for the engagement, by team member or grade, and recorded?"
+    },
+    {
+      "id": "pre-05",
+      "ref": "PRE5",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 315 (Revised 2019)"
+      ],
+      "question": "Did the meeting discuss what changed since last year (new staff, systems, services, ownership, funding) or, for a new client, what is known so far?"
+    },
+    {
+      "id": "pre-06",
+      "ref": "PRE6",
+      "mandatory": true,
+      "standardRefs": [
+        "ISA 300 (Revised)",
+        "ISA 620"
+      ],
+      "question": "Were known risk areas and areas needing specialist input or an expert raised and noted?"
+    },
+    {
+      "id": "pre-07",
+      "ref": "PRE7",
+      "mandatory": false,
+      "standardRefs": [
+        "ISA 300 (Revised)",
+        "ISA 265"
+      ],
+      "question": "Were last year's review points and management letter points carried onto this year's plan?"
+    }
+  ]
+}

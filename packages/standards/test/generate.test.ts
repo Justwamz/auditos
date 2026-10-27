@@ -65,3 +65,32 @@ describe('template content guards', () => {
     }
   });
 });
+
+describe('stage 1 templates', () => {
+  const NEW_IDS = [
+    'preplanning-meeting', 'client-meeting', 'system-documentation', 'risk-assessment', 'laws-regulations',
+    'related-parties', 'it-environment', 'journals-trial-balance', 'going-concern', 'opening-balances',
+  ];
+  test('every new checklist is generated for a plain trading engagement', () => {
+    const ids = gen({ ...base, sector: 'trading' }).checklists.map((c) => c.templateId);
+    for (const id of NEW_IDS) expect(ids, id).toContain(id);
+  });
+  test('opening balances: first-year items appear only with the first_year flag', () => {
+    const pick = (flags: string[]) => gen({ ...base, sector: 'trading', riskFlags: flags }).checklists.find((c) => c.templateId === 'opening-balances')!.items;
+    expect(pick(['first_year']).length).toBeGreaterThan(pick([]).length);
+    expect(pick([]).length).toBeGreaterThan(0);
+  });
+  test('each new checklist has between 5 and 14 items, so it stays quick to complete', () => {
+    for (const id of NEW_IDS) {
+      const n = templates.find((t) => t.id === id)!.items.length;
+      expect(n, id).toBeGreaterThanOrEqual(5);
+      expect(n, id).toBeLessThanOrEqual(14);
+    }
+  });
+  test('the topics the firm named are covered', () => {
+    const text = templates.filter((t) => NEW_IDS.includes(t.id)).flatMap((t) => t.items.map((i) => i.question.toLowerCase())).join(' ');
+    for (const topic of ['pre-planning', 'system', 'risk', 'law', 'related part', 'it environment', 'journal', 'going concern', 'opening balance', 'time budget']) {
+      expect(text, topic).toContain(topic);
+    }
+  });
+});

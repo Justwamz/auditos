@@ -2,6 +2,16 @@ import acceptance from '../content/checklists/acceptance.json';
 import planning from '../content/checklists/planning.json';
 import fieldworkCore from '../content/checklists/fieldwork-core.json';
 import completion from '../content/checklists/completion.json';
+import preplanningMeeting from '../content/checklists/preplanning-meeting.json';
+import clientMeeting from '../content/checklists/client-meeting.json';
+import systemDocumentation from '../content/checklists/system-documentation.json';
+import riskAssessment from '../content/checklists/risk-assessment.json';
+import lawsRegulations from '../content/checklists/laws-regulations.json';
+import relatedParties from '../content/checklists/related-parties.json';
+import itEnvironment from '../content/checklists/it-environment.json';
+import journalsTrialBalance from '../content/checklists/journals-trial-balance.json';
+import goingConcern from '../content/checklists/going-concern.json';
+import openingBalances from '../content/checklists/opening-balances.json';
 import sectorTrading from '../content/checklists/sector-trading.json';
 import sectorConsultancy from '../content/checklists/sector-consultancy.json';
 import sectorRental from '../content/checklists/sector-rental.json';
@@ -10,7 +20,7 @@ import type { Condition, GeneratedChecklist, Profile, Sector, Template } from '.
 const SECTOR_PACKS: Sector[] = ['trading', 'consultancy', 'rental'];
 
 export function loadTemplates(): Template[] {
-  return [acceptance, planning, fieldworkCore, completion, sectorTrading, sectorConsultancy, sectorRental] as Template[];
+  return [acceptance, preplanningMeeting, clientMeeting, planning, systemDocumentation, riskAssessment, lawsRegulations, relatedParties, itEnvironment, fieldworkCore, journalsTrialBalance, goingConcern, openingBalances, completion, sectorTrading, sectorConsultancy, sectorRental] as Template[];
 }
 
 function matches(c: Condition | undefined, p: Profile): boolean {
