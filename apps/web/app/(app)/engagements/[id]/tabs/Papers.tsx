@@ -5,6 +5,7 @@ import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, StateBadge } from '@/components/bits';
 import { ItemPanel, type Viewer } from '@/components/ItemPanel';
 import type { Engagement } from '../page';
+import { Materiality } from './Materiality';
 
 interface Row { id: string; kind: string; title: string; state: string; version: number }
 
@@ -86,6 +87,7 @@ export function Papers({ engagement: e, viewer, focusItem }: { engagement: Engag
 
   return (
     <div className="stack-lg">
+      <Materiality engagement={e} locked={viewer.engagementLocked} />
       {(
         <form className="sheet stack" onSubmit={create}>
           <h2>Add a working paper</h2>

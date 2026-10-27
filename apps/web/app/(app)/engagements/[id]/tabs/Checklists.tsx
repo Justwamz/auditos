@@ -8,7 +8,9 @@ import type { Engagement } from '../page';
 
 interface Completeness { mandatoryOpen: { checklistId: string; itemId: string; ref: string; question: string }[]; total: number; answered: number; percent: number }
 interface Row { id: string; title: string; state: string }
-interface CItem { id: string; ref: string; question: string; mandatory: boolean; standardRefs: string[]; response: 'yes' | 'no' | 'na' | null; rationale: string }
+interface CItem { id: string; ref: string; question: string; mandatory: boolean; standardRefs: string[]; response: 'yes' | 'no' | 'na' | null; rationale: string; prior?: { response: 'yes' | 'no' | 'na'; rationale: string } | null }
+
+const ANSWER = { yes: 'Yes', no: 'No', na: 'Not applicable' } as const;
 
 function Question({ checklistId, item, locked, onSaved }: { checklistId: string; item: CItem; locked: boolean; onSaved: () => void }) {
   const [response, setResponse] = useState<CItem['response']>(item.response);
@@ -23,6 +25,16 @@ function Question({ checklistId, item, locked, onSaved }: { checklistId: string;
     try {
       await api.patch(`/checklists/${checklistId}/items/${item.id}`, { response: next, rationale: why });
       setSaved(true);
+      onSaved();
+    } catch (e) {
+      setError(e);
+    }
+  }
+
+  async function confirmPrior() {
+    setError(undefined);
+    try {
+      await api.post(`/checklists/${checklistId}/items/${item.id}/confirm-prior`, {});
       onSaved();
     } catch (e) {
       setError(e);
@@ -46,6 +58,12 @@ function Question({ checklistId, item, locked, onSaved }: { checklistId: string;
           </label>
         ))}
       </div>
+      {item.prior && item.response === null && !locked && (
+        <div className="prior">
+          <span>Last year: <strong>{ANSWER[item.prior.response]}</strong>{item.prior.rationale ? ` (${item.prior.rationale})` : ''}</span>
+          <button className="secondary" onClick={() => confirmPrior()}>Same as last year</button>
+        </div>
+      )}
       {needsWhy && !locked && (
         <div className="row">
           <input aria-label={`Rationale for ${item.ref}`} placeholder="Why? A short rationale is required" value={rationale} onChange={(e) => setRationale(e.target.value)} style={{ maxWidth: '34rem' }} />

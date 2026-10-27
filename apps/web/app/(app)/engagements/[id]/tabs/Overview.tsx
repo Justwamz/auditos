@@ -4,13 +4,14 @@ import { api, ApiError } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, Notice } from '@/components/bits';
 import { useStepUp } from '@/components/StepUp';
+import { Roadmap } from '@/components/Roadmap';
 import { fmtDate, GATE_LABELS, ROLE_LABELS, STAGES, STATE_LABELS } from '@/lib/text';
 import type { Engagement, Me } from '../page';
 
 interface Member { userId: string; email: string; role: string }
 interface UnlockRequest { id: string; requestedBy: string; requestedByEmail: string; reason: string; status: string; createdAt: string }
 
-export function Overview({ engagement: e, me, onChanged }: { engagement: Engagement; me: Me; onChanged: () => void }) {
+export function Overview({ engagement: e, me, onChanged, onGo }: { engagement: Engagement; me: Me; onChanged: () => void; onGo: (tab: string) => void }) {
   const team = useApi<{ members: Member[] }>(`/engagements/${e.id}/members`);
   const people = useApi<{ people: { id: string; email: string; role: string }[] }>('/people');
   const unlocks = useApi<{ requests: UnlockRequest[] }>(e.state === 'locked' ? `/engagements/${e.id}/unlock-requests` : null);
@@ -63,8 +64,9 @@ export function Overview({ engagement: e, me, onChanged }: { engagement: Engagem
 
   return (
     <div className="stack-lg">
+      <Roadmap engagementId={e.id} locked={e.state === 'locked'} onGo={onGo} refreshKey={e.state} />
       <section className="sheet">
-        <h2>Where this engagement is</h2>
+        <h2>Engagement stage</h2>
         <ol className="stages" aria-label="Engagement stages">
           {STAGES.map((s, i) => (
             <li key={s} className={i < idx ? 'done' : i === idx ? 'current' : ''} aria-current={i === idx ? 'step' : undefined}>{STATE_LABELS[s]}</li>

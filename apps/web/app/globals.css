@@ -216,3 +216,15 @@ table.ledger td.num { min-width: 8.5rem; }
   .shell { display: block; }
   .main { padding: 0; }
 }
+
+/* Audit roadmap */
+.roadmap .next-step { border: 1px solid var(--ledger); background: var(--ledger-wash); padding: 0.9rem 1rem; max-width: 60ch; }
+.roadmap .next-step h3 { margin: 0.1rem 0 0.3rem; }
+.roadmap .next-step p { margin: 0 0 0.7rem; }
+.roadmap-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.roadmap-steps li { display: flex; gap: 0.6rem; align-items: baseline; color: var(--pencil); }
+.roadmap-steps li.done { color: var(--ledger-deep); }
+.roadmap-steps li.current { color: inherit; }
+.roadmap-steps .mark { width: 1.2rem; text-align: center; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.prior { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; font-size: 0.85rem; color: var(--pencil); }

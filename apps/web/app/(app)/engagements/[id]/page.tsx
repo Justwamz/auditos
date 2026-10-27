@@ -68,7 +68,7 @@ function Workspace() {
         ))}
       </div>
 
-      {tab === 'overview' && <Overview engagement={e} me={me.data} onChanged={eng.reload} />}
+      {tab === 'overview' && <Overview engagement={e} me={me.data} onChanged={eng.reload} onGo={setTab} />}
       {tab === 'papers' && <Papers engagement={e} viewer={viewer} focusItem={params.get('item')} />}
       {tab === 'checklists' && <Checklists engagement={e} viewer={viewer} />}
       {tab === 'evidence' && <Evidence engagement={e} viewer={viewer} />}

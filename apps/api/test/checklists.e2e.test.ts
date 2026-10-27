@@ -252,7 +252,7 @@ describe('carry-forward of last year\'s answers', () => {
   let client: string;
   let first: string;
 
-  const mine = async (e: string, _templateId: string) => {
+  const mine = async (e: string) => {
     // Titles come from the list, so only one checklist is fetched in full (the rate limit is per minute).
     const row = ((await call(sF, 'GET', `/engagements/${e}/items?kind=checklist`)).json().items as { id: string; title: string }[]).find((r) => r.title === 'Client acceptance and continuance')!;
     return (await checklist(row.id)) as { id: string; content: { items: { id: string; response: string | null; rationale: string; prior: { response: string; rationale: string } | null }[] } };
@@ -265,7 +265,7 @@ describe('carry-forward of last year\'s answers', () => {
     first = e.json().id as string;
     for (const u of [F, S]) await call(sM, 'POST', `/engagements/${first}/members`, { userId: u.id });
     await call(sF, 'POST', `/engagements/${first}/checklists/generate`);
-    const c = await mine(first, 'acceptance');
+    const c = await mine(first);
     expect((await answer(c.id, c.content.items[0]!.id, { response: 'yes' })).statusCode).toBe(200);
     expect((await answer(c.id, c.content.items[1]!.id, { response: 'no', rationale: 'Owner changed during the year.' })).statusCode).toBe(200);
   });
@@ -273,7 +273,7 @@ describe('carry-forward of last year\'s answers', () => {
   test("the next year's checklist shows last year's answers as suggestions only, and they do not count as answered", async () => {
     const e = await newEngagement(client);
     await call(sF, 'POST', `/engagements/${e}/checklists/generate`);
-    const c = await mine(e, 'acceptance');
+    const c = await mine(e);
     expect(c.content.items[0]).toMatchObject({ response: null, prior: { response: 'yes' } });
     expect(c.content.items[1]).toMatchObject({ response: null, prior: { response: 'no', rationale: 'Owner changed during the year.' } });
     expect(c.content.items[2]!.prior).toBeNull();
@@ -284,10 +284,10 @@ describe('carry-forward of last year\'s answers', () => {
   test('confirming last year\'s answer records it as this year\'s answer, with the same rules as any answer', async () => {
     const e = await newEngagement(client);
     await call(sF, 'POST', `/engagements/${e}/checklists/generate`);
-    const c = await mine(e, 'acceptance');
+    const c = await mine(e);
     const ok = await call(sF, 'POST', `/checklists/${c.id}/items/${c.content.items[1]!.id}/confirm-prior`, {});
     expect(ok.statusCode).toBe(200);
-    const after = await mine(e, 'acceptance');
+    const after = await mine(e);
     expect(after.content.items[1]).toMatchObject({ response: 'no', rationale: 'Owner changed during the year.' });
     expect((await call(sF, 'POST', `/checklists/${c.id}/items/${c.content.items[2]!.id}/confirm-prior`, {})).statusCode).toBe(409);
   });
@@ -295,7 +295,7 @@ describe('carry-forward of last year\'s answers', () => {
   test('a client with no earlier engagement has no suggestions', async () => {
     const e = await newEngagement(tradingClient);
     await call(sF, 'POST', `/engagements/${e}/checklists/generate`);
-    const c = await mine(e, 'acceptance');
+    const c = await mine(e);
     expect(c.content.items.every((i) => i.prior === null)).toBe(true);
   });
 });
