@@ -57,19 +57,12 @@ export async function tenantRoutes(app: FastifyInstance): Promise<void> {
       throw httpError(409, 'cannot_modify_self');
     }
     const updated = await withTenant(pool, tenantCtx(req), async (tx) => {
-      const sets: string[] = [];
-      const args: unknown[] = [id.data];
-      if (body.role !== undefined) {
-        args.push(body.role, GRADE[body.role as Role]);
-        sets.push(`role = $${args.length - 1}`, `grade = $${args.length}`);
-      }
-      if (body.active !== undefined) {
-        args.push(body.active);
-        sets.push(`active = $${args.length}`);
-      }
-      const r = await tx.query(`update memberships set ${sets.join(', ')} where user_id = $1`, args);
-      if (r.rowCount === 0) return false;
-      if (body.active === false) await tx.query('select session_revoke_tenant($1)', [id.data]);
+      await tx.query('select admin_update_member($1, $2, $3, $4)', [
+        id.data,
+        body.role ?? null,
+        body.role === undefined ? null : GRADE[body.role as Role],
+        body.active ?? null,
+      ]);
       return true;
     });
     if (!updated) throw httpError(404, 'not_found');

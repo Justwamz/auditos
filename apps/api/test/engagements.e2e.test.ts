@@ -119,7 +119,7 @@ describe('state machine', () => {
       withTenant(h.app.pools.app, { tenantId: T.id, userId: manager.id }, (tx) =>
         tx.query("update engagements set state = 'completion' where id = $1", [engId]),
       ),
-    ).rejects.toThrow(/invalid state transition/i);
+    ).rejects.toThrow(/permission denied/i);
   });
 
   const insertAt = async (state: string, daysAgo: number): Promise<string> => {
@@ -148,7 +148,7 @@ describe('state machine', () => {
       withTenant(h.app.pools.app, { tenantId: T.id, userId: manager.id }, (tx) =>
         tx.query("update engagements set risk_profile = '{}' where id = $1", [id]),
       ),
-    ).rejects.toThrow(/locked/i);
+    ).rejects.toThrow(/permission denied|locked/i);
   });
 
   test('engagements inside the deadline are not locked', async () => {

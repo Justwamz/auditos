@@ -160,9 +160,7 @@ export async function engagementRoutes(app: FastifyInstance): Promise<void> {
       if (to === 'report_issued' && !body.reportDate) throw httpError(400, 'report_date_required');
       const blockers = await evaluateGates(tx, id.data, e.state, to);
       if (blockers.length > 0) return { blockers };
-      await tx.query('update engagements set state = $2, report_date = coalesce($3::date, report_date) where id = $1', [
-        id.data, to, body.reportDate ?? null,
-      ]);
+      await tx.query('select engagement_transition($1, $2, $3)', [id.data, to, body.reportDate ?? null]);
       return { state: to };
     });
     if ('blockers' in result) return reply.code(409).send({ error: 'gate_blocked', blockers: result.blockers });

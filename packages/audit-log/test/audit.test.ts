@@ -23,8 +23,8 @@ afterAll(async () => {
 
 describe('audit log', () => {
   test('appends chained events and verifies', async () => {
-    await withTenant(app, ctx(), (tx) => appendEvent(tx, { action: 'test.one', entityType: 'thing', entityId: '1' }));
-    await withTenant(app, ctx(), (tx) => appendEvent(tx, { action: 'test.two', entityType: 'thing', entityId: '2', detail: { a: 1 } }));
+    await withTenant(app, ctx(), (tx) => appendEvent(tx, { action: 'export.one', entityType: 'thing', entityId: '1' }));
+    await withTenant(app, ctx(), (tx) => appendEvent(tx, { action: 'export.two', entityType: 'thing', entityId: '2', detail: { a: 1 } }));
     const rows = await events(t.id);
     const [first, second] = rows.slice(-2);
     expect(second.prev_hash).toBe(first.hash);
@@ -45,7 +45,7 @@ describe('audit log', () => {
   test('tampering is detected', async () => {
     const tenant = await createTestTenant(owner, 'tamper');
     const c = { tenantId: tenant.id, userId: tenant.adminId };
-    for (let i = 0; i < 3; i++) await withTenant(app, c, (tx) => appendEvent(tx, { action: `e${i}`, entityType: 'x' }));
+    for (let i = 0; i < 3; i++) await withTenant(app, c, (tx) => appendEvent(tx, { action: `export.e${i}`, entityType: 'x' }));
     const rows = await events(tenant.id);
     const victim = rows[2];
     await owner.query('update audit_events set detail = $1 where tenant_id = $2 and seq = $3', [JSON.stringify({ forged: true }), tenant.id, victim.seq]);
@@ -55,7 +55,7 @@ describe('audit log', () => {
   test('deleting a middle event is detected as a broken chain', async () => {
     const tenant = await createTestTenant(owner, 'gap');
     const c = { tenantId: tenant.id, userId: tenant.adminId };
-    for (let i = 0; i < 3; i++) await withTenant(app, c, (tx) => appendEvent(tx, { action: `e${i}`, entityType: 'x' }));
+    for (let i = 0; i < 3; i++) await withTenant(app, c, (tx) => appendEvent(tx, { action: `export.e${i}`, entityType: 'x' }));
     const rows = await events(tenant.id);
     await owner.query('delete from audit_events where tenant_id = $1 and seq = $2', [tenant.id, rows[1].seq]);
     const r = await verifyChain(owner, tenant.id);
@@ -65,7 +65,16 @@ describe('audit log', () => {
   test('trigger logs inserts on an attached table with the actor', async () => {
     const before = (await events(t.id)).length;
     const newbie = await addTestMember(owner, t.id, 'trigger', 'staff', 1);
-    await withTenant(app, ctx(), (tx) => tx.query('update memberships set role = $1 where user_id = $2', ['senior', newbie]));
+    // The application role cannot change memberships; the change is made as the owner with the admin as actor.
+    const c = await owner.connect();
+    try {
+      await c.query('BEGIN');
+      await c.query("select set_config('app.tenant_id', $1, true), set_config('app.user_id', $2, true)", [t.id, t.adminId]);
+      await c.query('update memberships set role = $1 where user_id = $2', ['senior', newbie]);
+      await c.query('COMMIT');
+    } finally {
+      c.release();
+    }
     const rows = (await events(t.id)).slice(before);
     expect(rows.map((r) => r.action)).toEqual(['INSERT', 'UPDATE']);
     expect(rows[1].entity_type).toBe('memberships');
@@ -80,7 +89,7 @@ describe('audit log', () => {
     const c = { tenantId: tenant.id, userId: tenant.adminId };
     const base = (await events(tenant.id)).length;
     await Promise.all(
-      Array.from({ length: 20 }, (_, i) => withTenant(app, c, (tx) => appendEvent(tx, { action: `c${i}`, entityType: 'x' }))),
+      Array.from({ length: 20 }, (_, i) => withTenant(app, c, (tx) => appendEvent(tx, { action: `export.c${i}`, entityType: 'x' }))),
     );
     const rows = await events(tenant.id);
     expect(rows.map((r) => Number(r.seq))).toEqual(Array.from({ length: base + 20 }, (_, i) => i + 1));

@@ -47,14 +47,13 @@ describe('tenant isolation', () => {
       withTenant(app, { tenantId: a.id, userId: a.adminId }, (tx) =>
         tx.query("insert into memberships (tenant_id, user_id, role, grade) values ($1, $2, 'staff', 1)", [b.id, intruder]),
       ),
-    ).rejects.toThrow(/row-level security/);
+    ).rejects.toThrow(/permission denied|row-level security/);
   });
 
-  test('cross-tenant update affects no rows', async () => {
-    const res = await withTenant(app, { tenantId: a.id, userId: a.adminId }, (tx) =>
-      tx.query("update memberships set role = 'partner' where tenant_id = $1", [b.id]),
-    );
-    expect(res.rowCount).toBe(0);
+  test('the application role cannot update memberships at all, in any tenant', async () => {
+    await expect(
+      withTenant(app, { tenantId: a.id, userId: a.adminId }, (tx) => tx.query("update memberships set role = 'partner' where tenant_id = $1", [b.id])),
+    ).rejects.toThrow(/permission denied/);
   });
 
   test('a user only sees users of their own tenant', async () => {
