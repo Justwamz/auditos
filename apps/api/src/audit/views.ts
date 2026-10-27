@@ -3,7 +3,7 @@ import type { PoolClient } from 'pg';
 import { appendEvent } from '@auditos/audit-log';
 import { actorOf } from '../authz';
 
-export type ViewType = 'client' | 'engagement' | 'paper' | 'statements' | 'statement';
+export type ViewType = 'client' | 'engagement' | 'paper' | 'statements' | 'statement' | 'sampling';
 
 export interface ViewTarget {
   type: ViewType;

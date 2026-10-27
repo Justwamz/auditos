@@ -8,3 +8,4 @@ export * from './statements';
 export * from './disclosures';
 export * from './materiality';
 export * from './tax';
+export * from './sampling';

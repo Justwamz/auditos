@@ -63,6 +63,16 @@ export function describeEvent(e: AuditRow): string {
         : `${who} confirmed the bank statement "${str(d.label)}"${forClient} was read completely`;
     case 'evidence.statement_discarded':
       return `${who} discarded the unconfirmed bank statement "${str(d.label)}"${forClient}`;
+    case 'view.sampling':
+      return `${who} viewed the sampling schedule "${str(d.label)}"${forClient}`;
+    case 'evidence.sample_drawn':
+      return `${who} drew a ${({ random: 'random', monetary_unit: 'monetary-unit', top: 'top-items' } as Record<string, string>)[str(d.method)] ?? ''} sample of ${String(d.selected)} from ${String(d.population)} items for "${str(d.label)}"${forClient}`;
+    case 'evidence.sample_tested': {
+      const word = ({ supported: 'as supported', exception: 'as an exception', not_tested: 'as not tested', pending: 'back to pending' } as Record<string, string>)[str(d.result)] ?? str(d.result);
+      return `${who} marked item ${str(d.ref)} of "${str(d.label)}"${forClient} ${word}${str(d.note) ? `. Note: "${str(d.note)}"` : ''}`;
+    }
+    case 'evidence.sample_discarded':
+      return `${who} discarded the untested sampling schedule "${str(d.label)}"${forClient}`;
     case 'pii.revealed': {
       const field = FIELD_LABELS[str(d.field)] ?? 'personal detail';
       const at = e.clientName ? ` at ${e.clientName}` : '';
