@@ -34,7 +34,8 @@ export async function bootstrap(env: NodeJS.ProcessEnv): Promise<void> {
     const db = await su.query('select 1 from pg_database where datname = $1', [dbName]);
     if (db.rowCount === 0) await su.query(`create database ${dbName} owner ${OWNER_ROLE}`);
     await su.query(`revoke all on database ${dbName} from public`);
-    await su.query(`grant connect on database ${dbName} to ${APP_ROLE}`);
+    // A hosted database is created for us and owned by someone else, so the owner role needs connect explicitly too.
+    await su.query(`grant connect on database ${dbName} to ${OWNER_ROLE}, ${APP_ROLE}`);
     await su.query('select pg_advisory_unlock($1)', [LOCK_KEY]);
   } finally {
     await su.end();
