@@ -1,4 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
+import { encrypt } from '../security/crypto';
+import { DEMO_FIRMS } from './people';
 
 const SYNTHETIC_CLIENT = 'Mwangaza Traders Ltd';
 
@@ -51,17 +53,18 @@ async function as(c: PoolClient, tenantId: string, userId: string): Promise<void
 }
 
 /** Idempotent. Synthetic only. Needs the seeded Kangethe & Associates users. */
-export async function seedDemoData(owner: Pool, firmName = 'Kangethe & Associates', slug = 'kangethe'): Promise<boolean> {
+export async function seedDemoData(owner: Pool, firmName = DEMO_FIRMS[0]!.name): Promise<boolean> {
+  const firm = DEMO_FIRMS.find((f) => f.name === firmName)!;
   const c = await owner.connect();
   try {
     await c.query('BEGIN');
     const tenantId = (await c.query('select id from tenants where name = $1', [firmName])).rows[0]?.id as string | undefined;
     if (!tenantId) throw new Error('Seed the demo firm first');
     await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
-    const user = async (role: string): Promise<string> =>
-      (await c.query('select id from users where lower(email) = $1', [`${role.replace('_', '-')}@${slug}.example.test`])).rows[0].id as string;
+    const user = async (role: keyof typeof firm.people): Promise<string> =>
+      (await c.query('select id from users where lower(email) = $1', [firm.people[role].email])).rows[0].id as string;
     const ids: string[] = [];
-    for (const role of ['partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr']) ids.push(await user(role));
+    for (const role of ['partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr'] as const) ids.push(await user(role));
     const [partner, manager, senior, staff, qo, eqr] = ids;
 
     await as(c, tenantId, manager!);
@@ -107,6 +110,45 @@ export async function seedDemoData(owner: Pool, firmName = 'Kangethe & Associate
     await addItem(senior!, current, 'materiality', 'Materiality', { notes: 'Benchmark: revenue. Overall materiality 1%.' });
     await addItem(staff!, current, 'workpaper', 'Understanding the business', { notes: 'Wholesale trader of household goods in Nairobi with two outlets.' });
 
+    await c.query('COMMIT');
+    return true;
+  } catch (e) {
+    await c.query('ROLLBACK');
+    throw e;
+  } finally {
+    c.release();
+  }
+}
+
+const DEMO_CONTACTS = [
+  { name: 'Jane Wambui', position: 'Finance manager', phone: '+254 712 345 678', email: 'jane.wambui@mwangaza.example.test', idNumber: '27654321', kraPin: 'A012345678B' },
+  { name: 'Peter Njoroge', position: 'Director', phone: '0722 111 222', email: 'peter.njoroge@mwangaza.example.test', idNumber: '12345678', kraPin: 'A098765432C' },
+];
+
+/** Idempotent. Fake people with fake details, stored encrypted like real ones. Returns true when it added them. */
+export async function seedDemoContacts(owner: Pool, env: NodeJS.ProcessEnv, firmName = DEMO_FIRMS[0]!.name): Promise<boolean> {
+  const firm = DEMO_FIRMS.find((f) => f.name === firmName)!;
+  const c = await owner.connect();
+  try {
+    await c.query('BEGIN');
+    const tenantId = (await c.query('select id from tenants where name = $1', [firmName])).rows[0]?.id as string | undefined;
+    const manager = (await c.query('select id from users where lower(email) = $1', [firm.people.manager.email])).rows[0]?.id as string | undefined;
+    if (!tenantId || !manager) {
+      await c.query('ROLLBACK');
+      return false;
+    }
+    await as(c, tenantId, manager);
+    const client = (await c.query('select id from clients where name = $1', [SYNTHETIC_CLIENT])).rows[0]?.id as string | undefined;
+    if (!client || (await c.query('select 1 from client_contacts where client_id = $1', [client])).rowCount) {
+      await c.query('ROLLBACK');
+      return false;
+    }
+    for (const p of DEMO_CONTACTS) {
+      await c.query(
+        'insert into client_contacts (tenant_id, client_id, name, position, phone_enc, email_enc, id_number_enc, kra_pin_enc, created_by) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [tenantId, client, p.name, p.position, encrypt(p.phone, env), encrypt(p.email, env), encrypt(p.idNumber, env), encrypt(p.kraPin, env), manager],
+      );
+    }
     await c.query('COMMIT');
     return true;
   } catch (e) {

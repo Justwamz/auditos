@@ -8,12 +8,12 @@ import { Roadmap } from '@/components/Roadmap';
 import { fmtDate, GATE_LABELS, ROLE_LABELS, STAGES, STATE_LABELS } from '@/lib/text';
 import type { Engagement, Me } from '../page';
 
-interface Member { userId: string; email: string; role: string }
+interface Member { userId: string; fullName: string | null; email: string; role: string }
 interface UnlockRequest { id: string; requestedBy: string; requestedByEmail: string; reason: string; status: string; createdAt: string }
 
 export function Overview({ engagement: e, me, onChanged, onGo }: { engagement: Engagement; me: Me; onChanged: () => void; onGo: (tab: string) => void }) {
   const team = useApi<{ members: Member[] }>(`/engagements/${e.id}/members`);
-  const people = useApi<{ people: { id: string; email: string; role: string }[] }>('/people');
+  const people = useApi<{ people: { id: string; fullName: string | null; email: string; role: string }[] }>('/people');
   const unlocks = useApi<{ requests: UnlockRequest[] }>(e.state === 'locked' ? `/engagements/${e.id}/unlock-requests` : null);
   const withStepUp = useStepUp();
   const [error, setError] = useState<unknown>();
@@ -131,7 +131,7 @@ export function Overview({ engagement: e, me, onChanged, onGo }: { engagement: E
           <tbody>
             {team.data?.members.map((m) => (
               <tr key={m.userId}>
-                <td>{m.email}</td>
+                <td>{m.fullName ?? m.email}</td>
                 <td>{ROLE_LABELS[m.role] ?? m.role}</td>
                 <td className="muted small">{m.userId === e.partnerId ? 'Engagement partner' : m.userId === e.eqrId ? 'Quality reviewer' : ''}</td>
               </tr>
@@ -144,7 +144,7 @@ export function Overview({ engagement: e, me, onChanged, onGo }: { engagement: E
               <label htmlFor="am">Add to the team <span className="hint">they need a current independence declaration</span></label>
               <select id="am" required value={addId} onChange={(e2) => setAddId(e2.target.value)}>
                 <option value="">Choose a person</option>
-                {candidates.map((p) => <option key={p.id} value={p.id}>{p.email} ({ROLE_LABELS[p.role] ?? p.role})</option>)}
+                {candidates.map((p) => <option key={p.id} value={p.id}>{p.fullName ?? p.email} ({ROLE_LABELS[p.role] ?? p.role})</option>)}
               </select>
             </div>
             <button className="secondary">Add</button>
@@ -156,7 +156,7 @@ export function Overview({ engagement: e, me, onChanged, onGo }: { engagement: E
               <label htmlFor="eq">Engagement quality reviewer <span className="hint">not the engagement partner</span></label>
               <select id="eq" required value={eqrId} onChange={(e2) => setEqrId(e2.target.value)}>
                 <option value="">Choose a reviewer</option>
-                {people.data?.people.filter((p) => p.role === 'eqr' || (p.role === 'partner' && p.id !== e.partnerId)).map((p) => <option key={p.id} value={p.id}>{p.email}</option>)}
+                {people.data?.people.filter((p) => p.role === 'eqr' || (p.role === 'partner' && p.id !== e.partnerId)).map((p) => <option key={p.id} value={p.id}>{p.fullName ?? p.email}</option>)}
               </select>
             </div>
             <button className="secondary">Assign</button>

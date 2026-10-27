@@ -22,7 +22,9 @@ export function Materiality({ engagement: e, locked }: { engagement: Engagement;
   const list = useApi<{ items: { id: string }[] }>(`/engagements/${e.id}/items?kind=materiality`);
   const paperId = list.data?.items[0]?.id;
   const paper = useApi<{ content: Saved }>(paperId ? `/items/${paperId}` : null);
-  const saved = paper.data?.content;
+  // A materiality paper written by hand (notes only) has no calculation yet: the form starts empty and saving adds one.
+  const content = paper.data?.content;
+  const saved = content && typeof content.overall === 'string' && typeof content.amount === 'string' ? content : undefined;
   const [form, setForm] = useState({ benchmark: 'revenue', amount: '', percent: '1', performancePercent: '75', trivialPercent: '5', rationale: '' });
   const [result, setResult] = useState<{ overall: string; performance: string; trivial: string }>();
   const [error, setError] = useState<unknown>();

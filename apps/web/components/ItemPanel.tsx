@@ -1,10 +1,10 @@
 'use client';
+import { History as VersionHistory } from '@/components/History';
 import { useState, type ReactNode } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote, Notice, SignoffStrip, StateBadge, type SignoffView } from './bits';
 import { useStepUp } from './StepUp';
-import { fmtDate } from '@/lib/text';
 
 export interface ItemDetail {
   id: string;
@@ -180,10 +180,7 @@ export function ItemPanel({
         <button className="quiet" onClick={() => setShowHistory(!showHistory)}>{showHistory ? 'Hide history' : 'Show history'}</button>
         {showHistory && history.data && (
           <div className="stack small">
-            <table>
-              <thead><tr><th>Version</th><th>Saved</th><th>Reason</th></tr></thead>
-              <tbody>{history.data.versions.map((v) => <tr key={v.version}><td>{v.version}</td><td>{fmtDate(v.editedAt)}</td><td>{v.reason ?? ''}</td></tr>)}</tbody>
-            </table>
+            <VersionHistory itemId={d.id} canRestore={!locked && viewer.role !== 'quality_officer' && viewer.role !== 'eqr'} onRestored={reload} />
             <table>
               <thead><tr><th>Audit trail</th><th>When</th></tr></thead>
               <tbody>{history.data.events.map((e) => <tr key={e.seq}><td>{e.action.replace(/^item\./, '').replace(/_/g, ' ')}</td><td>{new Date(e.at).toLocaleString('en-GB')}</td></tr>)}</tbody>

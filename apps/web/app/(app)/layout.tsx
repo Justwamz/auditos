@@ -9,6 +9,8 @@ const API_URL = resolveApiUrl();
 
 interface Me {
   email: string;
+  fullName: string | null;
+  isAdmin: boolean;
   role: string | null;
   activeTenantId: string | null;
   memberships: { tenantId: string; tenantName: string }[];
@@ -26,7 +28,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <StepUpProvider>
       <div className="shell">
-        <Nav email={me.email} role={me.role} firm={firm} multiFirm={me.memberships.length > 1} />
+        <Nav name={me.fullName ?? me.email} role={me.role} isAdmin={me.isAdmin} firm={firm} multiFirm={me.memberships.length > 1} />
         <main className="main" id="content">
           {children}
         </main>

@@ -27,8 +27,7 @@ pnpm --filter @auditos/api totp partner@kangethe.example.test
 
 While testing locally you can skip the authenticator: set `DEV_FIXED_OTP=123456` in `.env.local` and restart the API; every account then accepts `123456` for sign-in and step-up. The API refuses to start with it in production, so it cannot reach Render. Remove the line when you want to test the real authenticator.
 
-Seeded roles per firm (`Kangethe & Associates`, emails `@kangethe.example.test`, and `Waweru & Associates`, emails `@waweru.example.test`): `firm-admin`, `partner`, `manager`, `senior`, `staff`, `quality-officer`, `eqr`
-(for example `manager@waweru.example.test`).
+Seeded people are named, one account each (no shared logins). Kangethe & Associates: Wanjiru Mugo (firm administrator), Grace Kangethe (partner), Daniel Otieno (manager), Faith Njeri (senior), Brian Kiptoo (staff), Mercy Achieng (quality officer), Samuel Kariuki (EQR). Waweru & Associates: Peter Maina, Joseph Waweru, Esther Wairimu, Kevin Mutua, Lucy Chebet, Hassan Abdi, Alice Nduta. Emails are `firstname.lastname@kangethe.example.test` and `...@waweru.example.test`.
 
 ## Tests
 

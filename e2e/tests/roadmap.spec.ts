@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { signIn } from '../helpers';
 
 test('the engagement opens on a roadmap with one next step, and materiality can be calculated', async ({ page }) => {
-  await signIn(page, 'manager@kangethe.example.test');
+  await signIn(page, 'daniel.otieno@kangethe.example.test');
   await page.goto('/engagements');
   await page.getByRole('link', { name: 'Mwangaza Traders Ltd' }).first().click();
 

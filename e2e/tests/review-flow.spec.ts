@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { confirmStepUp, openDemoPaper, signIn } from '../helpers';
 
-const STAFF = 'staff@kangethe.example.test';
-const MANAGER = 'manager@kangethe.example.test';
-const PARTNER = 'partner@kangethe.example.test';
+const STAFF = 'brian.kiptoo@kangethe.example.test';
+const MANAGER = 'daniel.otieno@kangethe.example.test';
+const PARTNER = 'grace.kangethe@kangethe.example.test';
 const TITLE = 'Understanding the business';
 
 const stamp = (page: import('@playwright/test').Page, label: string) =>
@@ -20,14 +20,14 @@ test('a paper goes through preparation, review, revocation on edit, approval and
   await staff.getByRole('button', { name: 'Sign as prepared' }).click();
   await confirmStepUp(staff, STAFF);
   await expect(staff.getByText('Signed.')).toBeVisible();
-  await expect(stamp(staff, 'Prepared')).toContainText('ST');
+  await expect(stamp(staff, 'Prepared')).toContainText('BK');
 
   // Manager reviews.
   await signIn(manager, MANAGER);
   await openDemoPaper(manager, TITLE);
   await manager.getByRole('button', { name: 'Sign as reviewed' }).click();
   await confirmStepUp(manager, MANAGER);
-  await expect(stamp(manager, 'Reviewed')).toContainText('MA');
+  await expect(stamp(manager, 'Reviewed')).toContainText('DO');
   await expect(manager.locator('.state', { hasText: 'Manager reviewed' }).first()).toBeVisible();
 
   // Staff edits the reviewed paper: the review is revoked and stays visible, struck through.
@@ -54,7 +54,7 @@ test('a paper goes through preparation, review, revocation on edit, approval and
   await openDemoPaper(partner, TITLE);
   await partner.getByRole('button', { name: 'Approve', exact: true }).click();
   await confirmStepUp(partner, PARTNER);
-  await expect(stamp(partner, 'Approved')).toContainText('PA');
+  await expect(stamp(partner, 'Approved')).toContainText('GK');
   await expect(partner.locator('.state', { hasText: 'Partner approved' }).first()).toBeVisible();
 
   // Deleting an approved paper needs a second person.

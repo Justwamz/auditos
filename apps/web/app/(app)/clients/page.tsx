@@ -1,16 +1,21 @@
 'use client';
+import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, Notice } from '@/components/bits';
 import { SECTOR_LABELS } from '@/lib/text';
 
-interface Client { id: string; name: string; sector: string; legalForm: string; framework: string; yearEndMonth: number }
+interface Client { id: string; name: string; sector: string; legalForm: string; framework: string; yearEndMonth: number; accountManagerName: string | null }
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export default function ClientsPage() {
   const list = useApi<{ clients: Client[] }>('/clients');
-  const [form, setForm] = useState({ name: '', sector: 'trading', legalForm: 'Limited company', framework: 'IFRS_SME', yearEndMonth: 12 });
+  const me = useApi<{ userId: string; role: string }>('/me');
+  const people = useApi<{ people: { id: string; fullName: string | null; email: string; role: string }[] }>('/people');
+  const canAdd = me.data?.role === 'manager' || me.data?.role === 'partner';
+  const managers = people.data?.people.filter((p) => p.role === 'manager' || p.role === 'partner') ?? [];
+  const [form, setForm] = useState({ name: '', sector: 'trading', legalForm: 'Limited company', framework: 'IFRS_SME', yearEndMonth: 12, accountManagerId: '' });
   const [error, setError] = useState<unknown>();
   const [done, setDone] = useState('');
 
@@ -19,7 +24,7 @@ export default function ClientsPage() {
     setError(undefined);
     setDone('');
     try {
-      await api.post('/clients', { ...form, yearEndMonth: Number(form.yearEndMonth) });
+      await api.post('/clients', { ...form, yearEndMonth: Number(form.yearEndMonth), accountManagerId: form.accountManagerId || undefined });
       setDone(`${form.name} added.`);
       setForm({ ...form, name: '' });
       list.reload();
@@ -32,9 +37,10 @@ export default function ClientsPage() {
     <div className="stack-lg">
       <div className="page-head">
         <h1>Clients</h1>
-        <p>Entities the firm audits. Add a client here, then open an engagement for each financial year.</p>
+        <p>The clients you are assigned to. Each client has one account manager, who is accountable for the relationship. Partners and administrators see every client.</p>
       </div>
 
+      {canAdd && (
       <section className="sheet">
         <h2>Add a client</h2>
         <form onSubmit={submit} className="stack">
@@ -55,6 +61,13 @@ export default function ClientsPage() {
               </select>
             </div>
             <div className="field">
+              <label htmlFor="cm">Account manager</label>
+              <select id="cm" value={form.accountManagerId} onChange={(e) => setForm({ ...form, accountManagerId: e.target.value })}>
+                <option value="">Me</option>
+                {managers.filter((m) => m.id !== me.data?.userId).map((m) => <option key={m.id} value={m.id}>{m.fullName ?? m.email}</option>)}
+              </select>
+            </div>
+            <div className="field">
               <label htmlFor="cy">Year end month</label>
               <select id="cy" value={form.yearEndMonth} onChange={(e) => setForm({ ...form, yearEndMonth: Number(e.target.value) })}>
                 {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
@@ -66,18 +79,19 @@ export default function ClientsPage() {
           <div><button>Add client</button></div>
         </form>
       </section>
+      )}
 
       <section className="sheet">
         <h2>All clients</h2>
         <ErrorNote error={list.error} />
-        {list.data && list.data.clients.length === 0 && <Empty>No clients yet. Add the first one above.</Empty>}
+        {list.data && list.data.clients.length === 0 && <Empty>No clients assigned to you yet.</Empty>}
         {list.data && list.data.clients.length > 0 && (
           <table>
-            <thead><tr><th>Name</th><th>Sector</th><th>Legal form</th><th>Framework</th><th>Year end</th></tr></thead>
+            <thead><tr><th>Name</th><th>Account manager</th><th>Sector</th><th>Legal form</th><th>Framework</th><th>Year end</th></tr></thead>
             <tbody>
               {list.data.clients.map((c) => (
                 <tr key={c.id}>
-                  <td>{c.name}</td><td>{SECTOR_LABELS[c.sector] ?? c.sector}</td><td>{c.legalForm}</td>
+                  <td><Link href={`/clients/${c.id}`}>{c.name}</Link></td><td>{c.accountManagerName ?? 'Not set'}</td><td>{SECTOR_LABELS[c.sector] ?? c.sector}</td><td>{c.legalForm}</td>
                   <td>{c.framework === 'IFRS_SME' ? 'IFRS for SMEs' : 'Full IFRS'}</td><td>{MONTHS[c.yearEndMonth - 1]}</td>
                 </tr>
               ))}

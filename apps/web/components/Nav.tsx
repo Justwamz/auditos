@@ -4,17 +4,19 @@ import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { ROLE_LABELS } from '@/lib/text';
 
-export function Nav({ email, role, firm, multiFirm }: { email: string; role: string; firm: string; multiFirm: boolean }) {
+export function Nav({ name, role, isAdmin, firm, multiFirm }: { name: string; role: string; isAdmin: boolean; firm: string; multiFirm: boolean }) {
   const path = usePathname();
   const router = useRouter();
   const admin = role === 'firm_admin';
-  const canManage = role === 'manager' || role === 'partner';
+  const holdsAdmin = admin || isAdmin;
+  const seesTrail = holdsAdmin || role === 'manager' || role === 'partner';
   const items: { href: string; label: string; show: boolean }[] = [
     { href: '/', label: 'Dashboard', show: !admin },
     { href: '/engagements', label: 'Engagements', show: !admin },
-    { href: '/clients', label: 'Clients', show: canManage },
+    { href: '/clients', label: 'Clients', show: true },
     { href: '/independence', label: 'Independence', show: !admin },
-    { href: '/admin/users', label: 'People and access', show: admin },
+    { href: '/audit-trail', label: 'Audit trail', show: seesTrail },
+    { href: '/admin/users', label: 'People and access', show: holdsAdmin },
   ];
   const current = (href: string) => (href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`));
 
@@ -41,7 +43,7 @@ export function Nav({ email, role, firm, multiFirm }: { email: string; role: str
         ))}
       </nav>
       <div className="who">
-        <strong>{email}</strong>
+        <strong>{name}</strong>
         {ROLE_LABELS[role] ?? role}
         <div className="row">
           <button className="secondary" style={{ color: '#e9f1ea', borderColor: '#7fa38c' }} onClick={signOut}>Sign out</button>

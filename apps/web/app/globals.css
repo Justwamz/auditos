@@ -228,3 +228,8 @@ table.ledger td.num { min-width: 8.5rem; }
 .roadmap-steps .mark { width: 1.2rem; text-align: center; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .prior { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; font-size: 0.85rem; color: var(--pencil); }
+
+/* Version history */
+.changes { margin: 0.4rem 0 0; padding-left: 1rem; }
+.changes del { color: var(--red-pen); }
+.changes ins { color: var(--ledger-deep); text-decoration: none; font-weight: 600; }

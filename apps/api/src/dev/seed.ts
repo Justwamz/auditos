@@ -6,16 +6,14 @@ import { bootstrap, createPools, loadEnv, migrate } from '@auditos/db';
 import { encrypt } from '../security/crypto';
 import { hashPassword } from '../security/password';
 import { generateSecret, otpauthUri } from '../security/totp';
-import { seedDemoData } from './demo-data';
+import { seedDemoContacts, seedDemoData } from './demo-data';
+import { DEMO_FIRMS, legacyEmail } from './people';
 
-const FIRMS = [
-  { name: 'Kangethe & Associates', slug: 'kangethe', formerSlug: 'firm-a', formerName: 'Demo Firm A' },
-  { name: 'Waweru & Associates', slug: 'waweru', formerSlug: 'firm-b', formerName: 'Demo Firm B' },
-];
 const ROLES: Role[] = ['firm_admin', 'partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr'];
 export const CREDENTIALS_FILE = '.seed-credentials.local.json';
 
 export interface SeededUser {
+  fullName: string;
   email: string;
   role: Role;
   firm: string;
@@ -23,7 +21,10 @@ export interface SeededUser {
   otpauthUri: string;
 }
 
-/** Idempotent: existing tenants and users are left alone. Synthetic data only (@example.test). */
+/**
+ * Idempotent. Synthetic data only (@example.test). Existing databases are updated in place: the firms and people
+ * keep their data when they are renamed, and role-named accounts from earlier seeds become named people.
+ */
 export async function seed(env: NodeJS.ProcessEnv = process.env): Promise<{ password: string; users: SeededUser[] }> {
   if (env.NODE_ENV === 'production' && env.ALLOW_SEED !== 'true') {
     throw new Error('Refusing to seed in production without ALLOW_SEED=true');
@@ -35,14 +36,13 @@ export async function seed(env: NodeJS.ProcessEnv = process.env): Promise<{ pass
   const users: SeededUser[] = [];
   try {
     await migrate(owner);
-    for (const firm of FIRMS) {
+    for (const firm of DEMO_FIRMS) {
       const c = await owner.connect();
       try {
         await c.query('BEGIN');
         let tenantId = (await c.query('select id from tenants where name = $1', [firm.name])).rows[0]?.id as string | undefined;
         const formerId = (await c.query('select id from tenants where name = $1', [firm.formerName])).rows[0]?.id as string | undefined;
         if (!tenantId && formerId) {
-          // Databases seeded before the firms were renamed keep their users and data.
           await c.query("select set_config('app.tenant_id', $1, true)", [formerId]);
           await c.query('update tenants set name = $1 where id = $2', [firm.name, formerId]);
           tenantId = formerId;
@@ -50,21 +50,30 @@ export async function seed(env: NodeJS.ProcessEnv = process.env): Promise<{ pass
         tenantId ??= (await c.query('insert into tenants (name) values ($1) returning id', [firm.name])).rows[0].id as string;
         await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
         for (const role of ROLES) {
-          const email = `${role.replace('_', '-')}@${firm.slug}.example.test`;
-          const former = `${role.replace('_', '-')}@${firm.formerSlug}.example.test`;
-          // Databases seeded under the earlier addresses keep their users; only the address changes.
-          await c.query('update users set email = $1 where lower(email) = $2 and not exists (select 1 from users where lower(email) = $1)', [email, former]);
+          const { fullName, email } = firm.people[role];
+          // Role-named accounts from earlier seeds (two address generations) become this named person.
+          for (const old of [legacyEmail(role, firm.formerSlug), legacyEmail(role, firm.slug)]) {
+            await c.query(
+              'update users set email = $1, full_name = $2 where lower(email) = $3 and not exists (select 1 from users where lower(email) = $1)',
+              [email, fullName, old],
+            );
+          }
           const existing = (await c.query('select id from users where lower(email) = $1', [email])).rows[0]?.id as string | undefined;
-          if (existing) continue;
+          if (existing) {
+            await c.query('update users set full_name = coalesce(full_name, $2) where id = $1', [existing, fullName]);
+            continue;
+          }
           const secret = generateSecret();
           const id = (
             await c.query(
-              'insert into users (email, password_hash, mfa_secret_enc, mfa_enabled) values ($1, $2, $3, true) returning id',
-              [email, passwordHash, encrypt(secret, env)],
+              'insert into users (email, full_name, password_hash, mfa_secret_enc, mfa_enabled) values ($1, $2, $3, $4, true) returning id',
+              [email, fullName, passwordHash, encrypt(secret, env)],
             )
           ).rows[0].id as string;
-          await c.query('insert into memberships (tenant_id, user_id, role, grade) values ($1, $2, $3, $4)', [tenantId, id, role, GRADE[role]]);
-          users.push({ email, role, firm: firm.name, totpSecret: secret, otpauthUri: otpauthUri(secret, email, 'AuditOS') });
+          await c.query('insert into memberships (tenant_id, user_id, role, grade, is_admin) values ($1, $2, $3, $4, $5)', [
+            tenantId, id, role, GRADE[role], role === 'firm_admin',
+          ]);
+          users.push({ fullName, email, role, firm: firm.name, totpSecret: secret, otpauthUri: otpauthUri(secret, email, 'AuditOS') });
         }
         await c.query('COMMIT');
       } catch (e) {
@@ -76,6 +85,7 @@ export async function seed(env: NodeJS.ProcessEnv = process.env): Promise<{ pass
     }
     const created = await seedDemoData(owner);
     if (created) console.log('Seeded a synthetic client with FY2025 and FY2026 engagements in Kangethe & Associates.');
+    if (await seedDemoContacts(owner, env)) console.log('Seeded synthetic client contacts (personal details are fake and stored encrypted).');
   } finally {
     await owner.end();
     await app.end();
