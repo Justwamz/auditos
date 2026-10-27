@@ -59,8 +59,11 @@ test('a partner can change a client\'s account manager; a manager cannot', async
   const grace = await (await browser.newContext()).newPage();
   await signIn(grace, 'grace.kangethe@kangethe.example.test');
   await grace.goto('/clients');
+  await grace.waitForLoadState('networkidle');
   await grace.getByRole('link', { name: 'Savannah Farms Ltd' }).click();
-  await expect(grace.getByRole('heading', { name: 'Change the account manager' })).toBeVisible();
+  // The client page compiles on first visit in the dev server, which can take a while on a busy machine.
+  await expect(grace.getByRole('heading', { name: 'Savannah Farms Ltd', level: 1 })).toBeVisible({ timeout: 90_000 });
+  await expect(grace.getByRole('heading', { name: 'Change the account manager' })).toBeVisible({ timeout: 30_000 });
 
   const daniel = await (await browser.newContext()).newPage();
   await signIn(daniel, 'daniel.otieno@kangethe.example.test');
