@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { confirmStepUp, openDemoPaper, signIn } from '../helpers';
 
-const STAFF = 'staff@firm-a.example.test';
-const MANAGER = 'manager@firm-a.example.test';
-const PARTNER = 'partner@firm-a.example.test';
+const STAFF = 'staff@kangethe.example.test';
+const MANAGER = 'manager@kangethe.example.test';
+const PARTNER = 'partner@kangethe.example.test';
 const TITLE = 'Understanding the business';
 
 const stamp = (page: import('@playwright/test').Page, label: string) =>

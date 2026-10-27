@@ -22,13 +22,13 @@ Seeded users are synthetic (`@example.test`). The random password and each user'
 `apps/api/.seed-credentials.local.json` (git-ignored). Print the current code for a user:
 
 ```powershell
-pnpm --filter @auditos/api totp partner@firm-a.example.test
+pnpm --filter @auditos/api totp partner@kangethe.example.test
 ```
 
 While testing locally you can skip the authenticator: set `DEV_FIXED_OTP=123456` in `.env.local` and restart the API; every account then accepts `123456` for sign-in and step-up. The API refuses to start with it in production, so it cannot reach Render. Remove the line when you want to test the real authenticator.
 
-Seeded roles per firm (`Kangethe & Associates`, emails `@firm-a.example.test`, and `Waweru & Associates`, emails `@firm-b.example.test`): `firm-admin`, `partner`, `manager`, `senior`, `staff`, `quality-officer`, `eqr`
-(for example `manager@firm-b.example.test`).
+Seeded roles per firm (`Kangethe & Associates`, emails `@kangethe.example.test`, and `Waweru & Associates`, emails `@waweru.example.test`): `firm-admin`, `partner`, `manager`, `senior`, `staff`, `quality-officer`, `eqr`
+(for example `manager@waweru.example.test`).
 
 ## Tests
 

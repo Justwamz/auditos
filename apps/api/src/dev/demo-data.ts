@@ -51,7 +51,7 @@ async function as(c: PoolClient, tenantId: string, userId: string): Promise<void
 }
 
 /** Idempotent. Synthetic only. Needs the seeded Kangethe & Associates users. */
-export async function seedDemoData(owner: Pool, firmName = 'Kangethe & Associates', slug = 'firm-a'): Promise<boolean> {
+export async function seedDemoData(owner: Pool, firmName = 'Kangethe & Associates', slug = 'kangethe'): Promise<boolean> {
   const c = await owner.connect();
   try {
     await c.query('BEGIN');

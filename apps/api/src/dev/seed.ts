@@ -9,8 +9,8 @@ import { generateSecret, otpauthUri } from '../security/totp';
 import { seedDemoData } from './demo-data';
 
 const FIRMS = [
-  { name: 'Kangethe & Associates', slug: 'firm-a', formerName: 'Demo Firm A' },
-  { name: 'Waweru & Associates', slug: 'firm-b', formerName: 'Demo Firm B' },
+  { name: 'Kangethe & Associates', slug: 'kangethe', formerSlug: 'firm-a', formerName: 'Demo Firm A' },
+  { name: 'Waweru & Associates', slug: 'waweru', formerSlug: 'firm-b', formerName: 'Demo Firm B' },
 ];
 const ROLES: Role[] = ['firm_admin', 'partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr'];
 export const CREDENTIALS_FILE = '.seed-credentials.local.json';
@@ -40,17 +40,20 @@ export async function seed(env: NodeJS.ProcessEnv = process.env): Promise<{ pass
       try {
         await c.query('BEGIN');
         let tenantId = (await c.query('select id from tenants where name = $1', [firm.name])).rows[0]?.id as string | undefined;
-        const former = (await c.query('select id from tenants where name = $1', [firm.formerName])).rows[0]?.id as string | undefined;
-        if (!tenantId && former) {
+        const formerId = (await c.query('select id from tenants where name = $1', [firm.formerName])).rows[0]?.id as string | undefined;
+        if (!tenantId && formerId) {
           // Databases seeded before the firms were renamed keep their users and data.
-          await c.query("select set_config('app.tenant_id', $1, true)", [former]);
-          await c.query('update tenants set name = $1 where id = $2', [firm.name, former]);
-          tenantId = former;
+          await c.query("select set_config('app.tenant_id', $1, true)", [formerId]);
+          await c.query('update tenants set name = $1 where id = $2', [firm.name, formerId]);
+          tenantId = formerId;
         }
         tenantId ??= (await c.query('insert into tenants (name) values ($1) returning id', [firm.name])).rows[0].id as string;
         await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
         for (const role of ROLES) {
           const email = `${role.replace('_', '-')}@${firm.slug}.example.test`;
+          const former = `${role.replace('_', '-')}@${firm.formerSlug}.example.test`;
+          // Databases seeded under the earlier addresses keep their users; only the address changes.
+          await c.query('update users set email = $1 where lower(email) = $2 and not exists (select 1 from users where lower(email) = $1)', [email, former]);
           const existing = (await c.query('select id from users where lower(email) = $1', [email])).rows[0]?.id as string | undefined;
           if (existing) continue;
           const secret = generateSecret();

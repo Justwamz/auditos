@@ -3,7 +3,7 @@ import { signIn } from '../helpers';
 
 test('another firm, and staff not on the engagement, cannot reach the engagement', async ({ browser }) => {
   const a = await (await browser.newContext()).newPage();
-  await signIn(a, 'partner@firm-a.example.test');
+  await signIn(a, 'partner@kangethe.example.test');
   await a.goto('/engagements');
   await a.getByRole('link', { name: 'Mwangaza Traders Ltd' }).first().click();
   await expect(a.getByRole('heading', { name: 'Mwangaza Traders Ltd', level: 1 })).toBeVisible();
@@ -12,7 +12,7 @@ test('another firm, and staff not on the engagement, cannot reach the engagement
 
   // Firm B manager: same URL, nothing found, and no leakage of the client name.
   const b = await (await browser.newContext()).newPage();
-  await signIn(b, 'manager@firm-b.example.test');
+  await signIn(b, 'manager@waweru.example.test');
   await b.goto(`/engagements/${id}`);
   await expect(b.getByText('could not be found')).toBeVisible();
   await expect(b.getByText('Mwangaza')).toHaveCount(0);
@@ -28,7 +28,7 @@ test('another firm, and staff not on the engagement, cannot reach the engagement
 
   // A firm administrator sees people, not engagements.
   const admin = await (await browser.newContext()).newPage();
-  await signIn(admin, 'firm-admin@firm-a.example.test');
+  await signIn(admin, 'firm-admin@kangethe.example.test');
   await admin.goto('/admin/users');
   await expect(admin.getByRole('heading', { name: 'People and access' })).toBeVisible();
   await admin.goto(`/engagements/${id}`);
@@ -36,7 +36,7 @@ test('another firm, and staff not on the engagement, cannot reach the engagement
 });
 
 test('the statements page shows the draft statements with comparatives after carry-forward', async ({ page }) => {
-  await signIn(page, 'partner@firm-a.example.test');
+  await signIn(page, 'partner@kangethe.example.test');
   await page.goto('/engagements');
   await page.getByRole('link', { name: 'Mwangaza Traders Ltd' }).first().click();
   await page.getByRole('tab', { name: 'Financial statements' }).click();
