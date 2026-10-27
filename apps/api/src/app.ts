@@ -121,6 +121,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
       role: row.role,
       grade: row.grade,
       membershipActive: row.membership_active === true,
+      isAdmin: row.is_admin === true,
       stepUpAgeSec: row.stepup_age_seconds === null ? null : Number(row.stepup_age_seconds),
     };
     req.auth = auth;

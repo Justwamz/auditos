@@ -79,7 +79,7 @@ describe('user administration', () => {
 describe('invites', () => {
   test('invite, accept with a password once, then log in and enrol MFA', async () => {
     const email = `invitee-${Date.now()}@example.test`;
-    const inv = await call(sessA, 'POST', '/admin/users', { email, role: 'manager' });
+    const inv = await call(sessA, 'POST', '/admin/users', { email, role: 'manager', fullName: 'Test Person' });
     expect(inv.statusCode).toBe(201);
     const { inviteToken } = inv.json();
     expect(typeof inviteToken).toBe('string');
@@ -106,7 +106,7 @@ describe('invites', () => {
 
   test('re-inviting an existing member does not create a duplicate', async () => {
     const u = await makeUser(h, A.id, 'staff', 1);
-    const res = await call(sessA, 'POST', '/admin/users', { email: u.email, role: 'staff' });
+    const res = await call(sessA, 'POST', '/admin/users', { email: u.email, role: 'staff', fullName: 'Test Person' });
     expect(res.statusCode).toBe(201);
     const count = (await ownerQuery(h, A.id, 'select count(*)::int as n from memberships where user_id = $1', [u.id])).rows[0].n;
     expect(count).toBe(1);
@@ -124,7 +124,7 @@ describe('platform provisioning', () => {
 
   test('creates a tenant with a first firm_admin and an invite token', async () => {
     const email = `owner-${Date.now()}@example.test`;
-    const res = await create({ 'x-platform-token': process.env.PLATFORM_ADMIN_TOKEN! }, { name: 'New Audit Firm', adminEmail: email });
+    const res = await create({ 'x-platform-token': process.env.PLATFORM_ADMIN_TOKEN! }, { name: 'New Audit Firm', adminEmail: email, adminFullName: 'Test Person' });
     expect(res.statusCode).toBe(201);
     const { tenantId, inviteToken } = res.json();
     expect(inviteToken).toBeTruthy();

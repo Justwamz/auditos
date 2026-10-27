@@ -33,7 +33,7 @@ describe('people and team', () => {
   test('any member can list active people in their own firm, without secrets', async () => {
     const people = (await call(sF, 'GET', '/people')).json().people as { id: string; email: string; role: string }[];
     expect(people.map((p) => p.id)).toEqual(expect.arrayContaining([P.id, M.id, F.id, OUT.id]));
-    expect(Object.keys(people[0]!).sort()).toEqual(['email', 'grade', 'id', 'role']);
+    expect(Object.keys(people[0]!).sort()).toEqual(['email', 'fullName', 'grade', 'id', 'role']);
     const other = await makeTenant(h, 'people-other');
     expect(people.map((p) => p.id)).not.toContain(other.adminId);
   });

@@ -170,18 +170,24 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   app.get('/me', { config: { access: 'user' } }, async (req: FastifyRequest) => {
     const a = req.auth!;
-    const { email, memberships } = await withUser(pool, a.userId, async (tx) => ({
-      email: (await tx.query('select email from users where id = $1', [a.userId])).rows[0]?.email as string,
+    const { email, fullName, memberships } = await withUser(pool, a.userId, async (tx) => {
+      const me = (await tx.query('select email, full_name from users where id = $1', [a.userId])).rows[0];
+      return {
+      email: me?.email as string,
+      fullName: (me?.full_name as string | null) ?? null,
       memberships: (
         await tx.query(
           'select m.tenant_id, t.name, m.role, m.grade from memberships m join tenants t on t.id = m.tenant_id where m.user_id = $1 and m.active order by t.name',
           [a.userId],
         )
       ).rows.map((r) => ({ tenantId: r.tenant_id as string, tenantName: r.name as string, role: r.role as string, grade: r.grade as number })),
-    }));
+      };
+    });
     return {
       userId: a.userId,
       email,
+      fullName,
+      isAdmin: a.isAdmin,
       memberships,
       activeTenantId: a.tenantId,
       role: a.role,

@@ -8,7 +8,7 @@ export function httpError(statusCode: number, code: string): Error & { statusCod
 export function actorOf(req: FastifyRequest): Actor {
   const a = req.auth;
   if (!a?.tenantId || !a.role) throw httpError(403, 'tenant_required');
-  return { userId: a.userId, tenantId: a.tenantId, role: a.role, active: a.membershipActive, ...(a.grade !== null ? { grade: a.grade } : {}) };
+  return { userId: a.userId, tenantId: a.tenantId, role: a.role, active: a.membershipActive, isAdmin: a.isAdmin, ...(a.grade !== null ? { grade: a.grade } : {}) };
 }
 
 /** Throws a 403 unless the policy allows the action. Returns the actor for convenience. */

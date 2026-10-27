@@ -21,4 +21,6 @@ export interface Actor {
   role: Role;
   active: boolean;
   grade?: number;
+  /** Holds the admin permission (users, access and the audit trail), whatever their role. */
+  isAdmin?: boolean;
 }

@@ -6,14 +6,17 @@ import { withTenant } from '@auditos/db';
 import { assertCan, httpError, tenantCtx } from '../authz';
 import { signToken, verifyToken } from '../security/crypto';
 import { hashPassword } from '../security/password';
+import { isGenericMailbox, isPersonName } from '../people/names';
 
 const ROLES = ['firm_admin', 'partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr'] as const;
 const INVITE_MS = 72 * 3_600_000;
 
-const inviteBody = z.object({ email: z.string().email().max(254), role: z.enum(ROLES) });
-const patchBody = z.object({ role: z.enum(ROLES).optional(), active: z.boolean().optional() }).refine((b) => b.role !== undefined || b.active !== undefined, 'nothing to change');
+const fullName = z.string().trim().max(120).refine(isPersonName, 'enter the full name of the person');
+const personalEmail = z.string().email().max(254).refine((e) => !isGenericMailbox(e), { message: 'generic_mailbox' });
+const inviteBody = z.object({ email: personalEmail, fullName, role: z.enum(ROLES), isAdmin: z.boolean().optional() });
+const patchBody = z.object({ role: z.enum(ROLES).optional(), active: z.boolean().optional(), isAdmin: z.boolean().optional() }).refine((b) => b.role !== undefined || b.active !== undefined || b.isAdmin !== undefined, 'nothing to change');
 const acceptBody = z.object({ token: z.string().min(1).max(2048), password: z.string().min(12).max(512) });
-const platformBody = z.object({ name: z.string().min(2).max(200), adminEmail: z.string().email().max(254) });
+const platformBody = z.object({ name: z.string().min(2).max(200), adminEmail: personalEmail, adminFullName: fullName });
 
 export async function tenantRoutes(app: FastifyInstance): Promise<void> {
   const pool = app.pools.app;
@@ -33,13 +36,13 @@ export async function tenantRoutes(app: FastifyInstance): Promise<void> {
     const rows = await withTenant(pool, tenantCtx(req), async (tx) =>
       (
         await tx.query(
-          `select u.id, u.email, u.mfa_enabled, u.active as user_active, m.role, m.grade, m.active
+          `select u.id, u.email, u.full_name, u.mfa_enabled, u.active as user_active, m.role, m.grade, m.active, (m.is_admin or m.role = 'firm_admin') as is_admin
              from memberships m join users u on u.id = m.user_id order by u.email`,
         )
       ).rows,
     );
     return {
-      users: rows.map((r) => ({ id: r.id, email: r.email, role: r.role, grade: r.grade, active: r.active && r.user_active, mfaEnabled: r.mfa_enabled })),
+      users: rows.map((r) => ({ id: r.id, fullName: r.full_name as string | null, email: r.email, isAdmin: r.is_admin === true, role: r.role, grade: r.grade, active: r.active && r.user_active, mfaEnabled: r.mfa_enabled })),
     };
   });
 
@@ -47,7 +50,7 @@ export async function tenantRoutes(app: FastifyInstance): Promise<void> {
     assertCan(req, 'tenant.admin');
     const body = inviteBody.parse(req.body);
     const userId = await withTenant(pool, tenantCtx(req), async (tx) =>
-      (await tx.query('select admin_invite_user($1, $2, $3) as id', [body.email, body.role, GRADE[body.role as Role]])).rows[0].id as string,
+      (await tx.query('select admin_invite_user($1, $2, $3, $4, $5) as id', [body.email, body.role, GRADE[body.role as Role], body.fullName, body.isAdmin ?? false])).rows[0].id as string,
     );
     return reply.code(201).send({ userId, inviteToken: await inviteTokenFor(userId) });
   });
@@ -61,12 +64,15 @@ export async function tenantRoutes(app: FastifyInstance): Promise<void> {
       throw httpError(409, 'cannot_modify_self');
     }
     const updated = await withTenant(pool, tenantCtx(req), async (tx) => {
-      await tx.query('select admin_update_member($1, $2, $3, $4)', [
-        id.data,
-        body.role ?? null,
-        body.role === undefined ? null : GRADE[body.role as Role],
-        body.active ?? null,
-      ]);
+      if (body.role !== undefined || body.active !== undefined) {
+        await tx.query('select admin_update_member($1, $2, $3, $4)', [
+          id.data,
+          body.role ?? null,
+          body.role === undefined ? null : GRADE[body.role as Role],
+          body.active ?? null,
+        ]);
+      }
+      if (body.isAdmin !== undefined) await tx.query('select admin_set_admin($1, $2)', [id.data, body.isAdmin]);
       return true;
     });
     if (!updated) throw httpError(404, 'not_found');
@@ -90,7 +96,7 @@ export async function tenantRoutes(app: FastifyInstance): Promise<void> {
       timingSafeEqual(Buffer.from(given), Buffer.from(expected));
     if (!ok) return reply.code(401).send({ error: 'unauthorized' });
     const body = platformBody.parse(req.body);
-    const r = (await pool.query('select * from platform_create_tenant($1, $2)', [body.name, body.adminEmail])).rows[0];
+    const r = (await pool.query('select * from platform_create_tenant($1, $2, $3)', [body.name, body.adminEmail, body.adminFullName])).rows[0];
     return reply.code(201).send({ tenantId: r.tenant_id, userId: r.user_id, inviteToken: await inviteTokenFor(r.user_id) });
   });
 }

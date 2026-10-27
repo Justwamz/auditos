@@ -8,9 +8,10 @@ export interface TestTenant {
 
 export async function createTestUser(owner: Pool, label: string): Promise<string> {
   const id = randomUUID();
-  await owner.query('insert into users (id, email, password_hash) values ($1, $2, $3)', [
+  await owner.query('insert into users (id, email, full_name, password_hash) values ($1, $2, $3, $4)', [
     id,
     `${label}-${id.slice(0, 8)}@example.test`,
+    `Tester ${label}`,
     'x',
   ]);
   return id;

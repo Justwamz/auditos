@@ -12,12 +12,12 @@ export async function peopleRoutes(app: FastifyInstance): Promise<void> {
     const rows = await withTenant(pool, tenantCtx(req), async (tx) =>
       (
         await tx.query(
-          `select u.id, u.email, m.role, m.grade from memberships m join users u on u.id = m.user_id
+          `select u.id, u.email, u.full_name, m.role, m.grade from memberships m join users u on u.id = m.user_id
             where m.active and u.active and m.role <> 'firm_admin' order by m.role, u.email`,
         )
       ).rows,
     );
-    return { people: rows.map((r) => ({ id: r.id, email: r.email, role: r.role, grade: r.grade })) };
+    return { people: rows.map((r) => ({ id: r.id, fullName: r.full_name as string | null, email: r.email, role: r.role, grade: r.grade })) };
   });
 
   app.get<{ Params: { id: string } }>('/engagements/:id/members', { config: { access: 'tenant' } }, async (req) => {
@@ -27,14 +27,14 @@ export async function peopleRoutes(app: FastifyInstance): Promise<void> {
       if (!(await loadEngagement(tx, id.data))) throw httpError(404, 'not_found');
       const rows = (
         await tx.query(
-          `select em.user_id, u.email, m.role from engagement_members em
+          `select em.user_id, u.email, u.full_name, m.role from engagement_members em
              join users u on u.id = em.user_id
              join memberships m on m.user_id = em.user_id and m.tenant_id = em.tenant_id
             where em.engagement_id = $1 order by m.role, u.email`,
           [id.data],
         )
       ).rows;
-      return { members: rows.map((r) => ({ userId: r.user_id, email: r.email, role: r.role })) };
+      return { members: rows.map((r) => ({ userId: r.user_id, fullName: r.full_name as string | null, email: r.email, role: r.role })) };
     });
   });
 

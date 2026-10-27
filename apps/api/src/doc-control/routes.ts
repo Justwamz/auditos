@@ -199,7 +199,7 @@ export async function docControlRoutes(app: FastifyInstance): Promise<void> {
       assertCan(req, 'engagement.read', { assigned: true });
       const rows = (
         await tx.query(
-          `select v.version, v.title, v.content_hash, v.edited_by, u.email as edited_by_name, v.edited_at, v.reason
+          `select v.version, v.title, v.content_hash, v.edited_by, coalesce(u.full_name, u.email) as edited_by_name, v.edited_at, v.reason
              from wp_item_versions v left join users u on u.id = v.edited_by where v.item_id = $1 order by v.version desc`,
           [id],
         )

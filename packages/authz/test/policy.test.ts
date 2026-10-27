@@ -82,3 +82,18 @@ describe('authz policy', () => {
     expect(can(actor('senior', { userId: 'o' }), 'item.delete.approve', ctx).allow).toBe(false);
   });
 });
+
+describe('admin is a permission, not only a role', () => {
+  test('a partner holding the admin permission passes tenant.admin and keeps engagement access', () => {
+    const p = actor('partner', { isAdmin: true });
+    expect(can(p, 'tenant.admin', {}).allow).toBe(true);
+    expect(can(p, 'engagement.read', { assigned: true }).allow).toBe(true);
+  });
+  test('a partner without it does not', () => {
+    expect(can(actor('partner'), 'tenant.admin', {}).allow).toBe(false);
+    expect(can(actor('manager', { isAdmin: false }), 'tenant.admin', {}).allow).toBe(false);
+  });
+  test('a deactivated admin gets nothing', () => {
+    expect(can(actor('partner', { isAdmin: true, active: false }), 'tenant.admin', {}).allow).toBe(false);
+  });
+});

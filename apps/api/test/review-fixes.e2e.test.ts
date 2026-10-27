@@ -42,7 +42,7 @@ afterAll(async () => h.close());
 
 describe('invites cannot take over existing accounts', () => {
   test('inviting an email that already has an account returns no token and cannot change its password', async () => {
-    const res = await call(sAdmin, 'POST', '/admin/users', { email: victim.email, role: 'partner' });
+    const res = await call(sAdmin, 'POST', '/admin/users', { email: victim.email, role: 'partner', fullName: 'Test Person' });
     expect(res.statusCode).toBe(201);
     expect(res.json().inviteToken).toBeNull();
 

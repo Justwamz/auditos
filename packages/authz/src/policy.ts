@@ -43,7 +43,7 @@ export function can(actor: Actor, action: Action, ctx: PolicyCtx): Decision {
   if (!actor.active) return deny('user is deactivated');
 
   if (action === 'tenant.admin') {
-    return actor.role === 'firm_admin' ? allow : deny('firm admin only');
+    return actor.role === 'firm_admin' || actor.isAdmin ? allow : deny('admin permission required');
   }
   if (actor.role === 'firm_admin') return deny('firm admin has no access to engagement content');
   if (action === 'client.manage' || action === 'engagement.create') {

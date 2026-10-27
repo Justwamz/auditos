@@ -9,6 +9,7 @@ export interface AuthCtx {
   role: Role | null;
   grade: number | null;
   membershipActive: boolean;
+  isAdmin: boolean;
   stepUpAgeSec: number | null;
 }
 
