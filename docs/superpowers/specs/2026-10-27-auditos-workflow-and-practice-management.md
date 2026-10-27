@@ -44,6 +44,12 @@ Stage 2 precedes the features that store more personal data. Each stage ships wi
 - VAT default rate and the tax list contents are the firm's to confirm.
 - Checklist wording needs the external auditor's review.
 
+## Stage 6 as built
+- Bank statements: text PDFs (positioned-text reading), CSV and Excel. Scanned PDFs, non-PDFs and files with no statement table are refused with a reason; a PDF password is asked at upload, used once and never stored or logged. Entries are stored encrypted; only the last four digits of the account are kept. Every statement is checked (opening + entries = closing, each running balance follows, unreadable rows) and must be confirmed by a person before analysis; one that does not add up needs a reason, kept on the record. A confirmed statement cannot be changed or deleted.
+- Analysis rules (plain, visible, not AI): possible duplicates, returned items, large weekend entries, large entries near period end, round sums, overdrawn days, cash and mobile-money shares, related-party names, reconciliation to the books. Each is worded as something to look at and points at the checklist it supports.
+- Sampling: random, monetary-unit and top-items selection from an uploaded population; the seed, method and a fingerprint of the population are recorded so a draw can be repeated; results (supported, exception with amount and note, not tested with a reason) record who and when; receipts from the engagement's evidence can be linked; the summary gives counts, an exception rate and a simple projection labelled as an indication, never a conclusion.
+- Only verified on synthetic layouts. Real bank layouts will differ; the screen asks for redacted samples when a file will not read.
+
 ## Platform administration (planned, not built)
 
 AuditOS is multi-tenant: audit firms are tenants. Today a firm is created with one protected API call and a shared platform token. That is acceptable for a demo and not for running a service. The operator of the platform needs its own application, separate from the firm-facing app.
