@@ -96,6 +96,24 @@ export function describeEvent(e: AuditRow): string {
       return `${who} changed the ${str(d.kind)} "${str(d.title)}"${forClient}`;
     case 'calendar.cancelled':
       return `${who} cancelled the ${str(d.kind)} "${str(d.title)}"${forClient}`;
+    case 'invoice.issued': {
+      const total = `KES ${(Number(d.total) / 100).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `${who} issued invoice ${str(d.number)} to ${str(d.clientName)} for ${total}`;
+    }
+    case 'invoice.payment_recorded': {
+      const amount = `KES ${(Number(d.amount) / 100).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `${who} recorded a payment of ${amount} by ${str(d.method)} on invoice ${str(d.number)} for ${str(d.clientName)}${d.fullyPaid ? ', which is now paid in full' : ''}`;
+    }
+    case 'invoice.voided':
+      return `${who} voided invoice ${str(d.number)} for ${str(d.clientName)}. Reason given: "${str(d.reason)}"`;
+    case 'quote.sent': {
+      const total = `KES ${(Number(d.total) / 100).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `${who} sent quotation ${str(d.number)} to ${str(d.subject)} for ${total}`;
+    }
+    case 'quote.accepted':
+      return `${who} recorded that quotation ${str(d.number)} was accepted by ${str(d.subject)}`;
+    case 'quote.declined':
+      return `${who} recorded that quotation ${str(d.number)} was declined by ${str(d.subject)}`;
     case 'auth.login':
       return `${who} signed in`;
     case 'auth.logout':
