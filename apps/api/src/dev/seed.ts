@@ -9,8 +9,8 @@ import { generateSecret, otpauthUri } from '../security/totp';
 import { seedDemoData } from './demo-data';
 
 const FIRMS = [
-  { name: 'Demo Firm A', slug: 'firm-a' },
-  { name: 'Demo Firm B', slug: 'firm-b' },
+  { name: 'Kangethe & Associates', slug: 'firm-a', formerName: 'Demo Firm A' },
+  { name: 'Waweru & Associates', slug: 'firm-b', formerName: 'Demo Firm B' },
 ];
 const ROLES: Role[] = ['firm_admin', 'partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr'];
 export const CREDENTIALS_FILE = '.seed-credentials.local.json';
@@ -40,6 +40,13 @@ export async function seed(env: NodeJS.ProcessEnv = process.env): Promise<{ pass
       try {
         await c.query('BEGIN');
         let tenantId = (await c.query('select id from tenants where name = $1', [firm.name])).rows[0]?.id as string | undefined;
+        const former = (await c.query('select id from tenants where name = $1', [firm.formerName])).rows[0]?.id as string | undefined;
+        if (!tenantId && former) {
+          // Databases seeded before the firms were renamed keep their users and data.
+          await c.query("select set_config('app.tenant_id', $1, true)", [former]);
+          await c.query('update tenants set name = $1 where id = $2', [firm.name, former]);
+          tenantId = former;
+        }
         tenantId ??= (await c.query('insert into tenants (name) values ($1) returning id', [firm.name])).rows[0].id as string;
         await c.query("select set_config('app.tenant_id', $1, true)", [tenantId]);
         for (const role of ROLES) {
@@ -65,7 +72,7 @@ export async function seed(env: NodeJS.ProcessEnv = process.env): Promise<{ pass
       }
     }
     const created = await seedDemoData(owner);
-    if (created) console.log('Seeded a synthetic client with FY2025 and FY2026 engagements in Demo Firm A.');
+    if (created) console.log('Seeded a synthetic client with FY2025 and FY2026 engagements in Kangethe & Associates.');
   } finally {
     await owner.end();
     await app.end();

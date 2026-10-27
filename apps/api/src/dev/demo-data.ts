@@ -50,8 +50,8 @@ async function as(c: PoolClient, tenantId: string, userId: string): Promise<void
   await c.query("select set_config('app.tenant_id', $1, true), set_config('app.user_id', $2, true)", [tenantId, userId]);
 }
 
-/** Idempotent. Synthetic only. Needs the seeded Demo Firm A users. */
-export async function seedDemoData(owner: Pool, firmName = 'Demo Firm A', slug = 'firm-a'): Promise<boolean> {
+/** Idempotent. Synthetic only. Needs the seeded Kangethe & Associates users. */
+export async function seedDemoData(owner: Pool, firmName = 'Kangethe & Associates', slug = 'firm-a'): Promise<boolean> {
   const c = await owner.connect();
   try {
     await c.query('BEGIN');
