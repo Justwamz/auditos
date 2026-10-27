@@ -19,7 +19,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const nodeEnv = (env.NODE_ENV as Config['nodeEnv'] | undefined) ?? 'development';
   const devFixedOtp = env.DEV_FIXED_OTP || undefined;
   if (devFixedOtp !== undefined) {
-    if (nodeEnv === 'production') throw new Error('DEV_FIXED_OTP must never be set in production');
+    // Only a throwaway hosted demo (synthetic data) may opt in, with an explicit flag.
+    if (nodeEnv === 'production' && env.DEMO_MODE !== 'true') throw new Error('DEV_FIXED_OTP must never be set in production');
     if (!/^\d{6}$/.test(devFixedOtp)) throw new Error('DEV_FIXED_OTP must be exactly six digits');
   }
   return {

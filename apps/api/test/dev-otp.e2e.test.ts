@@ -11,7 +11,7 @@ describe('development-only fixed one-time code', () => {
 
   beforeAll(async () => {
     on = await harness({ env: { DEV_FIXED_OTP: '123456' } });
-    off = await harness();
+    off = await harness({ env: { DEV_FIXED_OTP: '' } });
     T = await makeTenant(on, 'devotp');
     user = await makeUser(on, T.id, 'staff', 1);
   });
@@ -48,6 +48,10 @@ describe('development-only fixed one-time code', () => {
 describe('the fixed code cannot be enabled outside development', () => {
   test('production refuses to start with it', () => {
     expect(() => loadConfig({ NODE_ENV: 'production', DEV_FIXED_OTP: '123456' })).toThrow(/production/i);
+  });
+  test('a hosted demo may enable it only with the explicit DEMO_MODE flag', () => {
+    expect(loadConfig({ NODE_ENV: 'production', DEV_FIXED_OTP: '123456', DEMO_MODE: 'true' }).devFixedOtp).toBe('123456');
+    expect(() => loadConfig({ NODE_ENV: 'production', DEV_FIXED_OTP: '123456', DEMO_MODE: 'yes' })).toThrow(/production/i);
   });
   test('it must be exactly six digits', () => {
     expect(() => loadConfig({ NODE_ENV: 'development', DEV_FIXED_OTP: '12ab' })).toThrow(/six digits/i);

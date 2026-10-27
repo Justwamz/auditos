@@ -1,3 +1,4 @@
+import { seed } from './seed';
 import { bootstrap, createPools, loadEnv, migrate } from '@auditos/db';
 
 /**
@@ -13,4 +14,10 @@ try {
 } finally {
   await owner.end();
   await app.end();
+}
+
+// Hosted demo only: SEED_DEMO=true adds the synthetic firms and users (idempotent; existing users are left alone).
+if (process.env.SEED_DEMO === 'true') {
+  const { users } = await seed({ ...process.env, ALLOW_SEED: 'true' });
+  console.log(`Demo seed: ${users.length} new users.`);
 }
