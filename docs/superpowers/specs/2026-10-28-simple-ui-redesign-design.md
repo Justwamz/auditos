@@ -43,7 +43,7 @@ The goal is a calm, familiar interface: fewer things on screen at once, the same
   - **Business**: Prospects, Billing (winning new clients and getting paid)
   - **Firm**: Quality and independence, People (how the firm is run)
   - Help at the bottom.
-- Every label is a plain noun an accountant would use. Maximum of five headings and eight links for any one role; groups a role cannot use are not shown.
+- Every label is a plain noun an accountant would use. Maximum of five headings and ten links for any one role (a partner who is also an administrator sees ten; nobody sees more); groups a role cannot use are not shown.
 - **"Pipeline" is renamed "Prospects"** everywhere people read it (menu, page title, help, chips). The address `/pipeline` and the help topic id stay as they are.
 - **Billing, Invoices and Quotations merge into one Billing page with tabs.** Existing role visibility is unchanged: the same people who see Billing, Invoices or Quotations today see the corresponding tab. "Quality and independence" groups the existing Independence and Audit trail pages (as tabs, with Audit trail still limited to its current roles). "People" is the existing "People and access", still admin-only.
 - **Today** opens with a greeting and a short list of things that need the person: for example papers waiting for their review, overdue invoices, year ends coming up. Each row is one sentence with an "Open" link. It replaces the Dashboard for everyone except the firm administrator, who currently has no Dashboard (the administrator starts at Clients, see "My calls").
