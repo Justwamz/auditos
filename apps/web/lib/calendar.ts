@@ -102,12 +102,12 @@ export function layoutDay<E extends Span>(events: E[], day?: string): { event: E
 }
 
 export const KIND_STYLES: Record<string, { label: string; token: string; icon: string }> = {
-  meeting: { label: 'Meeting', token: '--ledger', icon: '●' },
-  fieldwork: { label: 'Fieldwork', token: '--ledger-deep', icon: '▲' },
-  deadline: { label: 'Deadline', token: '--red-pen', icon: '⚑' },
-  leave: { label: 'Leave', token: '--amber', icon: '☀' },
-  training: { label: 'Training', token: '--pencil', icon: '✎' },
-  other: { label: 'Other', token: '--pencil', icon: '◆' },
+  meeting: { label: 'Meeting', token: '--kind-meeting', icon: '●' },
+  fieldwork: { label: 'Fieldwork', token: '--kind-fieldwork', icon: '▲' },
+  deadline: { label: 'Deadline', token: '--kind-deadline', icon: '⚑' },
+  leave: { label: 'Leave', token: '--kind-leave', icon: '☀' },
+  training: { label: 'Training', token: '--kind-training', icon: '✎' },
+  other: { label: 'Other', token: '--kind-other', icon: '◆' },
 };
 
 /** The first day of the month `n` months from the month of `day` (n may be negative). */

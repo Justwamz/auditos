@@ -530,6 +530,12 @@ test('an all-day leave sits in the strip above the hours, not on the grid', asyn
   await expect(stripOf(tom, nairobiDay(3)).getByText('Annual leave')).toBeVisible();
   await expect(stripOf(tom, nairobiDay(4)).getByText('Annual leave')).toBeVisible();
   await expect(tom.locator('.cal-col .cal-block', { hasText: 'Annual leave' })).toHaveCount(0);
+  // The leave also runs into Saturday, which Work week does not draw: a hint says so and Week shows it.
+  await expect(tom.locator('.cal-hint')).toContainText('1 event on the weekend. Switch to Week to see it.');
+  await tom.getByRole('button', { name: 'Show the whole week' }).click();
+  await expect(tom.getByRole('radio', { name: 'Week', exact: true })).toBeChecked();
+  await expect(stripOf(tom, nairobiDay(5)).getByText('Annual leave')).toBeVisible();
+  await expect(tom.locator('.cal-hint')).toHaveCount(0);
 });
 
 test('a block opens the details; Edit and Cancel are only for the person who made the event', async ({ browser }) => {
@@ -627,6 +633,66 @@ test('midnight-spanning, all-day and zero-length events are laid out sensibly', 
   const mark = stripOf(page, d2).locator('.cal-milestone', { hasText: 'Mwangaza report date' });
   await expect(mark.locator('.cal-diamond')).toBeVisible();
   await expect(mark.getByRole('button')).toHaveCount(0);
+});
+
+test('crowded blocks stay readable: whole words only, never empty, and the name is always reachable', async ({ browser }) => {
+  const d1 = nairobiDay(1);
+  const d2 = nairobiDay(2);
+  const mk = (n: number, title: string, from: string, to: string, day: string, kind = 'meeting') => ({
+    id: `00000000-0000-4000-8000-0000000002${String(n).padStart(2, '0')}`, title, kind, startsAt: `${day}T${from}:00+03:00`, endsAt: `${day}T${to}:00+03:00`, allDay: false,
+    location: null, notes: null, clientId: null, clientName: null, engagementId: null, attendees: [], createdBy: '10000000-0000-4000-8000-000000000001', createdByName: 'Grace Kangethe', mine: false,
+  });
+  const page = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  await signIn(page, 'grace.kangethe@kangethe.example.test');
+  await page.route(/\/api\/calendar\?/, async (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    await route.fulfill({
+      json: {
+        events: [
+          mk(1, 'Quarterly stocktake review', '09:00', '11:00', d1),
+          mk(2, 'Client call with finance', '10:00', '12:00', d1, 'training'),
+          mk(3, 'Long fieldwork day at the warehouse', '08:00', '17:00', d1, 'fieldwork'),
+          mk(4, 'Planning session for next month', '09:00', '10:00', d2),
+        ],
+        milestones: [],
+      },
+    });
+  });
+  await page.goto('/calendar');
+  await expect(page.getByRole('heading', { name: 'Calendar', level: 1 })).toBeVisible();
+  for (const view of ['Week', 'Work week'] as const) {
+    await viewOf(page, view);
+    const blocks = page.locator('.cal-block');
+    await expect(blocks).toHaveCount(4);
+    for (const block of await blocks.all()) {
+      const info = await block.evaluate((el) => {
+        const title = el.querySelector('.cal-block-title') as HTMLElement;
+        const box = el.getBoundingClientRect();
+        const shown = title.getBoundingClientRect().width > 2;
+        return {
+          width: box.width, shown, wrap: getComputedStyle(title).overflowWrap, brk: getComputedStyle(title).wordBreak,
+          fits: title.scrollWidth <= title.clientWidth + 1, hasIcon: (el.querySelector('.cal-block-time [aria-hidden]')?.textContent ?? '').trim().length > 0,
+          name: el.getAttribute('aria-label') ?? '', text: title.textContent ?? '',
+        };
+      });
+      expect(info.width).toBeGreaterThan(20);
+      expect(info.hasIcon).toBe(true);
+      expect(info.name).toContain(info.text);
+      if (info.shown) {
+        expect(info.wrap).toBe('normal');
+        expect(info.brk).toBe('normal');
+        expect(info.fits).toBe(true);
+      }
+    }
+    // A block on its own keeps its whole title in view.
+    const alone = colOf(page, d2).locator('.cal-block');
+    expect(((await alone.boundingBox())!).width).toBeGreaterThan(100);
+    await expect(alone.locator('.cal-block-title')).toBeVisible();
+    // Activating a squeezed block still opens its details.
+    await colOf(page, d1).locator('.cal-block').first().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.keyboard.press('Escape');
+  }
 });
 
 test('a partner can change a client\'s account manager; a manager cannot', async ({ browser }) => {

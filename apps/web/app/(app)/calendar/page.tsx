@@ -50,7 +50,9 @@ export default function CalendarPage() {
   const days = useMemo(() => visibleDays(view, anchor), [view, anchor]);
   const from = days[0]!;
   const to = days[days.length - 1]!;
-  const cal = useApi<{ events: CalEvent[]; milestones: Milestone[] }>(`/calendar?from=${from}&to=${to}${person ? `&person=${person}` : ''}`);
+  // Work week asks for the whole week so weekend events can be counted, even though only Monday to Friday are drawn.
+  const reach = view === 'workweek' ? addDays(from, 6) : to;
+  const cal = useApi<{ events: CalEvent[]; milestones: Milestone[] }>(`/calendar?from=${from}&to=${reach}${person ? `&person=${person}` : ''}`);
   const me = useApi<{ userId: string; role: string; isAdmin: boolean }>('/me');
   const people = useApi<{ people: Person[] }>('/people');
   const [panel, setPanel] = useState<{ editing?: CalEvent } | null>(null);
@@ -96,6 +98,9 @@ export default function CalendarPage() {
     : view === 'day' ? new Date(`${anchor}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
     : `${short(from)} to ${short(to)} ${to.slice(0, 4)}`;
   const noun = STEP_NOUN[view];
+  const weekend = view === 'workweek' && !showPeople
+    ? new Set([...eventsOnDay(events, addDays(from, 5)), ...eventsOnDay(events, addDays(from, 6))].map((e) => e.id)).size
+    : 0;
 
   return (
     <div className="stack-lg">
@@ -131,6 +136,13 @@ export default function CalendarPage() {
           <Segmented label="How to show the calendar" value={view} onChange={choose} options={VIEWS.map((v) => ({ id: v.id, label: v.label }))} />
         </div>
       </div>
+
+      {weekend > 0 && (
+        <p className="cal-hint" role="status">
+          <span>{weekend} {weekend === 1 ? 'event' : 'events'} on the weekend. Switch to Week to see {weekend === 1 ? 'it' : 'them'}.</span>
+          <button type="button" className="secondary" onClick={() => choose('week')}>Show the whole week</button>
+        </p>
+      )}
 
       <div className={`cal-layout${view === 'month' ? '' : ' is-wide'}`}>
         <div className="cal-side">

@@ -52,7 +52,9 @@ function Block({ event, col, cols, top, height, onOpen }: { event: CalEvent; col
   return (
     <button
       type="button"
-      className={`cal-block${px < 44 ? ' is-short' : ''}${cols > 1 ? ' is-narrow' : ''}`}
+      className={`cal-block${px < 44 ? ' is-short' : px < 72 ? ' is-hour' : ''}${cols > 1 ? ' is-narrow' : ''}`}
+      data-cols={Math.min(cols, 5)}
+      aria-label={`${k.label}: ${event.title}, ${range}`}
       title={`${k.label}: ${event.title}, ${range}`}
       style={{
         top: top * PX_PER_MINUTE,
@@ -60,11 +62,12 @@ function Block({ event, col, cols, top, height, onOpen }: { event: CalEvent; col
         left: `calc(${(col / cols) * 100}% + 2px)`,
         width: `calc(${100 / cols}% - 4px)`,
         ['--k' as string]: `var(${k.token})`,
+        ['--kw' as string]: `var(${k.token}-wash)`,
       }}
       onClick={() => onOpen(event)}
     >
-      <span className="cal-block-time">{when}</span>
-      <span className="cal-block-title"><span aria-hidden="true">{k.icon} </span><span className="sr-only">{k.label}: </span>{event.title}</span>
+      <span className="cal-block-time"><span aria-hidden="true">{k.icon} </span>{when}</span>
+      <span className="cal-block-title">{event.title}</span>
     </button>
   );
 }
@@ -72,7 +75,7 @@ function Block({ event, col, cols, top, height, onOpen }: { event: CalEvent; col
 function StripItem({ event, onOpen }: { event: CalEvent; onOpen: (e: CalEvent) => void }) {
   const k = KIND_STYLES[event.kind] ?? KIND_STYLES.other!;
   return (
-    <button type="button" className="cal-strip-item" style={{ ['--k' as string]: `var(${k.token})` }} onClick={() => onOpen(event)}>
+    <button type="button" className="cal-strip-item" style={{ ['--k' as string]: `var(${k.token})`, ['--kw' as string]: `var(${k.token}-wash)` }} onClick={() => onOpen(event)}>
       <span aria-hidden="true">{k.icon} </span><span className="sr-only">{k.label}: </span>{event.title}
     </button>
   );
@@ -86,7 +89,7 @@ export function HourGrid({ columns, onOpen, ariaLabel }: { columns: GridColumn[]
     // Open at 07:00; the rest of the day is a scroll away.
     if (scroller.current) scroller.current.scrollTop = FIRST_HOUR * HOUR_PX;
   }, []);
-  const style = { ['--cols' as string]: columns.length };
+  const style = { ['--cols' as string]: columns.length, ['--colmin' as string]: columns.length >= 6 ? '140px' : '104px' };
   return (
     <div ref={scroller} className="cal-scroll" role="group" aria-label={ariaLabel} style={style}>
       <div className="cal-tg-head">

@@ -56,7 +56,7 @@ export function DayPanel({
                   const k = KIND_STYLES[e.kind] ?? KIND_STYLES.other!;
                   const who = e.attendees.length > 0 ? ` with ${e.attendees.map((a) => a.name).join(', ')}` : '';
                   return (
-                    <div key={e.id} className="cal-event" style={{ borderLeftColor: `var(${k.token})` }}>
+                    <div key={e.id} className="cal-event" style={{ borderLeftColor: `var(${k.token})`, background: `var(${k.token}-wash)` }}>
                       <Disclosure
                         summary={
                           <span className="cal-event-sum">
