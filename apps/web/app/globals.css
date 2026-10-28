@@ -499,7 +499,6 @@ button.cal-day-head:hover:not(:disabled) { background: var(--ledger-wash); color
 .cal-block-title { min-width: 0; }
 .cal-block-time { white-space: nowrap; }
 @container (max-width: 150px) { .cal-block-end { display: none; } }
-.cal-block.is-short .cal-block-time, .cal-block.is-narrow .cal-block-time { white-space: nowrap; }
 /* Too narrow for words: the block is the kind icon alone. Time and title stay for assistive technology (and in the aria-label). */
 @container (max-width: 224px) { .cal-block[data-cols='2'] { align-items: center; justify-content: center; padding-inline: 2px; } .cal-block[data-cols='2'] :is(.cal-block-title, .cal-block-when) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } }
 @container (max-width: 336px) { .cal-block[data-cols='3'] { align-items: center; justify-content: center; padding-inline: 2px; } .cal-block[data-cols='3'] :is(.cal-block-title, .cal-block-when) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } }

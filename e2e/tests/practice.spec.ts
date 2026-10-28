@@ -678,7 +678,15 @@ test('crowded blocks stay readable: whole words only, never empty, and the name 
           titleShown: title.getBoundingClientRect().width > 2, whenShown: when.getBoundingClientRect().width > 2,
           iconShown: icon.getBoundingClientRect().width > 2 && (icon.textContent ?? '').trim().length > 0,
           wrap: getComputedStyle(title).overflowWrap, brk: getComputedStyle(title).wordBreak,
-          short: el.classList.contains('is-short'), titleFits: title.scrollWidth <= title.clientWidth + 1, whenFits: when.scrollWidth <= when.clientWidth + 1,
+          short: el.classList.contains('is-short'), titleFits: title.scrollWidth <= title.clientWidth + 1,
+          // The time text must end inside the block's content box (the block clips what runs past it).
+          whenFits: (() => {
+            const r = document.createRange();
+            r.selectNodeContents(when);
+            const box = el.getBoundingClientRect();
+            const room = box.right - parseFloat(getComputedStyle(el).paddingRight);
+            return r.getBoundingClientRect().right <= room + 0.5;
+          })(),
           name: el.getAttribute('aria-label') ?? '', text: title.textContent ?? '', time: when.textContent ?? '',
         };
       });
