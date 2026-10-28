@@ -82,13 +82,13 @@ describe('people', () => {
 describe('monthGrid', () => {
   test('weeks run Monday to Sunday and cover the month', () => {
     const grid = monthGrid('2026-11-15');
-    expect(grid[0][0]).toBe('2026-10-26');
+    expect(grid[0]?.[0]).toBe('2026-10-26');
     expect(grid.every((w) => w.length === 7)).toBe(true);
     expect(grid.flat()).toContain('2026-11-30');
     expect(grid.at(-1)![6]).toBe('2026-12-06');
   });
   test('a month starting on Monday has no leading days', () => {
-    expect(monthGrid('2026-06-10')[0][0]).toBe('2026-06-01');
+    expect(monthGrid("2026-06-10")[0]?.[0]).toBe('2026-06-01');
   });
 });
 
@@ -100,8 +100,8 @@ describe('layoutDay', () => {
     ]);
     expect(out.map((o) => o.cols)).toEqual([2, 2]);
     expect(new Set(out.map((o) => o.col)).size).toBe(2);
-    expect(out[0].top).toBe(540);
-    expect(out[0].height).toBe(120);
+    expect(out[0]?.top).toBe(540);
+    expect(out[0]?.height).toBe(120);
   });
   test('back-to-back events do not share columns', () => {
     const out = layoutDay([
