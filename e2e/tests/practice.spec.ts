@@ -479,6 +479,156 @@ test('a busy day says how many events, never overflows, and shows milestones as 
   await expect(page.locator(`[data-day="${nairobiDay(5)}"]`).first()).not.toContainText('event');
 });
 
+const viewOf = async (page: Page, name: 'Day' | 'Work week' | 'Week' | 'Month') => {
+  await page.getByRole('radiogroup', { name: 'How to show the calendar' }).getByRole('radio', { name, exact: true }).click();
+  await expect(page.getByRole('radio', { name, exact: true })).toBeChecked();
+};
+/** The column of one day in a time grid, and the strip cell above it. */
+const colOf = (page: Page, day: string) => page.locator(`.cal-col[data-col="${day}"]`);
+const stripOf = (page: Page, day: string) => page.locator(`.cal-strip-cell[data-col="${day}"]`);
+type Box = { x: number; y: number; width: number; height: number };
+const intersects = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+test('Work week and Week show an hourly grid with event blocks and side-by-side overlaps', async ({ browser }) => {
+  test.slow();
+  const grace = await calendarOf(browser, 'grace.kangethe@kangethe.example.test');
+  await viewOf(grace, 'Work week');
+  await expect(grace.locator('.cal-col')).toHaveCount(5);
+  // Hours from 07:00 are showing; the grid scrolls to the whole day.
+  await expect(grace.locator('.cal-hour', { hasText: '07:00' })).toBeVisible();
+  await expect(grace.locator('.cal-hour', { hasText: '00:00' })).toHaveCount(1);
+  expect(await grace.locator('.cal-scroll').evaluate((el) => el.scrollTop)).toBeGreaterThan(200);
+
+  // Two events at once sit side by side and never overlap.
+  const stock = colOf(grace, nairobiDay(2)).locator('.cal-block', { hasText: 'Mwangaza stock count' });
+  const review = colOf(grace, nairobiDay(2)).locator('.cal-block', { hasText: 'Partner review: Savannah planning' });
+  await expect(stock).toBeVisible();
+  await expect(review).toBeVisible();
+  expect(intersects((await stock.boundingBox())!, (await review.boundingBox())!)).toBe(false);
+  // A block says its kind in words as well as colour.
+  await expect(stock).toContainText('Fieldwork');
+
+  // Next week holds the management meeting, in both Work week and Week.
+  await grace.getByRole('button', { name: 'Next week' }).click();
+  await grace.waitForLoadState('networkidle');
+  await expect(colOf(grace, nairobiDay(7)).locator('.cal-block', { hasText: 'Management meeting' })).toBeVisible();
+  await viewOf(grace, 'Week');
+  await expect(grace.locator('.cal-col')).toHaveCount(7);
+  await expect(colOf(grace, nairobiDay(7)).locator('.cal-block', { hasText: 'Management meeting' })).toBeVisible();
+  await grace.getByRole('button', { name: 'Previous week' }).click();
+  await grace.waitForLoadState('networkidle');
+  await expect(colOf(grace, nairobiDay(2)).locator('.cal-block', { hasText: 'Mwangaza stock count' })).toBeVisible();
+  // The choice is remembered.
+  await grace.reload();
+  await expect(grace.getByRole('radio', { name: 'Week', exact: true })).toBeChecked();
+});
+
+test('an all-day leave sits in the strip above the hours, not on the grid', async ({ browser }) => {
+  test.slow();
+  const tom = await calendarOf(browser, 'tom.odhiambo@kangethe.example.test');
+  await viewOf(tom, 'Work week');
+  await expect(stripOf(tom, nairobiDay(3)).getByText('Annual leave')).toBeVisible();
+  await expect(stripOf(tom, nairobiDay(4)).getByText('Annual leave')).toBeVisible();
+  await expect(tom.locator('.cal-col .cal-block', { hasText: 'Annual leave' })).toHaveCount(0);
+});
+
+test('a block opens the details; Edit and Cancel are only for the person who made the event', async ({ browser }) => {
+  test.slow();
+  const faith = await calendarOf(browser, 'faith.njeri@kangethe.example.test');
+  await viewOf(faith, 'Work week');
+  await colOf(faith, nairobiDay(2)).locator('.cal-block', { hasText: 'Mwangaza stock count' }).click();
+  const seen = faith.getByRole('dialog', { name: /Mwangaza stock count/ });
+  await expect(seen.getByText('Client warehouse')).toBeVisible();
+  await expect(seen.getByRole('button', { name: 'Edit' })).toHaveCount(0);
+  await expect(seen.getByRole('button', { name: 'Cancel event' })).toHaveCount(0);
+  await faith.keyboard.press('Escape');
+  await expect(seen).toHaveCount(0);
+
+  const brian = await calendarOf(browser, 'brian.kiptoo@kangethe.example.test');
+  await viewOf(brian, 'Work week');
+  await colOf(brian, nairobiDay(2)).locator('.cal-block', { hasText: 'Mwangaza stock count' }).click();
+  const mine = brian.getByRole('dialog', { name: /Mwangaza stock count/ });
+  await expect(mine.getByRole('button', { name: 'Edit' })).toBeVisible();
+  await expect(mine.getByRole('button', { name: 'Cancel event' })).toBeVisible();
+});
+
+test('Day shows one day and the arrows move a day at a time; staff have no "See by person"', async ({ browser }) => {
+  test.slow();
+  const brian = await calendarOf(browser, 'brian.kiptoo@kangethe.example.test');
+  await viewOf(brian, 'Day');
+  await expect(brian.locator('.cal-col')).toHaveCount(1);
+  const before = await brian.locator('.cal-month-title').textContent();
+  await brian.getByRole('button', { name: 'Next day' }).click();
+  await expect(brian.locator('.cal-month-title')).not.toHaveText(before!);
+  await brian.getByRole('button', { name: 'Previous day' }).click();
+  await expect(brian.locator('.cal-month-title')).toHaveText(before!);
+  await expect(brian.getByRole('button', { name: 'See by person' })).toHaveCount(0);
+  await expect(brian.getByLabel('Show', { exact: true })).toHaveCount(0);
+});
+
+test('a partner sees one column per person on a shared hour grid', async ({ browser }) => {
+  test.slow();
+  const grace = await calendarOf(browser, 'grace.kangethe@kangethe.example.test');
+  await viewOf(grace, 'Work week');
+  const short = new Date(`${nairobiDay(2)}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  await grace.getByRole('button', { name: `Open ${short}` }).click();
+  await expect(grace.getByRole('radio', { name: 'Day', exact: true })).toBeChecked();
+  const toggle = grace.getByRole('button', { name: 'See by person' });
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  const heads = grace.locator('.cal-person-head');
+  await expect(heads).toHaveCount(4);
+  await expect(heads.filter({ hasText: 'Brian Kiptoo' })).toHaveCount(1);
+  await expect(heads.filter({ hasText: 'Faith Njeri' })).toHaveCount(1);
+  await expect(heads.filter({ hasText: 'Tom Odhiambo' })).toHaveCount(0);
+  await expect(grace.locator(`.cal-col[data-name="Brian Kiptoo"]`).locator('.cal-block', { hasText: 'Mwangaza stock count' })).toBeVisible();
+  await expect(grace.locator(`.cal-col[data-name="Faith Njeri"]`).locator('.cal-block', { hasText: 'Mwangaza stock count' })).toBeVisible();
+  // Choosing another view goes back to the normal grid.
+  await viewOf(grace, 'Week');
+  await expect(grace.locator('.cal-person-head')).toHaveCount(0);
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('midnight-spanning, all-day and zero-length events are laid out sensibly', async ({ browser }) => {
+  const d1 = nairobiDay(1);
+  const d2 = nairobiDay(2);
+  const mk = (n: number, title: string, startsAt: string, endsAt: string, allDay = false) => ({
+    id: `00000000-0000-4000-8000-0000000001${String(n).padStart(2, '0')}`, title, kind: 'meeting', startsAt, endsAt, allDay, location: null, notes: null,
+    clientId: null, clientName: null, engagementId: null, attendees: [], createdBy: '10000000-0000-4000-8000-000000000001', createdByName: 'Grace Kangethe', mine: false,
+  });
+  const page = await (await browser.newContext()).newPage();
+  await signIn(page, 'grace.kangethe@kangethe.example.test');
+  await page.route(/\/api\/calendar\?/, async (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    await route.fulfill({
+      json: {
+        events: [
+          mk(1, 'Late close', `${d1}T22:00:00+03:00`, `${d2}T02:00:00+03:00`),
+          mk(2, 'Reminder', `${d1}T10:00:00+03:00`, `${d1}T10:00:00+03:00`),
+          mk(3, 'Office closed', `${d1}T00:00:00+03:00`, `${d1}T23:59:00+03:00`, true),
+        ],
+        milestones: [{ date: d2, title: 'Mwangaza report date', engagementId: 'e1', kind: 'report' }],
+      },
+    });
+  });
+  await page.goto('/calendar');
+  await expect(page.getByRole('heading', { name: 'Calendar', level: 1 })).toBeVisible();
+  await viewOf(page, 'Week');
+  // The late close is cut at midnight and shows on both days.
+  await expect(colOf(page, d1).locator('.cal-block', { hasText: 'Late close' })).toHaveCount(1);
+  await expect(colOf(page, d2).locator('.cal-block', { hasText: 'Late close' })).toHaveCount(1);
+  // A reminder with no length still has a block you can see and click.
+  const reminder = (await colOf(page, d1).locator('.cal-block', { hasText: 'Reminder' }).boundingBox())!;
+  expect(reminder.height).toBeGreaterThanOrEqual(20);
+  // The all-day event is in the strip and not on the grid; the date mark is a read-only diamond there.
+  await expect(stripOf(page, d1).getByText('Office closed')).toBeVisible();
+  await expect(page.locator('.cal-col .cal-block', { hasText: 'Office closed' })).toHaveCount(0);
+  const mark = stripOf(page, d2).locator('.cal-milestone', { hasText: 'Mwangaza report date' });
+  await expect(mark.locator('.cal-diamond')).toBeVisible();
+  await expect(mark.getByRole('button')).toHaveCount(0);
+});
+
 test('a partner can change a client\'s account manager; a manager cannot', async ({ browser }) => {
   const grace = await (await browser.newContext()).newPage();
   await signIn(grace, 'grace.kangethe@kangethe.example.test');
