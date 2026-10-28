@@ -374,3 +374,22 @@ table.ledger td.num { min-width: 8.5rem; }
 .empty-action { display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; }
 
 .skeleton { display: block; border-radius: var(--radius-sm); background: linear-gradient(90deg, var(--rule) 25%, var(--sheet) 50%, var(--rule) 75%); background-size: 200% 100%; animation: shimmer 2.4s ease-in-out infinite; }
+/* Prospects page */
+.prospects-toolbar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.prospects-closed-counts { white-space: nowrap; }
+.prospects-search { width: min(22rem, 100%); }
+.prospects-person { width: auto; min-width: 12rem; }
+.prospects-sheet { padding: var(--space-2) var(--space-3); }
+.prospects-scroll { overflow-x: auto; }
+.prospects-table td { vertical-align: top; padding-top: var(--space-2); padding-bottom: var(--space-2); }
+.prospects-table td.num { white-space: nowrap; }
+.prospects-row { cursor: pointer; }
+.prospects-row .disclosure-btn { padding-left: 0; text-align: left; color: var(--ink); }
+.prospects-details { display: grid; gap: var(--space-2); margin: 0 0 var(--space-3); padding-left: var(--space-5); }
+.prospects-details dt { font-size: 13px; font-weight: 600; color: var(--pencil); }
+.prospects-details dd { margin: 0; }
+.prospects-stages { display: grid; gap: var(--space-4); }
+.prospects-stage-head { display: inline-flex; align-items: baseline; gap: var(--space-3); color: var(--ink); font-size: 18px; }
+.prospects-card-top { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
+.prospects-cards { grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); padding: var(--space-2) 0 var(--space-3) var(--space-2); }
+.prospects-loading { display: grid; gap: var(--space-3); }

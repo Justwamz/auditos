@@ -14,7 +14,7 @@ export const STAGE_LABELS: Record<Stage, string> = {
   lost: 'Lost',
 };
 
-const OPEN_STAGES: readonly Stage[] = ['lead', 'proposal', 'loe_sent'];
+export const OPEN_STAGES: readonly Stage[] = ['lead', 'proposal', 'loe_sent'];
 
 export function filterProspects<
   P extends { name: string; ownerId: string; ownerName: string; stage: Stage; contactName: string | null },
@@ -33,3 +33,30 @@ export function countByStage(rows: { stage: Stage }[]): Record<Stage, number> {
   for (const r of rows) counts[r.stage] += 1;
   return counts;
 }
+
+export interface Prospect {
+  id: string;
+  name: string;
+  sector: string | null;
+  contactName: string | null;
+  source: string | null;
+  ownerId: string;
+  ownerName: string;
+  stage: Stage;
+  expectedFee: string | null;
+  expectedStart: string | null;
+  notes: string | null;
+  lostReason: string | null;
+  clientId: string | null;
+}
+
+export interface ProspectActions {
+  move: (p: Prospect, stage: Stage) => void;
+  lose: (p: Prospect) => void;
+  handOver: (p: Prospect) => void;
+  convert: (p: Prospect) => void;
+}
+
+
+export const kes = (v: string | null): string =>
+  v === null ? 'No fee yet' : `KES ${Number(v).toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;

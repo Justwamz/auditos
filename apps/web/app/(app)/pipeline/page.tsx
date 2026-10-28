@@ -1,212 +1,184 @@
 'use client';
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
-import { Empty, ErrorNote, Notice } from '@/components/bits';
+import { usePref } from '@/lib/prefs';
+import { countByStage, filterProspects, STAGE_LABELS, type Prospect, type ProspectActions, type Stage } from '@/lib/pipeline';
+import { ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
-import { fmtDate, SECTOR_LABELS } from '@/lib/text';
+import { ProspectCards } from '@/components/ProspectCards';
+import { ProspectPanel, type PanelMode, type Person } from '@/components/ProspectPanel';
+import { ProspectTable, StagePill } from '@/components/ProspectTable';
+import { Chips } from '@/components/ui/Chips';
+import { Disclosure } from '@/components/ui/Disclosure';
+import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
+import { PageHead } from '@/components/ui/PageHead';
+import { Segmented } from '@/components/ui/Segmented';
 
-interface Prospect {
-  id: string; name: string; sector: string | null; contactName: string | null; source: string | null; ownerId: string; ownerName: string;
-  stage: 'lead' | 'proposal' | 'loe_sent' | 'won' | 'lost'; expectedFee: string | null; expectedStart: string | null; notes: string | null;
-  lostReason: string | null; clientId: string | null;
-}
 interface Summary { byStage: Record<string, { count: number; value: string }>; byOwner: { ownerId: string; ownerName: string; count: number; value: string }[] }
-interface Person { id: string; fullName: string | null; email: string; role: string }
-
-const OPEN = [
-  { id: 'lead', label: 'Lead' },
-  { id: 'proposal', label: 'Proposal sent' },
-  { id: 'loe_sent', label: 'Engagement letter sent' },
-] as const;
-const kes = (v: string | null) => (v === null ? 'No fee yet' : `KES ${Number(v).toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`);
-
-function Card({ p, me, people, onChanged }: { p: Prospect; me: { userId: string; role: string }; people: Person[]; onChanged: () => void }) {
-  const [mode, setMode] = useState<'none' | 'lost' | 'owner' | 'convert'>('none');
-  const [reason, setReason] = useState('');
-  const [newOwner, setNewOwner] = useState('');
-  const [conv, setConv] = useState({ legalForm: 'Limited company', yearEndMonth: 12, accountManagerId: '' });
-  const [error, setError] = useState<unknown>();
-  const manager = me.role === 'manager' || me.role === 'partner';
-
-  async function run(fn: () => Promise<unknown>) {
-    setError(undefined);
-    try {
-      await fn();
-      setMode('none');
-      setReason('');
-      onChanged();
-    } catch (e) {
-      setError(e);
-    }
-  }
-  const move = (stage: string) => run(() => api.post(`/prospects/${p.id}/stage`, { stage }));
-
-  return (
-    <li className="card">
-      <strong>{p.name}</strong>
-      <div className="small muted">{[p.sector ? SECTOR_LABELS[p.sector] ?? p.sector : null, p.contactName].filter(Boolean).join(' · ') || 'No details yet'}</div>
-      <div>{kes(p.expectedFee)}{p.expectedStart ? ` · starts ${fmtDate(p.expectedStart)}` : ''}</div>
-      <div className="small">Owner: {p.ownerName}</div>
-      {p.notes && <div className="small muted">{p.notes}</div>}
-
-      <div className="row" style={{ marginTop: '0.4rem' }}>
-        <label className="small" htmlFor={`st-${p.id}`}>Move to</label>
-        <select id={`st-${p.id}`} value={p.stage} onChange={(e) => (e.target.value === 'lost' ? setMode('lost') : void move(e.target.value))} style={{ width: 'auto' }}>
-          {OPEN.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-          <option value="lost">Lost…</option>
-        </select>
-        {manager && <button className="quiet" onClick={() => setMode(mode === 'owner' ? 'none' : 'owner')}>Hand over</button>}
-        {manager && <button className="secondary" onClick={() => setMode(mode === 'convert' ? 'none' : 'convert')}>Won: make a client</button>}
-      </div>
-
-      {mode === 'lost' && (
-        <form className="row" onSubmit={(e: FormEvent) => { e.preventDefault(); void run(() => api.post(`/prospects/${p.id}/stage`, { stage: 'lost', reason })); }}>
-          <input aria-label={`Why ${p.name} was lost`} placeholder="Why was it lost?" required minLength={5} value={reason} onChange={(e) => setReason(e.target.value)} />
-          <button className="danger">Mark as lost</button>
-          <button type="button" className="quiet" onClick={() => setMode('none')}>Cancel</button>
-        </form>
-      )}
-      {mode === 'owner' && (
-        <form className="row" onSubmit={(e: FormEvent) => { e.preventDefault(); void run(() => api.post(`/prospects/${p.id}/owner`, { userId: newOwner, reason })); }}>
-          <select aria-label={`New owner of ${p.name}`} required value={newOwner} onChange={(e) => setNewOwner(e.target.value)}>
-            <option value="">Choose a person</option>
-            {people.filter((x) => x.id !== p.ownerId).map((x) => <option key={x.id} value={x.id}>{x.fullName ?? x.email}</option>)}
-          </select>
-          <input aria-label={`Reason for handing over ${p.name}`} placeholder="Why? (recorded)" required minLength={5} value={reason} onChange={(e) => setReason(e.target.value)} />
-          <button className="secondary">Hand over</button>
-        </form>
-      )}
-      {mode === 'convert' && (
-        <form className="stack" onSubmit={(e: FormEvent) => { e.preventDefault(); void run(() => api.post(`/prospects/${p.id}/convert`, { legalForm: conv.legalForm, yearEndMonth: Number(conv.yearEndMonth), ...(conv.accountManagerId ? { accountManagerId: conv.accountManagerId } : {}) })); }}>
-          <div className="row">
-            <input aria-label="Legal form" value={conv.legalForm} onChange={(e) => setConv({ ...conv, legalForm: e.target.value })} required />
-            <select aria-label="Year end month" value={conv.yearEndMonth} onChange={(e) => setConv({ ...conv, yearEndMonth: Number(e.target.value) })}>
-              {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m, i) => <option key={m} value={i + 1}>{m} year end</option>)}
-            </select>
-            <select aria-label="Account manager" value={conv.accountManagerId} onChange={(e) => setConv({ ...conv, accountManagerId: e.target.value })}>
-              <option value="">Account manager: me</option>
-              {people.filter((x) => (x.role === 'manager' || x.role === 'partner') && x.id !== me.userId).map((x) => <option key={x.id} value={x.id}>{x.fullName ?? x.email}</option>)}
-            </select>
-            <button>Create the client</button>
-          </div>
-          <span className="small muted">The prospect becomes a client. You then open an engagement for it from Engagements.</span>
-        </form>
-      )}
-      <ErrorNote error={error} />
-    </li>
-  );
-}
+type StageFilter = 'open' | 'lead' | 'proposal' | 'loe_sent';
 
 export default function PipelinePage() {
   const data = useApi<{ prospects: Prospect[]; summary: Summary }>('/prospects');
   const me = useApi<{ userId: string; role: string }>('/me');
   const people = useApi<{ people: Person[] }>('/people');
-  const [form, setForm] = useState({ name: '', sector: 'trading', contactName: '', expectedFee: '', expectedStart: '', ownerId: '' });
-  const [error, setError] = useState<unknown>();
-  const [done, setDone] = useState('');
+  const [view, setView] = usePref<'table' | 'cards'>('pipeline.view', 'table');
+  const [stage, setStage] = useState<StageFilter>('open');
+  const [ownerId, setOwnerId] = useState('');
+  const [query, setQuery] = useState('');
+  const [panel, setPanel] = useState<{ mode: PanelMode; prospect?: Prospect } | null>(null);
+  const [notice, setNotice] = useState('');
+  const [actionError, setActionError] = useState<unknown>();
   const manager = me.data?.role === 'manager' || me.data?.role === 'partner';
 
-  async function add(ev: FormEvent) {
-    ev.preventDefault();
-    setError(undefined);
-    setDone('');
-    const body: Record<string, unknown> = { name: form.name, sector: form.sector };
-    if (form.contactName.trim()) body.contactName = form.contactName;
-    if (form.expectedFee.trim()) body.expectedFee = form.expectedFee;
-    if (form.expectedStart) body.expectedStart = form.expectedStart;
-    if (form.ownerId) body.ownerId = form.ownerId;
+  const all = useMemo(() => data.data?.prospects ?? [], [data.data]);
+  const summary = data.data?.summary;
+  const owners = useMemo(() => [...new Map(all.map((p) => [p.ownerId, p.ownerName])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [all]);
+
+  // Counts follow the person and search filters, so the chips always match what the table can show.
+  const scoped = useMemo(
+    () => (['open', 'won', 'lost'] as const).flatMap((s) => filterProspects(all, { stage: s, ownerId, query })),
+    [all, ownerId, query],
+  );
+  const counts = countByStage(scoped);
+  const rows = useMemo(() => filterProspects(all, { stage, ownerId, query }), [all, stage, ownerId, query]);
+  const closed = useMemo(() => [...filterProspects(all, { stage: 'won', ownerId, query }), ...filterProspects(all, { stage: 'lost', ownerId, query })], [all, ownerId, query]);
+  const filtered = ownerId !== '' || query.trim() !== '';
+  const totals = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const s of ['lead', 'proposal', 'loe_sent'] as const) {
+      out[s] = filtered
+        ? String(scoped.filter((p) => p.stage === s).reduce((sum, p) => sum + Number(p.expectedFee ?? 0), 0))
+        : summary?.byStage[s]?.value ?? '0';
+    }
+    return out;
+  }, [filtered, scoped, summary]);
+
+  async function move(p: Prospect, to: Stage) {
+    setActionError(undefined);
+    setNotice('');
     try {
-      await api.post('/prospects', body);
-      setDone(`${form.name} added to the pipeline.`);
-      setForm({ ...form, name: '', contactName: '', expectedFee: '', expectedStart: '' });
+      await api.post(`/prospects/${p.id}/stage`, { stage: to });
+      setNotice(`${p.name} moved to ${STAGE_LABELS[to]}.`);
       data.reload();
     } catch (e) {
-      setError(e);
+      setActionError(e);
     }
   }
+  const actions: ProspectActions = {
+    move: (p, to) => void move(p, to),
+    lose: (p) => setPanel({ mode: 'lost', prospect: p }),
+    handOver: (p) => setPanel({ mode: 'handover', prospect: p }),
+    convert: (p) => setPanel({ mode: 'convert', prospect: p }),
+  };
 
-  const prospects = data.data?.prospects ?? [];
-  const summary = data.data?.summary;
-  const closed = prospects.filter((p) => p.stage === 'won' || p.stage === 'lost');
+  const options = [
+    { id: 'open', label: 'All open', count: counts.lead + counts.proposal + counts.loe_sent },
+    { id: 'lead', label: STAGE_LABELS.lead, count: counts.lead },
+    { id: 'proposal', label: STAGE_LABELS.proposal, count: counts.proposal },
+    { id: 'loe_sent', label: STAGE_LABELS.loe_sent, count: counts.loe_sent },
+  ];
+
+  const addButton = <button type="button" onClick={() => setPanel({ mode: 'add' })}>+ Add a prospect</button>;
+  const loading = data.loading && !data.data;
+  const noneAtAll = !!data.data && all.length === 0;
 
   return (
     <div className="stack-lg">
-      <div className="page-head">
-        <div className="row between"><h1>Pipeline</h1><HelpLink topic="pipeline" /></div>
-        <p>Prospective clients, from first contact to signed engagement letter. Each one has an owner. {manager ? 'You see the whole pipeline.' : 'You see the prospects you own.'}</p>
-      </div>
+      <PageHead
+        title="Prospects"
+        sentence={`Prospective clients, from first contact to signed engagement letter. ${manager ? 'You see all of them.' : 'You see the prospects you own.'}`}
+        action={addButton}
+        help={<HelpLink topic="pipeline" />}
+      />
       <ErrorNote error={data.error} />
+      <ErrorNote error={actionError} />
+      {notice && <Notice>{notice}</Notice>}
 
-      {summary && (
-        <section className="sheet">
-          <div className="row" style={{ gap: '2rem' }}>
-            {OPEN.map((s) => (
-              <div key={s.id}><div className="small muted">{s.label}</div><strong>{summary.byStage[s.id]?.count ?? 0}</strong> · {kes(summary.byStage[s.id]?.value ?? '0')}</div>
-            ))}
-            <div><div className="small muted">Won</div><strong>{summary.byStage.won?.count ?? 0}</strong></div>
-            <div><div className="small muted">Lost</div><strong>{summary.byStage.lost?.count ?? 0}</strong></div>
-          </div>
-          {manager && summary.byOwner.length > 0 && (
-            <p className="small" style={{ marginBottom: 0 }}>
-              <strong>By person:</strong> {summary.byOwner.map((o) => `${o.ownerName}: ${o.count} (${kes(o.value)})`).join(' · ')}
-            </p>
-          )}
+      {loading && (
+        <section className="sheet prospects-loading" aria-label="Loading prospects">
+          <Skeleton height={36} width="60%" />
+          <Skeleton height={48} />
+          <Skeleton height={48} />
+          <Skeleton height={48} />
         </section>
       )}
 
-      <form className="sheet stack" onSubmit={add}>
-        <h2>Add a prospect</h2>
-        <div className="form-grid">
-          <div className="field"><label htmlFor="pn">Name</label><input id="pn" required minLength={2} maxLength={200} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div className="field">
-            <label htmlFor="ps">Sector</label>
-            <select id="ps" value={form.sector} onChange={(e) => setForm({ ...form, sector: e.target.value })}>{Object.entries(SECTOR_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-          </div>
-          <div className="field"><label htmlFor="pc">Contact</label><input id="pc" maxLength={120} value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })} /></div>
-          <div className="field"><label htmlFor="pf">Expected fee (KES)</label><input id="pf" inputMode="decimal" placeholder="450000" value={form.expectedFee} onChange={(e) => setForm({ ...form, expectedFee: e.target.value })} /></div>
-          <div className="field"><label htmlFor="pd">Expected start</label><input id="pd" type="date" value={form.expectedStart} onChange={(e) => setForm({ ...form, expectedStart: e.target.value })} /></div>
-          {manager && (
-            <div className="field">
-              <label htmlFor="po">Owner</label>
-              <select id="po" value={form.ownerId} onChange={(e) => setForm({ ...form, ownerId: e.target.value })}>
-                <option value="">Me</option>
-                {people.data?.people.filter((p) => p.id !== me.data?.userId).map((p) => <option key={p.id} value={p.id}>{p.fullName ?? p.email}</option>)}
-              </select>
-            </div>
-          )}
-        </div>
-        <ErrorNote error={error} />
-        {done && <Notice>{done}</Notice>}
-        <div><button>Add to pipeline</button></div>
-      </form>
-
-      {data.data && prospects.length === 0 && <Empty>Nothing in the pipeline yet. Add the first prospect above.</Empty>}
-      <div className="board">
-        {OPEN.map((s) => (
-          <section key={s.id} className="sheet" aria-label={s.label}>
-            <h2>{s.label}</h2>
-            <ul className="cards">
-              {prospects.filter((p) => p.stage === s.id).map((p) => (
-                <Card key={p.id} p={p} me={me.data ?? { userId: '', role: '' }} people={people.data?.people ?? []} onChanged={data.reload} />
-              ))}
-            </ul>
-          </section>
-        ))}
-      </div>
-
-      {closed.length > 0 && (
+      {noneAtAll && (
         <section className="sheet">
-          <h2>Closed</h2>
-          <table>
-            <thead><tr><th>Prospect</th><th>Outcome</th><th>Owner</th></tr></thead>
-            <tbody>
-              {closed.map((p) => (
-                <tr key={p.id}><td>{p.name}</td><td>{p.stage === 'won' ? 'Won: now a client' : `Lost: ${p.lostReason ?? ''}`}</td><td>{p.ownerName}</td></tr>
-              ))}
-            </tbody>
-          </table>
+          <EmptyState kind="people" title="No prospects yet" action={addButton}>
+            Add the first person or business you hope to work with, and keep track of it here.
+          </EmptyState>
         </section>
+      )}
+
+      {data.data && !noneAtAll && (
+        <>
+          <div className="prospects-toolbar">
+            <Chips label="Show prospects at" value={stage} onChange={(id) => setStage(id as StageFilter)} options={options} />
+            <span className="small muted prospects-closed-counts">Won {counts.won} · Lost {counts.lost}</span>
+          </div>
+          <div className="prospects-toolbar">
+            <div className="row">
+              <input type="search" className="prospects-search" aria-label="Search prospects" placeholder="Search by prospect or owner" value={query} onChange={(e) => setQuery(e.target.value)} />
+              {manager && (
+                <select className="prospects-person" aria-label="Show prospects of" value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
+                  <option value="">Everyone</option>
+                  {owners.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                </select>
+              )}
+            </div>
+            <Segmented label="How to show the list" value={view} onChange={(id) => setView(id as 'table' | 'cards')} options={[{ id: 'table', label: 'Table' }, { id: 'cards', label: 'Cards' }]} />
+          </div>
+
+          {rows.length === 0 ? (
+            <section className="sheet">
+              <EmptyState kind="folder" title="No prospects match" action={<button type="button" className="secondary" onClick={() => { setStage('open'); setOwnerId(''); setQuery(''); }}>Show everything</button>}>
+                Try a different word, person or stage.
+              </EmptyState>
+            </section>
+          ) : view === 'table' ? (
+            <section className="sheet prospects-sheet"><ProspectTable rows={rows} actions={actions} manager={!!manager} /></section>
+          ) : (
+            <ProspectCards rows={rows} actions={actions} manager={!!manager} totals={totals} />
+          )}
+
+          {closed.length > 0 && (
+            <section className="sheet">
+              <Disclosure summary={<span>Closed <span className="muted small">({closed.length})</span></span>}>
+                <table className="prospects-table">
+                  <thead><tr><th>Prospect</th><th>Outcome</th><th>Owner</th></tr></thead>
+                  <tbody>
+                    {closed.map((p) => (
+                      <tr key={p.id}>
+                        <td>{p.name}</td>
+                        <td><StagePill stage={p.stage} />{p.stage === 'won' ? ' now a client' : p.lostReason ? ` ${p.lostReason}` : ''}</td>
+                        <td>{p.ownerName}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Disclosure>
+            </section>
+          )}
+        </>
+      )}
+
+      {panel && (
+        <ProspectPanel
+          key={panel.mode + (panel.prospect?.id ?? '')}
+          mode={panel.mode}
+          prospect={panel.prospect}
+          me={me.data ?? { userId: '', role: '' }}
+          people={people.data?.people ?? []}
+          onClose={() => setPanel(null)}
+          onDone={(message) => {
+            setPanel(null);
+            setActionError(undefined);
+            setNotice(message);
+            data.reload();
+          }}
+        />
       )}
     </div>
   );
