@@ -4,6 +4,8 @@ import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigat
 import { useApi } from '@/lib/hooks';
 import { ErrorNote, StateBadge } from '@/components/bits';
 import type { Viewer } from '@/components/ItemPanel';
+import { PageHead } from '@/components/ui/PageHead';
+import { Skeleton } from '@/components/ui/EmptyState';
 import { fmtDate, SECTOR_LABELS } from '@/lib/text';
 import { Overview } from './tabs/Overview';
 import { Papers } from './tabs/Papers';
@@ -52,21 +54,23 @@ function Workspace() {
   const setTab = (t: string) => router.replace(`${path}?tab=${t}`);
 
   if (eng.error) return <ErrorNote error={eng.error} />;
-  if (!eng.data || !me.data) return <p className="muted">Loading engagement…</p>;
+  if (!eng.data || !me.data) return (
+    <section className="sheet prospects-loading" aria-label="Loading engagement">
+      <Skeleton height={36} width="40%" />
+      <Skeleton height={48} />
+      <Skeleton height={48} />
+    </section>
+  );
   const e = eng.data;
   const viewer: Viewer = { userId: me.data.userId, role: me.data.role, engagementLocked: e.state === 'locked' || !e.member };
 
   return (
-    <div className="stack">
-      <div className="page-head">
-        <div className="row between">
-          <h1>{e.clientName}</h1>
-          <StateBadge state={e.state} />
-        </div>
-        <p>
-          {SECTOR_LABELS[e.sector] ?? e.sector} · year ended {fmtDate(e.periodEnd)} · {e.framework === 'IFRS_SME' ? 'IFRS for SMEs' : 'Full IFRS'}
-        </p>
-      </div>
+    <div className="stack-lg">
+      <PageHead
+        title={e.clientName}
+        sentence={`${SECTOR_LABELS[e.sector] ?? e.sector} · year ended ${fmtDate(e.periodEnd)} · ${e.framework === 'IFRS_SME' ? 'IFRS for SMEs' : 'Full IFRS'}`}
+        help={<StateBadge state={e.state} />}
+      />
 
       {!e.member && (
         <div className="notice warn" role="status">

@@ -21,6 +21,12 @@ test('a paper goes through preparation, review, revocation on edit, approval and
   await confirmStepUp(staff, STAFF);
   await expect(staff.getByText('Signed.')).toBeVisible();
   await expect(stamp(staff, 'Prepared')).toContainText('BK');
+  // Sign-off boxes keep the 13px reading floor and their text stays inside the box.
+  for (const label of ['Prepared', 'Reviewed', 'Approved']) {
+    const box = stamp(staff, label);
+    expect(await box.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(13);
+    expect(await box.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  }
 
   // Manager reviews.
   await signIn(manager, MANAGER);
