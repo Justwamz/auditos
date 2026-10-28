@@ -126,19 +126,57 @@ test('a population with an unreadable amount is refused, with the row', async ({
   await expect(page.getByText(/Row 3: The amount "not money" could not be read/)).toBeVisible(SLOW);
 });
 
-const BANNED = [/authenticator/i, /outbox/i, /simulatw*/i, /session/i, /csrf/i, /malware/i, /quarantinw*/i, /fingerprint/i, /sha-?256/i, /tenant/i, /token/i, /payload/i, /api/i, /mfa/i, /totp/i];
-const TAB_NAMES = ['Overview', 'Working papers', 'Checklists', 'Evidence', 'Financial statements', 'Bank statements', 'Sampling'];
+const BANNED = [/authenticator/i, /outbox/i, /simulatw*/i, /sessions?/i, /csrf/i, /malware/i, /quarantinw*/i, /fingerprint/i, /sha-?256/i, /tenant/i, /tokens?/i, /payload/i, /api/i, /mfa/i, /totp/i];
+// A main button is a filled one: not secondary, quiet or danger, and not a tab.
+const MAIN = 'main button:visible:not(.secondary):not(.quiet):not(.danger):not([role="tab"])';
 
-test('every engagement tab speaks plainly and has one main button', async ({ page }) => {
+async function plain(page: Page, label: string) {
+  const text = await page.locator('main').innerText();
+  for (const re of BANNED) expect(text, `${label} contains ${re}`).not.toMatch(re);
+}
+async function oneMain(page: Page, label: string, name: string | RegExp) {
+  await expect(page.locator(MAIN).filter({ hasText: name })).toHaveCount(1, SLOW);
+  await expect(page.locator(MAIN), `${label}: ${await page.locator(MAIN).allInnerTexts()}`).toHaveCount(1);
+}
+
+test('every engagement tab speaks plainly and has exactly one main button', async ({ page }) => {
   await signIn(page, 'daniel.otieno@kangethe.example.test');
-  for (const name of TAB_NAMES) {
+  // Evidence needs a file on the list so the table is checked too.
+  await openMwangaza(page, 'Evidence');
+  await page.getByLabel('File', { exact: true }).setInputFiles({ name: 'plain-check.txt', mimeType: 'text/plain', buffer: Buffer.from('Plain words check') });
+  await page.getByRole('button', { name: 'Upload file' }).click();
+  await expect(page.getByRole('row', { name: /plain-check.txt/ })).toBeVisible(SLOW);
+  await expect(page.getByRole('columnheader', { name: 'Virus check' })).toBeVisible();
+  await plain(page, 'Evidence with a file');
+
+  const tabs: [string, string | RegExp][] = [
+    ['Overview', 'Start the checklists'], ['Working papers', '+ Add a paper'], ['Checklists', 'Generate checklists'],
+    ['Evidence', 'Upload file'], ['Financial statements', '+ Import a trial balance'], ['Bank statements', '+ Upload a statement'], ['Sampling', '+ Draw a sample'],
+  ];
+  for (const [name, button] of tabs) {
     await openMwangaza(page, name);
-    const text = await page.locator('main').innerText();
-    for (const re of BANNED) expect(text, `${name} contains ${re}`).not.toMatch(re);
-    // A main button is a filled one: not secondary, quiet or danger, and not a tab.
-    const main = page.locator('main button:visible:not(.secondary):not(.quiet):not(.danger):not([role="tab"])');
-    expect(await main.count(), `${name}: ${await main.allInnerTexts()}`).toBeLessThanOrEqual(1);
+    await oneMain(page, name, button);
+    await plain(page, name);
   }
+
+  // Deeper views: the export step, and an open sampling schedule.
+  await openMwangaza(page, 'Financial statements');
+  await page.getByRole('tab', { name: 'Export' }).click();
+  await oneMain(page, 'Export', 'Word document');
+  await plain(page, 'Export');
+  await openMwangaza(page, 'Sampling');
+  await page.getByRole('row', { name: /Trade payables at year end/ }).getByRole('button', { name: 'Open' }).click();
+  await expect(page.getByRole('region', { name: 'Schedule Trade payables at year end' })).toBeVisible(SLOW);
+  await plain(page, 'Sampling schedule');
+});
+
+test('with a paper open the sign-off button is the only main button', async ({ page }) => {
+  await signIn(page, 'daniel.otieno@kangethe.example.test');
+  await openMwangaza(page, 'Working papers');
+  await page.getByRole('row', { name: /Engagement letter FY2026/ }).getByRole('button', { name: /^Open$/ }).click();
+  await expect(page.getByRole('heading', { name: 'Engagement letter FY2026', level: 3 })).toBeVisible(SLOW);
+  await expect(page.locator(MAIN)).toHaveCount(1);
+  await expect(page.locator(MAIN)).toHaveText(/Sign as prepared/);
 });
 
 test('a working paper is added from a side panel, and materiality stays inline', async ({ page }) => {

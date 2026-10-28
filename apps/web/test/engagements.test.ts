@@ -27,6 +27,9 @@ describe('filterEngagements', () => {
     expect(filterEngagements(rows, { group: 'all', query: ' acme ' }).map((r) => r.clientName)).toEqual(['Acme Ltd']);
     expect(filterEngagements(rows, { group: 'all', query: 'FARMING' }).map((r) => r.clientName)).toEqual(['Baraka Foods', 'Eneo Farms']);
   });
+  test('search also matches the sector as shown', () => {
+    expect(filterEngagements([row('Pensions Co', 'planning', 'pension')], { group: 'all', query: 'scheme' })).toHaveLength(1);
+  });
   test('group and search combine', () => {
     expect(filterEngagements(rows, { group: 'in_review', query: 'farming' }).map((r) => r.clientName)).toEqual(['Eneo Farms']);
   });

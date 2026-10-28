@@ -132,7 +132,7 @@ export default function EngagementsPage() {
           footer={
             <>
               <button type="button" className="quiet" onClick={close}>Cancel</button>
-              <button type="submit" form={FORM} disabled={busy}>Open engagement</button>
+              <button type="submit" form={FORM} disabled={busy}>{busy ? 'Opening…' : 'Open engagement'}</button>
             </>
           }
         >

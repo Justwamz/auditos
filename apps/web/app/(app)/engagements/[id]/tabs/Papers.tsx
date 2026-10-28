@@ -95,7 +95,7 @@ export function Papers({ engagement: e, viewer, focusItem }: { engagement: Engag
       <SectionHead
         title="Working papers"
         sentence="Materiality first, then every paper of the file. Open a paper to write it up, sign it off or raise review points."
-        action={<button type="button" onClick={() => { setError(undefined); setPanel(true); }}>+ Add a paper</button>}
+        action={<button type="button" className={open ? 'secondary' : undefined} onClick={() => { setError(undefined); setPanel(true); }}>+ Add a paper</button>}
       />
       <Materiality engagement={e} locked={viewer.engagementLocked} />
       <SidePanel

@@ -1,3 +1,5 @@
+import { SECTOR_LABELS } from './text';
+
 /** The eight engagement stages, gathered into four plain groups for the filter chips. */
 export const STAGE_GROUPS = [
   { id: 'getting_ready', label: 'Getting ready', states: ['onboarding', 'planning'] },
@@ -19,7 +21,7 @@ export function filterEngagements<E extends { clientName: string; state: string;
   return rows.filter((r) => {
     if (states && !states.includes(r.state)) return false;
     if (q === '') return true;
-    return [r.clientName, r.sector].some((s) => s.toLowerCase().includes(q));
+    return [r.clientName, r.sector, SECTOR_LABELS[r.sector] ?? ''].some((s) => s.toLowerCase().includes(q));
   });
 }
 

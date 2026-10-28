@@ -95,7 +95,7 @@ export function BankStatements({ engagement: e, viewer }: { engagement: Engageme
           onClose={() => { setPanel(false); setError(undefined); }}
           footer={
             <>
-              <button type="button" className="quiet" onClick={() => { setPanel(false); setError(undefined); }}>Cancel</button>
+              <button type="button" className="quiet" onClick={() => { setPanel(false); setError(undefined); setNeedPassword(false); }}>Cancel</button>
               <button type="submit" form="bank-upload-form" disabled={busy}>{busy ? 'Reading…' : 'Read statement'}</button>
             </>
           }

@@ -47,6 +47,9 @@ test('staff cannot open an engagement', async ({ page }) => {
   await signIn(page, 'brian.kiptoo@kangethe.example.test');
   await page.goto('/engagements');
   await expect(page.getByRole('heading', { name: 'Engagements', level: 1 })).toBeVisible();
+  // Wait until the page is fully loaded (the list and the role are known) before asserting absence.
+  await expect(page.getByRole('link', { name: 'Mwangaza Traders Ltd' }).first()).toBeVisible();
+  await page.waitForLoadState('networkidle');
   await expect(page.getByRole('button', { name: '+ Open an engagement' })).toHaveCount(0);
 });
 
@@ -65,4 +68,9 @@ test('the engagement tabs keep their names and ?tab= values and show the selecte
   const chosen = tabs.getByRole('tab', { selected: true });
   expect(await chosen.evaluate((el) => getComputedStyle(el).borderBottomWidth)).toBe('3px');
   expect(await chosen.evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe('0px');
+  // Keyboard focus keeps the global 3px ring.
+  await chosen.focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  expect(await chosen.evaluate((el) => getComputedStyle(el).outlineWidth)).toBe('3px');
 });

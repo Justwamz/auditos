@@ -239,7 +239,6 @@ function Adjustments({ e, viewer }: { e: Engagement; viewer: Viewer }) {
           ))}
           <div className="row"><button type="button" className="quiet" onClick={() => setForm({ ...form, lines: [...form.lines, { code: '', debit: '', credit: '' }] })}>Add a line</button></div>
           <ErrorNote error={error} />
-            <ErrorNote error={error} />
           </form>
         </SidePanel>
       )}
@@ -256,7 +255,7 @@ function Adjustments({ e, viewer }: { e: Engagement; viewer: Viewer }) {
             <table><tbody>{en.lines.map((l, i) => <tr key={i}><td>{l.code}</td><td className="num">{l.debit !== '0.00' ? l.debit : ''}</td><td className="num">{l.credit !== '0.00' ? l.credit : ''}</td></tr>)}</tbody></table>
           </div>
         ))}
-        <ErrorNote error={error} />
+        {!panel && <ErrorNote error={error} />}
       </section>
     </div>
   );
