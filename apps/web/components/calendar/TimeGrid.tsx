@@ -48,7 +48,7 @@ function Block({ event, col, cols, top, height, onOpen }: { event: CalEvent; col
   const px = Math.max(height * PX_PER_MINUTE, MIN_BLOCK_PX);
   const range = event.startsAt === event.endsAt ? timeOf(event.startsAt) : `${timeOf(event.startsAt)} to ${timeOf(event.endsAt)}`;
   // Side by side, a block is narrow: show just the start; the full range is in the tooltip and the details.
-  const when = cols > 1 ? timeOf(event.startsAt) : range;
+  const startOnly = cols > 1 || px < 44 || event.startsAt === event.endsAt;
   return (
     <button
       type="button"
@@ -66,7 +66,7 @@ function Block({ event, col, cols, top, height, onOpen }: { event: CalEvent; col
       }}
       onClick={() => onOpen(event)}
     >
-      <span className="cal-block-time"><span aria-hidden="true">{k.icon} </span>{when}</span>
+      <span className="cal-block-time"><span className="cal-block-icon" aria-hidden="true">{k.icon} </span><span className="cal-block-when">{timeOf(event.startsAt)}{!startOnly && <span className="cal-block-end"> to {timeOf(event.endsAt)}</span>}</span></span>
       <span className="cal-block-title">{event.title}</span>
     </button>
   );

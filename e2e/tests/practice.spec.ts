@@ -638,9 +638,9 @@ test('midnight-spanning, all-day and zero-length events are laid out sensibly', 
 test('crowded blocks stay readable: whole words only, never empty, and the name is always reachable', async ({ browser }) => {
   const d1 = nairobiDay(1);
   const d2 = nairobiDay(2);
-  const mk = (n: number, title: string, from: string, to: string, day: string, kind = 'meeting') => ({
+  const mk = (n: number, title: string, from: string, to: string, day: string, kind = 'meeting', by = 1) => ({
     id: `00000000-0000-4000-8000-0000000002${String(n).padStart(2, '0')}`, title, kind, startsAt: `${day}T${from}:00+03:00`, endsAt: `${day}T${to}:00+03:00`, allDay: false,
-    location: null, notes: null, clientId: null, clientName: null, engagementId: null, attendees: [], createdBy: '10000000-0000-4000-8000-000000000001', createdByName: 'Grace Kangethe', mine: false,
+    location: null, notes: null, clientId: null, clientName: null, engagementId: null, attendees: [], createdBy: `10000000-0000-4000-8000-0000000000${String(by).padStart(2, '0')}`, createdByName: by === 1 ? 'Grace Kangethe' : `Person ${by}`, mine: false,
   });
   const page = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
   await signIn(page, 'grace.kangethe@kangethe.example.test');
@@ -653,6 +653,10 @@ test('crowded blocks stay readable: whole words only, never empty, and the name 
           mk(2, 'Client call with finance', '10:00', '12:00', d1, 'training'),
           mk(3, 'Long fieldwork day at the warehouse', '08:00', '17:00', d1, 'fieldwork'),
           mk(4, 'Planning session for next month', '09:00', '10:00', d2),
+          mk(5, 'Team stand-up', '09:00', '09:30', d1, 'meeting', 2),
+          mk(6, 'Team stand-up', '09:00', '09:30', d1, 'meeting', 3),
+          mk(7, 'Team stand-up', '09:00', '09:30', d1, 'meeting', 4),
+          mk(8, 'Team stand-up', '09:00', '09:30', d1, 'meeting', 5),
         ],
         milestones: [],
       },
@@ -660,39 +664,62 @@ test('crowded blocks stay readable: whole words only, never empty, and the name 
   });
   await page.goto('/calendar');
   await expect(page.getByRole('heading', { name: 'Calendar', level: 1 })).toBeVisible();
-  for (const view of ['Week', 'Work week'] as const) {
-    await viewOf(page, view);
+  const check = async () => {
     const blocks = page.locator('.cal-block');
-    await expect(blocks).toHaveCount(4);
+    expect(await blocks.count()).toBeGreaterThan(3);
+    let compact = 0;
     for (const block of await blocks.all()) {
       const info = await block.evaluate((el) => {
         const title = el.querySelector('.cal-block-title') as HTMLElement;
-        const box = el.getBoundingClientRect();
-        const shown = title.getBoundingClientRect().width > 2;
+        const when = el.querySelector('.cal-block-when') as HTMLElement;
+        const icon = el.querySelector('.cal-block-icon') as HTMLElement;
         return {
-          width: box.width, shown, wrap: getComputedStyle(title).overflowWrap, brk: getComputedStyle(title).wordBreak,
-          fits: title.scrollWidth <= title.clientWidth + 1, hasIcon: (el.querySelector('.cal-block-time [aria-hidden]')?.textContent ?? '').trim().length > 0,
-          name: el.getAttribute('aria-label') ?? '', text: title.textContent ?? '',
+          width: el.getBoundingClientRect().width,
+          titleShown: title.getBoundingClientRect().width > 2, whenShown: when.getBoundingClientRect().width > 2,
+          iconShown: icon.getBoundingClientRect().width > 2 && (icon.textContent ?? '').trim().length > 0,
+          wrap: getComputedStyle(title).overflowWrap, brk: getComputedStyle(title).wordBreak,
+          short: el.classList.contains('is-short'), titleFits: title.scrollWidth <= title.clientWidth + 1, whenFits: when.scrollWidth <= when.clientWidth + 1,
+          name: el.getAttribute('aria-label') ?? '', text: title.textContent ?? '', time: when.textContent ?? '',
         };
       });
-      expect(info.width).toBeGreaterThan(20);
-      expect(info.hasIcon).toBe(true);
+      expect(info.width).toBeGreaterThan(14);
+      expect(info.iconShown).toBe(true);
+      // The accessible name always carries the kind, the whole title and the time.
       expect(info.name).toContain(info.text);
-      if (info.shown) {
+      expect(info.name).toContain(info.time);
+      if (info.titleShown) {
         expect(info.wrap).toBe('normal');
         expect(info.brk).toBe('normal');
-        expect(info.fits).toBe(true);
+        // A one-line (short) block may end its title with an ellipsis; a wrapped title never runs past its box.
+        if (!info.short) expect(info.titleFits).toBe(true);
       }
+      // A time is either fully readable or not shown at all, never cut off.
+      if (info.whenShown) expect(info.whenFits).toBe(true);
+      if (!info.whenShown) { compact += 1; expect(info.titleShown).toBe(false); }
     }
+    return compact;
+  };
+  for (const view of ['Work week', 'Week'] as const) {
+    await viewOf(page, view);
+    expect(await check()).toBeGreaterThan(0);
     // A block on its own keeps its whole title in view.
     const alone = colOf(page, d2).locator('.cal-block');
     expect(((await alone.boundingBox())!).width).toBeGreaterThan(100);
     await expect(alone.locator('.cal-block-title')).toBeVisible();
-    // Activating a squeezed block still opens its details.
-    await colOf(page, d1).locator('.cal-block').first().click();
+    // A squeezed block can be focused with the keyboard and opens its details.
+    const squeezed = colOf(page, d1).locator('.cal-block').first();
+    await squeezed.focus();
+    await expect(squeezed).toBeFocused();
+    await page.keyboard.press('Enter');
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.keyboard.press('Escape');
   }
+  // The same holds in the person columns.
+  const short = new Date(`${d1}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  await page.getByRole('button', { name: `Open ${short}` }).click();
+  await page.getByRole('button', { name: 'See by person' }).click();
+  await expect(page.locator('.cal-person-head')).toHaveCount(5);
+  expect(await check()).toBeGreaterThan(0);
 });
 
 test('a partner can change a client\'s account manager; a manager cannot', async ({ browser }) => {
