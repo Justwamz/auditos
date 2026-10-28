@@ -78,7 +78,7 @@ export function Materiality({ engagement: e, locked }: { engagement: Engagement;
           Overall materiality <strong>{kes(result.overall)}</strong> · performance materiality <strong>{kes(result.performance)}</strong> · clearly trivial <strong>{kes(result.trivial)}</strong>
         </Notice>
       )}
-      {!locked && <div><button>{saved ? 'Recalculate and save' : 'Calculate and save'}</button></div>}
+      {!locked && <div><button className="secondary">{saved ? 'Recalculate and save' : 'Calculate and save'}</button></div>}
     </form>
   );
 }

@@ -92,7 +92,7 @@ export function Overview({ engagement: e, me, onChanged, onGo }: { engagement: E
                 <input id="rd" type="date" value={reportDate} onChange={(e2) => setReportDate(e2.target.value)} />
               </div>
             )}
-            <button onClick={move} disabled={(partnerOnly && me.userId !== e.partnerId) || (next === 'report_issued' && !reportDate)}>
+            <button className="secondary" onClick={move} disabled={(partnerOnly && me.userId !== e.partnerId) || (next === 'report_issued' && !reportDate)}>
               Move to {STATE_LABELS[next]}
             </button>
             {partnerOnly && me.userId !== e.partnerId && <span className="muted small">Only the engagement partner can do this step.</span>}
@@ -104,7 +104,7 @@ export function Overview({ engagement: e, me, onChanged, onGo }: { engagement: E
       {e.state === 'locked' && (
         <section className="sheet stack">
           <h2>Unlocking</h2>
-          <p className="muted">A partner asks with a reason. A different partner or quality officer on the engagement approves. Both confirm with their authenticator.</p>
+          <p className="muted">A partner asks with a reason. A different partner or quality officer on the engagement approves. Both confirm with a 6-digit code from their phone.</p>
           {me.role === 'partner' && (
             <form className="stack" onSubmit={(ev) => { ev.preventDefault(); void run(() => withStepUp(() => api.post(`/engagements/${e.id}/unlock-requests`, { reason: unlockReason })), 'Unlock requested.'); }}>
               <div className="field"><label htmlFor="ur">Reason for unlocking</label><input id="ur" required minLength={10} value={unlockReason} onChange={(e2) => setUnlockReason(e2.target.value)} /></div>
@@ -118,7 +118,7 @@ export function Overview({ engagement: e, me, onChanged, onGo }: { engagement: E
                 <div>{r.reason}</div>
                 <div className="small muted">Requested by {r.requestedByEmail} on {fmtDate(r.createdAt)}: {r.status}</div>
                 {r.status === 'pending' && r.requestedBy !== me.userId && (me.role === 'partner' || me.role === 'quality_officer') && (
-                  <button style={{ marginTop: '0.4rem' }} onClick={() => run(() => withStepUp(() => api.post(`/unlock-requests/${r.id}/approve`, {})), 'Engagement unlocked.')}>Approve unlock</button>
+                  <button className="secondary" style={{ marginTop: '0.4rem' }} onClick={() => run(() => withStepUp(() => api.post(`/unlock-requests/${r.id}/approve`, {})), 'Engagement unlocked.')}>Approve unlock</button>
                 )}
               </li>
             ))}

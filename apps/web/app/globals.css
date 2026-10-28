@@ -242,7 +242,7 @@ table.ledger td.num { min-width: 8.5rem; }
 
 /* Stage line: where the engagement is in its life */
 .stages { display: flex; flex-wrap: wrap; gap: 0; margin: 0.5rem 0 1rem; padding: 0; list-style: none; }
-.stages li { padding: 0.25rem 0.7rem; border: 1px solid var(--rule-strong); margin-left: -1px; background: #fff; font-size: 0.85rem; color: var(--pencil); }
+.stages li { padding: 0.3rem 0.8rem; border: 1px solid var(--rule-strong); margin-left: -1px; background: #fff; font-size: 0.85rem; color: var(--pencil); }
 .stages li.done { background: var(--ledger-wash); color: var(--ledger-deep); }
 .stages li.current { background: var(--ledger-deep); color: #fff; font-weight: 600; }
 
@@ -295,7 +295,7 @@ table.ledger td.num { min-width: 8.5rem; }
 }
 
 /* Audit roadmap */
-.roadmap .next-step { border: 1px solid var(--ledger); background: var(--ledger-wash); padding: 0.9rem 1rem; max-width: 60ch; }
+.roadmap .next-step { border: 1px solid var(--ledger); border-radius: var(--radius); background: var(--ledger-wash); padding: var(--space-4) var(--space-5); max-width: 60ch; margin-bottom: var(--space-2); }
 .roadmap .next-step h3 { margin: 0.1rem 0 0.3rem; }
 .roadmap .next-step p { margin: 0 0 0.7rem; }
 .roadmap-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
@@ -543,3 +543,10 @@ button.cal-day-head:hover:not(:disabled) { background: var(--ledger-wash); color
 .today-card .button { flex: none; text-decoration: none; }
 .today-skeleton { border-radius: var(--radius); }
 @media (max-width: 560px) { .today-card { flex-direction: column; align-items: stretch; } .today-card .button { text-align: center; } }
+
+/* Section head inside an engagement tab */
+.section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); flex-wrap: wrap; }
+.section-head-text { min-width: 0; flex: 1 1 22rem; }
+.section-head-text h2 { margin-bottom: var(--space-1); }
+.section-head-text p { margin: 0; color: var(--pencil); max-width: 46rem; }
+.section-head-actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
