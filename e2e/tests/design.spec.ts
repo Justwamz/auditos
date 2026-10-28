@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { freshCode, signIn, user } from '../helpers';
 
 test('uses Inter everywhere', async ({ page }) => {
@@ -20,12 +20,15 @@ test('uses Inter everywhere', async ({ page }) => {
 });
 
 test.describe('sign-in', () => {
-  test('is calm and plain: name, one primary button per step, a sentence under each heading', async ({ page }) => {
-    const email = 'grace.kangethe@kangethe.example.test';
+  const email = 'grace.kangethe@kangethe.example.test';
+  const primary = (page: Page) => page.locator('main button:not(.secondary):not(.quiet):not(.choice-row)');
+
+  test('credentials and code steps: name, plain sentence under each heading, one primary button', async ({ page }) => {
     await page.goto('/login');
     await expect(page.getByRole('heading', { name: 'AuditOS', level: 1 })).toBeVisible();
-    await expect(page.locator('.login p.muted').first()).toBeVisible();
-    await expect(page.locator('main button:not(.secondary):not(.quiet)')).toHaveCount(1);
+    await expect(page.getByRole('heading', { name: 'Sign in', level: 2 })).toBeVisible();
+    await expect(page.getByText('Use your work email and password.')).toBeVisible();
+    await expect(primary(page)).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible();
 
     // The generic error text is unchanged.
@@ -40,13 +43,32 @@ test.describe('sign-in', () => {
     await page.waitForSelector('#code');
     await expect(page.getByRole('heading', { name: 'Enter your code', level: 2 })).toBeVisible();
     await expect(page.getByText('Type the 6-digit code from your phone.')).toBeVisible();
-    await expect(page.locator('main button:not(.secondary):not(.quiet)')).toHaveCount(1);
+    await expect(primary(page)).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
     await expect(page.locator('main')).not.toContainText(/authenticator/i);
   });
 
+  test('set-up step uses plain words', async ({ page }) => {
+    // The login and enrol calls are mocked so no real account is changed.
+    await page.route('**/api/auth/login', (route) => route.fulfill({ json: { challengeId: 'c1', mfaEnrolled: false } }));
+    await page.route('**/api/auth/mfa/enroll', (route) =>
+      route.fulfill({ json: { secret: 'JBSWY3DPEHPK3PXP', otpauthUri: 'otpauth://totp/AuditOS:test?secret=JBSWY3DPEHPK3PXP' } }),
+    );
+    await page.goto('/login');
+    await page.fill('#email', email);
+    await page.fill('#password', 'any-password-123');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByRole('heading', { name: 'Set up your sign-in code', level: 2 })).toBeVisible();
+    await expect(page.getByText('Add the setup code to a code app on your phone, then type the 6-digit code it shows.')).toBeVisible();
+    await expect(page.getByText('Setup code', { exact: true })).toBeVisible();
+    await expect(page.getByText("Can't scan? Use this link")).toBeVisible();
+    await expect(page.locator('main')).not.toContainText(/authenticator/i);
+    await expect(primary(page)).toHaveCount(1);
+  });
+
   test('firm choice lists firms as large selectable rows', async ({ page }) => {
-    await page.route('**/me', (route) =>
+    // GET /me is mocked because the seeded users each belong to a single firm.
+    await page.route('**/api/me', (route) =>
       route.fulfill({
         json: {
           activeTenantId: null,
@@ -57,7 +79,6 @@ test.describe('sign-in', () => {
         },
       }),
     );
-    const email = 'grace.kangethe@kangethe.example.test';
     await page.goto('/login');
     await page.fill('#email', email);
     await page.fill('#password', user(email).password);
@@ -67,10 +88,19 @@ test.describe('sign-in', () => {
     await page.getByRole('button', { name: 'Sign in' }).click();
     await expect(page.getByRole('heading', { name: 'Choose a firm', level: 2 })).toBeVisible();
     await expect(page.getByText('Pick the firm you want to work in now.')).toBeVisible();
+    await expect(primary(page)).toHaveCount(0);
     const rows = page.locator('.choice-row');
     await expect(rows).toHaveCount(2);
     const box = await rows.first().boundingBox();
     expect(box!.height).toBeGreaterThanOrEqual(56);
     expect(box!.width).toBeGreaterThan(300);
+  });
+
+  test('invitation page uses plain words', async ({ page }) => {
+    await page.goto('/accept-invite?token=example');
+    await expect(page.getByRole('heading', { name: 'AuditOS', level: 1 })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Set your password', level: 1 })).toBeVisible();
+    await expect(page.getByText('You will set up your sign-in code on your phone the first time you sign in.')).toBeVisible();
+    await expect(page.locator('main')).not.toContainText(/authenticator/i);
   });
 });
