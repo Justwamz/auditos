@@ -110,7 +110,7 @@ export default function PeoplePage() {
             </select>
           </div>
         </div>
-        <label className="row small"><input type="checkbox" checked={form.isAdmin} onChange={(e) => setForm({ ...form, isAdmin: e.target.checked })} /> Can manage people and access, and read the audit trail</label>
+        <label className="row small"><input type="checkbox" checked={form.isAdmin} onChange={(e) => setForm({ ...form, isAdmin: e.target.checked })} /> Can manage people and access, and read the activity history</label>
         <p className="muted small">Addresses like admin@, info@ or accounts@ are refused, because nobody can be held to account for a shared login.</p>
         <div><button>Create invite</button></div>
         {link && (

@@ -31,10 +31,10 @@ test('the pipeline shows each person their own prospects, and managers and partn
   await daniel.getByRole('button', { name: /Closed/ }).click();
   await expect(daniel.getByText('Pwani Fisheries Ltd')).toBeVisible();
 
-  // The firm administrator has no pipeline.
+  // The firm administrator has no prospects.
   const admin = await (await browser.newContext()).newPage();
   await signIn(admin, 'wanjiru.mugo@kangethe.example.test');
-  await expect(admin.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Pipeline' })).toHaveCount(0);
+  await expect(admin.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Prospects' })).toHaveCount(0);
 });
 
 test('the prospects page: add panel, table and cards, search and the row menu', async ({ browser }) => {

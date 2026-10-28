@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { BillingTabs } from '@/components/BillingTabs';
 import { useState } from 'react';
 import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote } from '@/components/bits';
@@ -24,6 +25,7 @@ export default function InvoicesPage() {
         <div className="row between"><h1>Invoices</h1><HelpLink topic="invoices" /></div>
         <p>Invoices start as drafts. A partner or administrator issues them, which numbers and locks them. Until KRA is connected, every issued invoice is marked as a simulation.</p>
       </div>
+      <BillingTabs />
       <div className="row between">
         <div className="row">
           <label htmlFor="inf" className="small">Show</label>

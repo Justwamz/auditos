@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { BillingTabs } from '@/components/BillingTabs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState, type FormEvent } from 'react';
 import { api } from '@/lib/api';
@@ -70,6 +71,7 @@ function Builder() {
         <div className="row between"><h1>{editing ? 'Change the draft invoice' : 'New invoice'}</h1><HelpLink topic="invoices" /></div>
         <p>Choose the client. To bill time, expenses or the fixed fee from an engagement, choose the engagement too. You can add lines of your own as well.</p>
       </div>
+      <BillingTabs />
       <form className="stack-lg" onSubmit={save}>
         <section className="sheet stack">
           <div className="form-grid">

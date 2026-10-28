@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { BillingTabs } from '@/components/BillingTabs';
 import { useState } from 'react';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote } from '@/components/bits';
@@ -42,6 +43,7 @@ export default function BillingPage() {
         <div className="row between"><h1>Billing</h1><HelpLink topic="billing" /></div>
         <p>Hours, work in progress, invoices and what is owed. You see the engagements you work on{me.data?.role === 'partner' ? ', and the whole firm as a partner' : ''}.</p>
       </div>
+      <BillingTabs />
       <ErrorNote error={s.error} />
 
       <section className="sheet row between">
@@ -52,7 +54,7 @@ export default function BillingPage() {
         <div className="row">
           <Link href="/invoices">Invoices</Link>
           <Link href="/quotes">Quotations</Link>
-          <Link href="/billing/outbox">Outbox</Link>
+          <Link href="/billing/outbox">Sent emails</Link>
           {manage && <Link href="/billing/settings">Rates, taxes and settings</Link>}
         </div>
       </section>

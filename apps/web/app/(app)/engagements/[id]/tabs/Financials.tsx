@@ -408,7 +408,7 @@ function Export({ e }: { e: Engagement }) {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      setInfo(`Exported ${filename}. The export is recorded in the audit trail.`);
+      setInfo(`Exported ${filename}. The export is recorded in the activity history.`);
     } catch (err) {
       if (!(err instanceof Error && err.message === 'cancelled')) setError(err);
     } finally {

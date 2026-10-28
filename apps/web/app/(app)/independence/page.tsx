@@ -1,5 +1,6 @@
 'use client';
 import { useState, type FormEvent } from 'react';
+import { QualityTabs } from '@/components/QualityTabs';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, Notice } from '@/components/bits';
@@ -35,6 +36,7 @@ export default function IndependencePage() {
         <h1>Independence</h1>
         <p>You need a current declaration before you can be assigned to an engagement. Declarations last twelve months.</p>
       </div>
+      <QualityTabs />
       <ErrorNote error={list.error} />
       {current ? <Notice>Your annual declaration is current until {fmtDate(current.expiresAt)}.</Notice> : list.data && <Notice kind="warn">You have no current annual declaration.</Notice>}
 

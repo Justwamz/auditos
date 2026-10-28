@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { BillingTabs } from '@/components/BillingTabs';
 import { useEffect, useState, type FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
@@ -72,6 +73,7 @@ export default function BillingSettingsPage() {
         <div className="row between"><h1>Rates, taxes and settings</h1><HelpLink topic="billing.settings" /></div>
         <p>The firm's hourly rates by role, the taxes that can be put on an invoice, and the details printed on invoices.{canEdit ? '' : ' You can read these; partners and administrators change them.'}</p>
       </div>
+      <BillingTabs />
       <ErrorNote error={error ?? data.error} />
       {done && <Notice>{done}</Notice>}
 

@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { BillingTabs } from '@/components/BillingTabs';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { api } from '@/lib/api';
@@ -55,6 +56,7 @@ export default function InvoicePage() {
         <div className="row between"><h1>{i.number ? `Invoice ${i.number}` : 'Draft invoice'}</h1><HelpLink topic="invoices" /></div>
         <p>{i.clientName} · {statusLabel(i.status, i.overdue)}{i.issueDate ? ` · issued ${i.issueDate}` : ''}{i.dueDate ? ` · due ${i.dueDate}` : ''}</p>
       </div>
+      <BillingTabs />
       <ErrorNote error={error} />
       {info && <Notice>{info}</Notice>}
 
@@ -94,14 +96,14 @@ export default function InvoicePage() {
       </section>
 
       {issued && i.status !== 'void' && (
-        <form className="sheet stack" onSubmit={(e: FormEvent) => { e.preventDefault(); void run(() => api.post(`/invoices/${i.id}/send`, { to: mail.to, ...(mail.message.trim() ? { message: mail.message } : {}) }), 'Kept in the outbox. Email is simulated, so nothing was actually sent.'); }}>
+        <form className="sheet stack" onSubmit={(e: FormEvent) => { e.preventDefault(); void run(() => api.post(`/invoices/${i.id}/send`, { to: mail.to, ...(mail.message.trim() ? { message: mail.message } : {}) }), 'Kept in the sent emails list. Email is simulated, so nothing was actually sent.'); }}>
           <h2>Send to the client</h2>
           <div className="row">
             <input aria-label="Send to email address" type="email" required placeholder="client@example.com" value={mail.to} onChange={(e) => setMail({ ...mail, to: e.target.value })} />
             <input aria-label="Message" placeholder="Message (optional)" value={mail.message} onChange={(e) => setMail({ ...mail, message: e.target.value })} style={{ minWidth: '18rem' }} />
             <button className="secondary">Send</button>
           </div>
-          <p className="muted small">Email is not connected yet: the message is kept in the <Link href="/billing/outbox">outbox</Link> and not delivered.</p>
+          <p className="muted small">Email is not connected yet: the message is kept in <Link href="/billing/outbox">sent emails</Link> and not delivered.</p>
         </form>
       )}
 

@@ -41,3 +41,23 @@ test('a partner reads an engagement they are not on, but is told it is view only
   await page.getByRole('link', { name: 'Savannah Farms Ltd' }).click();
   await expect(page.getByText('You are viewing this engagement as a partner. You are not on its team')).toBeVisible();
 });
+
+test('the side menu is grouped, and each person sees only their own entries', async ({ browser }) => {
+  const menu = (page: Page) => page.getByRole('navigation', { name: 'Main' });
+  const grace = await (await browser.newContext()).newPage();
+  await signIn(grace, 'grace.kangethe@kangethe.example.test');
+  for (const heading of ['My work', 'Clients and audits', 'Business', 'Firm']) await expect(menu(grace).getByText(heading, { exact: true })).toBeVisible();
+  for (const name of ['Today', 'Calendar', 'Timesheet', 'Clients', 'Engagements', 'Prospects', 'Billing', 'Quality and independence', 'Help']) {
+    await expect(menu(grace).getByRole('link', { name, exact: true })).toBeVisible();
+  }
+  await expect(menu(grace).getByRole('link', { name: 'People' })).toHaveCount(0);
+
+  const wanjiru = await (await browser.newContext()).newPage();
+  await signIn(wanjiru, 'wanjiru.mugo@kangethe.example.test');
+  for (const name of ['Clients', 'Billing', 'Quality and independence', 'People', 'Help']) {
+    await expect(menu(wanjiru).getByRole('link', { name, exact: true })).toBeVisible();
+  }
+  for (const name of ['Today', 'Prospects', 'Calendar', 'Timesheet', 'Engagements']) {
+    await expect(menu(wanjiru).getByRole('link', { name, exact: true })).toHaveCount(0);
+  }
+});

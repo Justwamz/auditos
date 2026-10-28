@@ -36,6 +36,8 @@ test('a manager sees the billing summary, the invoices of their engagements, and
   await expect(page.getByRole('link', { name: 'Mwangaza Traders Ltd' }).first()).toBeVisible();
 
   await open(page, '/invoices', 'Invoices');
+  await expect(page.getByRole('navigation', { name: 'Billing sections' }).getByRole('link', { name: 'Invoices' })).toHaveAttribute('aria-current', 'page');
+  await expect(nav(page).getByRole('link', { name: 'Billing' })).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('link', { name: /KA-\d{4}-\d{4}/ }).first()).toBeVisible();
   await expect(page.getByText('Savannah Farms Ltd')).toHaveCount(0);
   await page.getByLabel('Show').selectOption('overdue');

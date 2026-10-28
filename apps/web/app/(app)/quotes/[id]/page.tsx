@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { BillingTabs } from '@/components/BillingTabs';
 import { useParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { api } from '@/lib/api';
@@ -49,6 +50,7 @@ export default function QuotePage() {
         <div className="row between"><h1>{d.number ? `Quotation ${d.number}` : 'Draft quotation'}</h1><HelpLink topic="quotes" /></div>
         <p>{d.subjectName} · {d.title} · {statusLabel(d.status)}{d.validUntil ? ` · valid until ${d.validUntil}` : ''}</p>
       </div>
+      <BillingTabs />
       <ErrorNote error={error} />
       {info && <Notice>{info}</Notice>}
 
@@ -76,7 +78,7 @@ export default function QuotePage() {
             <input aria-label="Send to email address" type="email" placeholder="client@example.com (optional)" value={to} onChange={(e) => setTo(e.target.value)} />
             <button>Send and number it</button>
           </div>
-          <p className="muted small">Email is not connected yet: the message is kept in the <Link href="/billing/outbox">outbox</Link>.</p>
+          <p className="muted small">Email is not connected yet: the message is kept in <Link href="/billing/outbox">sent emails</Link>.</p>
         </form>
       )}
 

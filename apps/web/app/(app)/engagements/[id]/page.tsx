@@ -70,7 +70,7 @@ function Workspace() {
 
       {!e.member && (
         <div className="notice warn" role="status">
-          You are viewing this engagement as a partner. You are not on its team, so you can read everything but cannot change anything. Ask the manager to add you if you need to work on it. Your viewing is recorded in the audit trail.
+          You are viewing this engagement as a partner. You are not on its team, so you can read everything but cannot change anything. Ask the manager to add you if you need to work on it. Your viewing is recorded in the activity history.
         </div>
       )}
 

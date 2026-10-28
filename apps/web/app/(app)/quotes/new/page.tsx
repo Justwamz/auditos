@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { BillingTabs } from '@/components/BillingTabs';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { api } from '@/lib/api';
@@ -41,6 +42,7 @@ export default function NewQuotePage() {
         <p className="small"><Link href="/quotes">Quotations</Link></p>
         <div className="row between"><h1>New quotation</h1><HelpLink topic="quotes" /></div>
       </div>
+      <BillingTabs />
       <form className="stack-lg" onSubmit={save}>
         <section className="sheet stack">
           <div className="row">

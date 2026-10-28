@@ -129,7 +129,7 @@ export function ItemPanel({
           }}
         >
           <div className="field">
-            <label htmlFor={`del-${d.id}`}>Why is this paper being deleted? <span className="hint">Recorded in the audit trail.</span></label>
+            <label htmlFor={`del-${d.id}`}>Why is this paper being deleted? <span className="hint">Recorded in the activity history.</span></label>
             <input id={`del-${d.id}`} required minLength={5} value={reason} onChange={(e) => setReason(e.target.value)} />
           </div>
           <div className="row"><button className="danger">Confirm deletion</button><button type="button" className="secondary" onClick={() => setDeleting(false)}>Keep paper</button></div>
@@ -182,7 +182,7 @@ export function ItemPanel({
           <div className="stack small">
             <VersionHistory itemId={d.id} canRestore={!locked && viewer.role !== 'quality_officer' && viewer.role !== 'eqr'} onRestored={reload} />
             <table>
-              <thead><tr><th>Audit trail</th><th>When</th></tr></thead>
+              <thead><tr><th>Activity history</th><th>When</th></tr></thead>
               <tbody>{history.data.events.map((e) => <tr key={e.seq}><td>{e.action.replace(/^item\./, '').replace(/_/g, ' ')}</td><td>{new Date(e.at).toLocaleString('en-GB')}</td></tr>)}</tbody>
             </table>
           </div>

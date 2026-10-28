@@ -166,7 +166,7 @@ export default function ClientPage() {
 
       <section className="sheet stack">
         <h2>People at the client</h2>
-        <p className="muted">Phone numbers, emails, ID numbers and KRA PINs are hidden by default. Revealing one needs a reason, and every reveal is recorded in the audit trail.</p>
+        <p className="muted">Phone numbers, emails, ID numbers and KRA PINs are hidden by default. Revealing one needs a reason, and every reveal is recorded in the activity history.</p>
         <ErrorNote error={contacts.error} />
         {contacts.data?.contacts.length === 0 && <Empty>No contacts yet. Add the finance contact below.</Empty>}
         {contacts.data && contacts.data.contacts.length > 0 && (

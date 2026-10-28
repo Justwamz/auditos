@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { openDemoPaper, signIn } from '../helpers';
 
-test('personal details are masked, revealing needs a reason, and the reveal shows in the audit trail', async ({ browser }) => {
+test('personal details are masked, revealing needs a reason, and the reveal shows in the activity history', async ({ browser }) => {
   const staff = await (await browser.newContext()).newPage();
   await signIn(staff, 'brian.kiptoo@kangethe.example.test');
   await staff.goto('/clients');
@@ -18,14 +18,16 @@ test('personal details are masked, revealing needs a reason, and the reveal show
   await staff.getByRole('button', { name: 'Reveal and record' }).click();
   await expect(staff.getByText('+254 712 345 678')).toBeVisible();
 
-  // Staff have no audit trail.
-  await expect(staff.getByRole('link', { name: 'Audit trail' })).toHaveCount(0);
+  // Staff have no activity history.
+  await expect(staff.getByRole('link', { name: 'Activity history' })).toHaveCount(0);
 
   // The partner reads it, in plain English, with the reason.
   const partner = await (await browser.newContext()).newPage();
   await signIn(partner, 'grace.kangethe@kangethe.example.test');
-  await partner.getByRole('link', { name: 'Audit trail' }).click();
-  await expect(partner.getByRole('heading', { name: 'Audit trail' })).toBeVisible();
+  await partner.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Quality and independence' }).click();
+  await partner.getByRole('navigation', { name: 'Quality sections' }).getByRole('link', { name: 'Activity history' }).click();
+  await expect(partner.getByRole('heading', { name: 'Activity history', level: 1 })).toBeVisible();
+  await expect(partner.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Quality and independence' })).toHaveAttribute('aria-current', 'page');
   await expect(
     partner.getByText('Brian Kiptoo revealed the phone number of Jane Wambui at Mwangaza Traders Ltd. Reason given: "Calling to confirm the year-end visit"'),
   ).toBeVisible();

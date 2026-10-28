@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { BillingTabs } from '@/components/BillingTabs';
 import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
@@ -16,6 +17,7 @@ export default function QuotesPage() {
         <div className="row between"><h1>Quotations</h1><HelpLink topic="quotes" /></div>
         <p>Price a job for a client or a prospect. Sending numbers the quotation; when it is accepted, its amount can become the engagement's fixed fee.</p>
       </div>
+      <BillingTabs />
       <div className="row between"><span /><Link href="/quotes/new" className="button">New quotation</Link></div>
       <ErrorNote error={list.error} />
       <section className="sheet">
