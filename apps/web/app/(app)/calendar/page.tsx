@@ -1,207 +1,168 @@
 'use client';
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
+import { usePref } from '@/lib/prefs';
+import { KIND_STYLES, monthGrid, today } from '@/lib/calendar';
 import { ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
+import { DayPanel } from '@/components/calendar/DayPanel';
+import { EventForm } from '@/components/calendar/EventForm';
+import { MiniMonth } from '@/components/calendar/MiniMonth';
+import { MonthView } from '@/components/calendar/MonthView';
+import type { CalEvent, Milestone, Person } from '@/components/calendar/types';
+import { PageHead } from '@/components/ui/PageHead';
 
-interface CalEvent {
-  id: string; title: string; kind: string; startsAt: string; endsAt: string; allDay: boolean; location: string | null; notes: string | null;
-  clientId: string | null; clientName: string | null; engagementId: string | null; attendees: { id: string; name: string }[]; createdByName: string; mine: boolean;
-}
-interface Milestone { date: string; title: string; engagementId: string; kind: string }
-interface Person { id: string; fullName: string | null; email: string; role: string }
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+// Only the month is ready. The other three are shown so people can see what is coming, but they cannot be chosen yet.
+const VIEWS = [
+  { id: 'day', label: 'Day', ready: false },
+  { id: 'workweek', label: 'Work week', ready: false },
+  { id: 'week', label: 'Week', ready: false },
+  { id: 'month', label: 'Month', ready: true },
+];
 
-const TZ = 'Africa/Nairobi';
-const KINDS = [
-  { id: 'meeting', label: 'Meeting' },
-  { id: 'fieldwork', label: 'Fieldwork' },
-  { id: 'deadline', label: 'Deadline' },
-  { id: 'leave', label: 'Leave' },
-  { id: 'training', label: 'Training' },
-  { id: 'other', label: 'Other' },
-] as const;
-
-const dayOf = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(iso));
-const timeOf = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
-const addDays = (date: string, n: number) => {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
+const firstOf = (day: string) => `${day.slice(0, 7)}-01`;
+const shiftMonth = (day: string, n: number) => {
+  const d = new Date(`${firstOf(day)}T00:00:00Z`);
+  d.setUTCMonth(d.getUTCMonth() + n);
   return d.toISOString().slice(0, 10);
 };
-const mondayOf = (date: string) => {
-  const dow = new Date(`${date}T00:00:00Z`).getUTCDay();
-  return addDays(date, dow === 0 ? -6 : 1 - dow);
-};
-const label = (date: string) => new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-const today = () => dayOf(new Date().toISOString());
-
-const blank = (date: string) => ({ title: '', kind: 'meeting', date, allDay: false, start: '09:00', end: '10:00', location: '', clientId: '', engagementId: '', attendeeIds: [] as string[] });
 
 export default function CalendarPage() {
-  const [weekStart, setWeekStart] = useState(() => mondayOf(today()));
+  const [, setView] = usePref<string>('calendar.view', 'month');
+  const [selected, setSelected] = useState(() => today());
+  const [anchor, setAnchor] = useState(() => today());
   const [person, setPerson] = useState('');
-  const weekEnd = addDays(weekStart, 6);
-  const cal = useApi<{ events: CalEvent[]; milestones: Milestone[] }>(`/calendar?from=${weekStart}&to=${weekEnd}${person ? `&person=${person}` : ''}`);
+  const [hidden, setHidden] = useState<string[]>([]);
+  const grid = useMemo(() => monthGrid(anchor), [anchor]);
+  const from = grid[0]![0]!;
+  const to = grid[grid.length - 1]![6]!;
+  const cal = useApi<{ events: CalEvent[]; milestones: Milestone[] }>(`/calendar?from=${from}&to=${to}${person ? `&person=${person}` : ''}`);
   const me = useApi<{ userId: string; role: string; isAdmin: boolean }>('/me');
   const people = useApi<{ people: Person[] }>('/people');
-  const clients = useApi<{ clients: { id: string; name: string }[] }>('/clients');
-  const engagements = useApi<{ engagements: { id: string; clientName: string; periodEnd: string; member: boolean }[] }>('/engagements');
-  const [form, setForm] = useState(() => blank(today()));
-  const [editing, setEditing] = useState<string | null>(null);
+  const [panel, setPanel] = useState<{ editing?: CalEvent } | null>(null);
   const [error, setError] = useState<unknown>();
   const [done, setDone] = useState('');
 
   const sees = me.data?.role === 'partner' || me.data?.role === 'manager';
-  const canSchedule = me.data?.role !== 'firm_admin';
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const events = cal.data?.events ?? [];
+  const canSchedule = me.data !== undefined && me.data.role !== 'firm_admin';
+  const meId = me.data?.userId ?? '';
+  const events = useMemo(() => (cal.data?.events ?? []).filter((e) => !hidden.includes(e.kind)), [cal.data, hidden]);
+  const milestones = cal.data?.milestones ?? [];
 
-  const onDay = (d: string) =>
-    events.filter((e) => {
-      const first = dayOf(e.startsAt);
-      const last = dayOf(e.endsAt);
-      return d >= first && d <= last;
-    });
+  function go(day: string) {
+    setSelected(day);
+    setAnchor(day);
+  }
+  function step(n: number) {
+    const first = shiftMonth(anchor, n);
+    go(first.slice(0, 7) === today().slice(0, 7) ? today() : first);
+  }
 
-  async function save(ev: FormEvent) {
-    ev.preventDefault();
+  async function cancel(e: CalEvent) {
     setError(undefined);
     setDone('');
-    const startsAt = `${form.date}T${form.allDay ? '00:00' : form.start}:00+03:00`;
-    const endsAt = `${form.date}T${form.allDay ? '23:59' : form.end}:00+03:00`;
-    const body = {
-      title: form.title, kind: form.kind, startsAt, endsAt, allDay: form.allDay, attendeeIds: form.attendeeIds,
-      ...(form.location.trim() ? { location: form.location.trim() } : {}),
-      ...(form.clientId ? { clientId: form.clientId } : {}),
-      ...(form.engagementId ? { engagementId: form.engagementId } : {}),
-    };
     try {
-      if (editing) await api.patch(`/calendar/${editing}`, body);
-      else await api.post('/calendar', body);
-      setDone(editing ? 'Event updated.' : 'Event added to the calendar.');
-      setEditing(null);
-      setForm(blank(form.date));
+      await api.post(`/calendar/${e.id}/cancel`, {});
+      setDone(`${e.title} cancelled.`);
       cal.reload();
-    } catch (e) {
-      setError(e);
+    } catch (err) {
+      setError(err);
     }
   }
 
-  async function cancel(id: string) {
-    setError(undefined);
-    try {
-      await api.post(`/calendar/${id}/cancel`, {});
-      cal.reload();
-    } catch (e) {
-      setError(e);
-    }
-  }
-
-  function edit(e: CalEvent) {
-    setEditing(e.id);
-    setForm({
-      title: e.title, kind: e.kind, date: dayOf(e.startsAt), allDay: e.allDay, start: timeOf(e.startsAt), end: timeOf(e.endsAt),
-      location: e.location ?? '', clientId: e.clientId ?? '', engagementId: e.engagementId ?? '', attendeeIds: e.attendees.map((a) => a.id),
-    });
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-  }
-
-  const toggle = (id: string) => setForm({ ...form, attendeeIds: form.attendeeIds.includes(id) ? form.attendeeIds.filter((x) => x !== id) : [...form.attendeeIds, id] });
+  const addButton = canSchedule ? <button type="button" onClick={() => { setDone(''); setPanel({}); }}>+ New event</button> : undefined;
+  const month = anchor.slice(0, 7);
 
   return (
     <div className="stack-lg">
-      <div className="page-head">
-        <div className="row between"><h1>Calendar</h1><HelpLink topic="calendar" /></div>
-        <p>
-          {sees ? 'What the firm is doing this week: your own events, and those of the people on your teams. ' : 'Your own events and those of your engagements. '}
-          Year ends, report dates and file-lock deadlines appear by themselves.
-        </p>
-      </div>
+      <PageHead
+        title="Calendar"
+        sentence={`${sees ? 'Your own events and those of the people on your teams. ' : 'Your own events and those of your engagements. '}Year ends, report dates and file-lock deadlines appear by themselves.`}
+        action={addButton}
+        help={<HelpLink topic="calendar" />}
+      />
       <ErrorNote error={error ?? cal.error} />
+      {done && <Notice>{done}</Notice>}
 
-      <section className="sheet row between">
+      <div className="cal-toolbar">
         <div className="row">
-          <button className="secondary" onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Previous week">Previous week</button>
-          <button className="secondary" onClick={() => setWeekStart(mondayOf(today()))}>This week</button>
-          <button className="secondary" onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Next week">Next week</button>
-          <strong>{label(weekStart)} to {label(weekEnd)}</strong>
+          <button type="button" className="secondary" onClick={() => go(today())}>Today</button>
+          <button type="button" className="secondary cal-step" aria-label="Previous month" onClick={() => step(-1)}><span aria-hidden="true">‹</span></button>
+          <button type="button" className="secondary cal-step" aria-label="Next month" onClick={() => step(1)}><span aria-hidden="true">›</span></button>
+          <h2 className="cal-month-title">{MONTH_NAMES[Number(month.slice(5)) - 1]} {month.slice(0, 4)}</h2>
         </div>
-        {sees && (
-          <div className="row">
-            <label htmlFor="cp" className="small">Show</label>
-            <select id="cp" value={person} onChange={(e) => setPerson(e.target.value)} style={{ width: 'auto' }}>
-              <option value="">Everyone I can see</option>
-              {people.data?.people.map((p) => <option key={p.id} value={p.id}>{p.fullName ?? p.email}</option>)}
-            </select>
-          </div>
-        )}
-      </section>
-
-      <div className="week" role="list" aria-label="This week">
-        {days.map((d) => (
-          <section key={d} className={`day${d === today() ? ' today' : ''}`} role="listitem" aria-label={label(d)}>
-            <h3>{label(d)}</h3>
-            {(cal.data?.milestones ?? []).filter((m) => m.date === d).map((m) => <div key={`${m.engagementId}-${m.kind}`} className="milestone">◆ {m.title}</div>)}
-            {onDay(d).map((e) => (
-              <div key={`${e.id}-${d}`} className={`event kind-${e.kind}`}>
-                <div className="small muted">{e.allDay ? 'All day' : `${timeOf(e.startsAt)} to ${timeOf(e.endsAt)}`}</div>
-                <strong>{e.title}</strong>
-                <div className="small">{[e.clientName, e.location].filter(Boolean).join(' · ')}</div>
-                <div className="small muted">{e.createdByName}{e.attendees.length > 0 ? ` with ${e.attendees.map((a) => a.name).join(', ')}` : ''}</div>
-                {e.mine && (
-                  <div className="row">
-                    <button className="quiet" onClick={() => edit(e)}>Edit</button>
-                    <button className="quiet" onClick={() => cancel(e.id)}>Cancel</button>
-                  </div>
-                )}
-              </div>
+        <div className="row">
+          {sees && (
+            <div className="row">
+              <label htmlFor="cp" className="small">Show</label>
+              <select id="cp" value={person} onChange={(e) => setPerson(e.target.value)} style={{ width: 'auto' }}>
+                <option value="">Everyone I can see</option>
+                {people.data?.people.map((p) => <option key={p.id} value={p.id}>{p.fullName ?? p.email}</option>)}
+              </select>
+            </div>
+          )}
+          <div className="segmented cal-views" role="radiogroup" aria-label="How to show the calendar">
+            {VIEWS.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                role="radio"
+                aria-checked={v.id === 'month'}
+                disabled={!v.ready}
+                title={v.ready ? undefined : 'Not ready yet'}
+                onClick={() => setView(v.id)}
+              >
+                {v.label}
+              </button>
             ))}
-          </section>
-        ))}
+          </div>
+        </div>
       </div>
 
-      {canSchedule && (
-        <form className="sheet stack" onSubmit={save}>
-          <h2>{editing ? 'Change the event' : 'Add an event'}</h2>
-          <div className="form-grid">
-            <div className="field"><label htmlFor="et">Title</label><input id="et" required minLength={2} maxLength={200} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
-            <div className="field">
-              <label htmlFor="ek">Kind</label>
-              <select id="ek" value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>{KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}</select>
+      <div className="cal-layout">
+        <div className="cal-side">
+          <section className="sheet">
+            <MiniMonth anchor={anchor} selected={selected} onPick={go} />
+          </section>
+          <section className="sheet cal-legend" aria-label="What to show">
+            <h3>What to show</h3>
+            <div className="chips">
+              {Object.entries(KIND_STYLES).map(([id, k]) => {
+                const on = !hidden.includes(id);
+                return (
+                  <button key={id} type="button" className="chip" aria-pressed={on} onClick={() => setHidden(on ? [...hidden, id] : hidden.filter((x) => x !== id))}>
+                    <span className="cal-swatch" style={{ background: `var(${k.token})` }} aria-hidden="true" />
+                    {k.label}
+                  </button>
+                );
+              })}
             </div>
-            <div className="field"><label htmlFor="ed">Date</label><input id="ed" type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
-            {!form.allDay && <div className="field"><label htmlFor="es">From</label><input id="es" type="time" required value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} /></div>}
-            {!form.allDay && <div className="field"><label htmlFor="ee">To</label><input id="ee" type="time" required value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })} /></div>}
-            <div className="field"><label htmlFor="el">Where</label><input id="el" maxLength={200} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
-            <div className="field">
-              <label htmlFor="ec">Client</label>
-              <select id="ec" value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })}>
-                <option value="">None</option>
-                {clients.data?.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div className="field">
-              <label htmlFor="eg">Engagement</label>
-              <select id="eg" value={form.engagementId} onChange={(e) => setForm({ ...form, engagementId: e.target.value })}>
-                <option value="">None</option>
-                {engagements.data?.engagements.filter((g) => g.member).map((g) => <option key={g.id} value={g.id}>{g.clientName}, year ended {g.periodEnd}</option>)}
-              </select>
-            </div>
-          </div>
-          <label className="row small"><input type="checkbox" checked={form.allDay} onChange={(e) => setForm({ ...form, allDay: e.target.checked })} /> All day</label>
-          <fieldset className="attendees">
-            <legend className="small">Invite</legend>
-            {people.data?.people.filter((p) => p.id !== me.data?.userId).map((p) => (
-              <label key={p.id} className="row small"><input type="checkbox" checked={form.attendeeIds.includes(p.id)} onChange={() => toggle(p.id)} /> {p.fullName ?? p.email}</label>
-            ))}
-          </fieldset>
-          {done && <Notice>{done}</Notice>}
-          <div className="row">
-            <button>{editing ? 'Save changes' : 'Add to calendar'}</button>
-            {editing && <button type="button" className="quiet" onClick={() => { setEditing(null); setForm(blank(form.date)); }}>Stop editing</button>}
-          </div>
-        </form>
+          </section>
+        </div>
+        <section className="sheet cal-main" aria-label="Month calendar">
+          <MonthView days={grid} month={month} events={events} milestones={milestones} selected={selected} onSelect={setSelected} meId={meId} />
+        </section>
+        <DayPanel
+          day={selected}
+          events={events}
+          milestones={milestones}
+          meId={meId}
+          onEdit={(e) => { setDone(''); setPanel({ editing: e }); }}
+          onCancel={(e) => void cancel(e)}
+        />
+      </div>
+
+      {panel && me.data && (
+        <EventForm
+          editing={panel.editing}
+          defaults={{ date: selected }}
+          people={people.data?.people ?? []}
+          meId={meId}
+          onClose={() => setPanel(null)}
+          onDone={(message) => { setPanel(null); setDone(message); cal.reload(); }}
+        />
       )}
     </div>
   );
