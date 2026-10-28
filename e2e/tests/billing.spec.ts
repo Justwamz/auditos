@@ -24,6 +24,30 @@ test('staff log time and expenses but see no billing, rates or invoices', async 
   await expect(page.getByText(/logged/).first()).toBeVisible();
   await expect(page.getByLabel('Time (hours)')).toHaveCount(0);
 
+  const daily = page.getByRole('list', { name: 'Daily totals' }).getByRole('listitem');
+  await expect(daily).toHaveCount(7);
+  await expect(daily.filter({ hasText: '(today)' })).toHaveCount(1);
+  const range = page.locator('.cal-month-title');
+  const thisWeek = await range.textContent();
+  await page.getByRole('button', { name: 'Next week' }).click();
+  await expect(range).not.toHaveText(thisWeek ?? '');
+  await expect(daily.filter({ hasText: '(today)' })).toHaveCount(0);
+  await expect(daily.filter({ hasText: '0h 00m' })).toHaveCount(7);
+  await page.getByRole('button', { name: 'Previous week' }).click();
+  await expect(range).toHaveText(thisWeek ?? '');
+  await expect(daily.filter({ hasText: '(today)' })).toHaveCount(1);
+
+  // Invalid hours: the error shows once and the panel stays open.
+  await page.getByRole('button', { name: '+ Log time' }).click();
+  const bad = page.getByRole('dialog', { name: 'Log time' });
+  await bad.getByLabel('Time (hours)').fill('abc');
+  await bad.getByLabel('What you did').fill('Browser test: bad hours');
+  await bad.getByRole('button', { name: 'Log time', exact: true }).click();
+  await expect(bad.getByText('Enter the time as hours, for example 1.5, or as 1:30.')).toHaveCount(1);
+  await expect(bad).toBeVisible();
+  await bad.getByRole('button', { name: 'Cancel' }).click();
+  await expect(bad).toHaveCount(0);
+
   const stamp = Date.now();
   const doing = `Browser test: attendance at the stock count ${stamp}`;
   await page.getByRole('button', { name: '+ Log time' }).click();
@@ -38,6 +62,8 @@ test('staff log time and expenses but see no billing, rates or invoices', async 
   await expect(page.getByRole('button', { name: '+ Log time' })).toBeFocused();
   await expect(page.getByRole('row', { name: new RegExp(doing) })).toHaveCount(1);
   await expect(page.getByText(/KES [\d,]+\.\d\d/)).toHaveCount(0);
+  await expect(page.getByText('3h 30m').first()).toBeVisible();
+  await expect(daily.filter({ hasText: '(today)' })).toContainText('1h 30m');
 
   const spent = `Browser test: fuel to the client ${stamp}`;
   await page.getByRole('button', { name: '+ Record expense' }).click();

@@ -38,6 +38,7 @@ export default function TimesheetPage() {
   const [done, setDone] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const entries = [...(time.data?.entries ?? [])].sort((a, b) => a.workDate.localeCompare(b.workDate));
   const total = time.data?.totals.minutes ?? 0;
   const billable = time.data?.totals.billableMinutes ?? 0;
@@ -60,7 +61,7 @@ export default function TimesheetPage() {
     setPanelError(undefined);
     const minutes = parseHours(form.hours);
     if (minutes === null) {
-      setPanelError(new Error('Enter the time as hours, for example 1.5, or as 1:30.'));
+      setPanelError('Enter the time as hours, for example 1.5, or as 1:30.');
       return;
     }
     setBusy(true);
@@ -121,7 +122,7 @@ export default function TimesheetPage() {
         action={actions}
         help={<HelpLink topic="timesheet" />}
       />
-      <ErrorNote error={error ?? time.error ?? expenses.error} />
+      <ErrorNote error={error ?? me.error ?? time.error ?? expenses.error} />
       {done && <Notice>{done}</Notice>}
 
       <div className="cal-toolbar">
@@ -135,6 +136,19 @@ export default function TimesheetPage() {
           <strong>{hoursLabel(total)}</strong> logged · <strong>{hoursLabel(billable)}</strong> billable{total > 0 && <> · {Math.round((billable / total) * 100)}% billable</>}
         </div>
       </div>
+
+      <ul className="daily-totals" aria-label="Daily totals">
+        {days.map((d) => {
+          const isToday = d === todayNairobi();
+          const minutes = entries.filter((e) => e.workDate === d).reduce((n, e) => n + e.minutes, 0);
+          return (
+            <li key={d} className={isToday ? 'is-today' : undefined} aria-current={isToday ? 'date' : undefined}>
+              <span className="daily-day">{dayLabel(d)}{isToday ? ' (today)' : ''}</span>
+              <strong>{hoursLabel(minutes)}</strong>
+            </li>
+          );
+        })}
+      </ul>
 
       {loading ? (
         <section className="sheet prospects-loading" aria-label="Loading your week">
@@ -185,8 +199,8 @@ export default function TimesheetPage() {
                   <tbody>
                     {expenses.data?.expenses.map((x) => (
                       <tr key={x.id}>
-                        <td>{x.spentOn}</td>
-                        <td>{x.engagementName}</td>
+                        <td>{dayLabel(x.spentOn)}</td>
+                        <td>{x.engagementName ?? "-"}</td>
                         <td>
                           <strong>{x.description}</strong>
                           <div className="small muted">{x.category}{x.rebillable ? '' : ' · not rebilled'}{x.invoiced ? ' · billed' : ''}</div>
@@ -228,7 +242,7 @@ export default function TimesheetPage() {
           <div className="field"><label htmlFor="th">Time (hours)</label><input id="th" required placeholder="1.5 or 1:30" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} /></div>
           <div className="field"><label htmlFor="tw">What you did</label><input id="tw" required maxLength={500} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           {form.engagementId && <label className="row small"><input type="checkbox" checked={form.billable} onChange={(e) => setForm({ ...form, billable: e.target.checked })} /> Billable to the client</label>}
-          <ErrorNote error={panelError} />
+          {typeof panelError === 'string' ? <Notice kind="error">{panelError}</Notice> : <ErrorNote error={panelError} />}
         </form>
       </SidePanel>
 
@@ -260,7 +274,7 @@ export default function TimesheetPage() {
           <div className="field"><label htmlFor="xw">What for</label><input id="xw" required maxLength={300} value={exp.description} onChange={(e) => setExp({ ...exp, description: e.target.value })} /></div>
           <div className="field"><label htmlFor="xa">Amount (KES)</label><input id="xa" required inputMode="decimal" placeholder="5000.00" value={exp.amount} onChange={(e) => setExp({ ...exp, amount: e.target.value })} /></div>
           <label className="row small"><input type="checkbox" checked={exp.rebillable} onChange={(e) => setExp({ ...exp, rebillable: e.target.checked })} /> Add to the client's invoice</label>
-          <ErrorNote error={panelError} />
+          {typeof panelError === 'string' ? <Notice kind="error">{panelError}</Notice> : <ErrorNote error={panelError} />}
         </form>
       </SidePanel>
     </div>
