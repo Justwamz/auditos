@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { MeProvider } from '@/components/Me';
 import { Nav } from '@/components/Nav';
 import { StepUpProvider } from '@/components/StepUp';
 import { resolveApiUrl } from '@/lib/apiUrl';
@@ -30,7 +31,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <div className="shell">
         <Nav name={me.fullName ?? me.email} role={me.role} isAdmin={me.isAdmin} firm={firm} multiFirm={me.memberships.length > 1} />
         <main className="main" id="content">
-          {children}
+          <MeProvider role={me.role} isAdmin={me.isAdmin}>{children}</MeProvider>
         </main>
       </div>
     </StepUpProvider>

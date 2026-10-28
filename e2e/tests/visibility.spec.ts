@@ -57,6 +57,7 @@ test('the side menu is grouped, and each person sees only their own entries', as
   for (const name of ['Clients', 'Billing', 'Quality and independence', 'People', 'Help']) {
     await expect(menu(wanjiru).getByRole('link', { name, exact: true })).toBeVisible();
   }
+  await expect(menu(wanjiru).getByRole('link', { name: 'Quality and independence' })).toHaveAttribute('href', '/audit-trail');
   for (const name of ['Today', 'Prospects', 'Calendar', 'Timesheet', 'Engagements']) {
     await expect(menu(wanjiru).getByRole('link', { name, exact: true })).toHaveCount(0);
   }

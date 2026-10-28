@@ -43,7 +43,7 @@ export function navFor(role: string, isAdmin: boolean): NavGroup[] {
     {
       heading: 'Firm',
       items: [
-        { href: '/independence', label: 'Quality and independence', show: true },
+        { href: f.admin ? '/audit-trail' : '/independence', label: 'Quality and independence', show: true },
         { href: '/admin/users', label: 'People', show: f.holdsAdmin },
       ],
     },
@@ -63,7 +63,7 @@ export function billingTabs(role: string, isAdmin: boolean): TabDef[] {
     { href: '/invoices', label: 'Invoices', show: true },
     { href: '/quotes', label: 'Quotations', show: true },
     { href: '/billing/outbox', label: 'Sent emails', show: true },
-    { href: '/billing/settings', label: 'Settings', show: true },
+    { href: '/billing/settings', label: 'Settings', show: f.admin || role === 'partner' || isAdmin },
   ];
 }
 
@@ -71,9 +71,14 @@ export function billingTabs(role: string, isAdmin: boolean): TabDef[] {
 export function qualityTabs(role: string, isAdmin: boolean): TabDef[] {
   const f = flags(role, isAdmin);
   return [
-    { href: '/independence', label: 'Independence', show: true },
+    { href: '/independence', label: 'Independence', show: !f.admin },
     { href: '/audit-trail', label: 'Activity history', show: f.seesTrail },
   ];
+}
+
+/** A tab bar is worth showing only when there are at least two tabs to choose between. */
+export function shownTabs(tabs: TabDef[]): boolean {
+  return tabs.filter((t) => t.show).length >= 2;
 }
 
 /** The tab whose address best matches the path (longest prefix; `/billing` itself only matches exactly). */
@@ -91,6 +96,6 @@ export function isCurrent(href: string, path: string): boolean {
   if (href === '/') return path === '/';
   const under = (h: string) => path === h || path.startsWith(`${h}/`);
   if (href === '/billing') return under('/billing') || under('/invoices') || under('/quotes');
-  if (href === '/independence') return under('/independence') || under('/audit-trail');
+  if (href === '/independence' || href === '/audit-trail') return under('/independence') || under('/audit-trail');
   return under(href);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { billingTabs, navFor, qualityTabs } from '../lib/nav';
+import { billingTabs, navFor, qualityTabs, shownTabs } from '../lib/nav';
 
 const summary = (role: string, isAdmin = false) =>
   navFor(role, isAdmin).map((g) => `${g.heading ?? '-'}: ${g.items.map((i) => i.href).join(' ')}`);
@@ -25,16 +25,21 @@ describe('navFor', () => {
     expect(summary('staff', true)).toEqual([TODAY, 'My work: /calendar /timesheet', 'Clients and audits: /clients /engagements', 'Business: /pipeline /billing', 'Firm: /independence /admin/users', HELP]);
   });
   test('firm administrator has no Today, no Prospects, no work pages', () => {
-    const expected = ['Clients and audits: /clients', 'Business: /billing', 'Firm: /independence /admin/users', HELP];
+    const expected = ['Clients and audits: /clients', 'Business: /billing', 'Firm: /audit-trail /admin/users', HELP];
     expect(summary('firm_admin', false)).toEqual(expected);
     expect(summary('firm_admin', true)).toEqual(expected);
+  });
+  test('quality officer and external reviewer see the work pages but no business entries', () => {
+    const expected = [TODAY, 'My work: /calendar /timesheet', 'Clients and audits: /clients /engagements', 'Firm: /independence', HELP];
+    expect(summary('quality_officer')).toEqual(expected);
+    expect(summary('eqr')).toEqual(expected);
   });
   test('menu names', () => {
     const labels = navFor('partner', true).flatMap((g) => g.items.map((i) => i.label));
     expect(labels).toEqual(['Today', 'Calendar', 'Timesheet', 'Clients', 'Engagements', 'Prospects', 'Billing', 'Quality and independence', 'People', 'Help']);
   });
   test('no empty group and at most five headings, for every role', () => {
-    for (const role of ['staff', 'senior', 'manager', 'partner', 'firm_admin']) {
+    for (const role of ['staff', 'senior', 'manager', 'partner', 'firm_admin', 'quality_officer', 'eqr']) {
       for (const isAdmin of [false, true]) {
         const groups = navFor(role, isAdmin);
         expect(groups.every((g) => g.items.length > 0)).toBe(true);
@@ -55,9 +60,23 @@ describe('tab bars', () => {
     expect(shown(billingTabs('partner', false))).toEqual(['Overview', 'Invoices', 'Quotations', 'Sent emails', 'Settings']);
     expect(billingTabs('partner', false).map((t) => t.href)).toEqual(['/billing', '/invoices', '/quotes', '/billing/outbox', '/billing/settings']);
   });
+  test('Settings is for partners, firm administrators and site administrators only', () => {
+    expect(shown(billingTabs('manager', false))).not.toContain('Settings');
+    expect(shown(billingTabs('partner', false))).toContain('Settings');
+    expect(shown(billingTabs('firm_admin', false))).toContain('Settings');
+    expect(shown(billingTabs('manager', true))).toContain('Settings');
+  });
+  test('a bar with fewer than two tabs is not shown', () => {
+    expect(shownTabs(qualityTabs('senior', false))).toBe(false);
+    expect(shownTabs(qualityTabs('eqr', false))).toBe(false);
+    expect(shownTabs(qualityTabs('firm_admin', false))).toBe(false);
+    expect(shownTabs(qualityTabs('manager', false))).toBe(true);
+    expect(shownTabs(billingTabs('staff', false))).toBe(false);
+    expect(shownTabs(billingTabs('manager', false))).toBe(true);
+  });
   test('qualityTabs hides Activity history from a senior', () => {
     expect(shown(qualityTabs('senior', false))).toEqual(['Independence']);
     expect(shown(qualityTabs('manager', false))).toEqual(['Independence', 'Activity history']);
-    expect(shown(qualityTabs('firm_admin', false))).toContain('Activity history');
+    expect(shown(qualityTabs('firm_admin', false))).toEqual(['Activity history']);
   });
 });
