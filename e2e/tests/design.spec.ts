@@ -10,10 +10,11 @@ test('uses Inter everywhere', async ({ page }) => {
     return {
       body: getComputedStyle(document.body).fontFamily,
       h1: getComputedStyle(document.querySelector('h1')!).fontFamily,
-      loaded: document.fonts.check('16px Inter'),
+      loadedFaces: [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family),
     };
   });
-  expect(fonts.body).toMatch(/^"?Inter/);
-  expect(fonts.h1).toMatch(/^"?Inter/);
-  expect(fonts.loaded).toBe(true);
+  // next/font hashes the family name (for example "__Inter_abc123"), so match loosely.
+  expect(fonts.body).toMatch(/^["']?_*inter/i);
+  expect(fonts.h1).toMatch(/^["']?_*inter/i);
+  expect(fonts.loadedFaces.some((family) => /inter/i.test(family))).toBe(true);
 });
