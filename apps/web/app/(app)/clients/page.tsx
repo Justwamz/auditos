@@ -81,10 +81,10 @@ export default function ClientsPage() {
         </section>
       )}
 
-      {list.data && all.length === 0 && (
+      {list.data && all.length === 0 && !me.loading && (
         <section className="sheet">
-          <EmptyState kind="people" title="No clients yet" action={addButton}>
-            {canAdd ? 'Add your first client to start an engagement.' : 'No clients assigned to you yet.'}
+          <EmptyState kind="people" title="No clients yet">
+            {canAdd ? 'Use Add a client at the top to start an engagement.' : 'No clients assigned to you yet.'}
           </EmptyState>
         </section>
       )}
@@ -93,7 +93,7 @@ export default function ClientsPage() {
         <>
           <div className="prospects-toolbar">
             <input type="search" className="prospects-search" aria-label="Search clients" placeholder="Search by client, manager or sector" value={query} onChange={(e) => setQuery(e.target.value)} />
-            <span className="small muted">{rows.length === all.length ? `${all.length} ${all.length === 1 ? 'client' : 'clients'}` : `${rows.length} of ${all.length}`}</span>
+            <span className="small muted" role="status" aria-live="polite">{rows.length === all.length ? `${all.length} ${all.length === 1 ? 'client' : 'clients'}` : `${rows.length} of ${all.length}`}</span>
           </div>
           {rows.length === 0 ? (
             <section className="sheet">

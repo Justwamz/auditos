@@ -53,6 +53,12 @@ test('the clients list has a search box, and only managers and partners can add 
   await expect(panel.getByLabel('Account manager')).toBeVisible();
   await panel.getByRole('button', { name: 'Cancel' }).click();
   await expect(panel).toHaveCount(0);
+  await grace.getByRole('button', { name: '+ Add a client' }).click();
+  await grace.getByRole('dialog').getByLabel('Name').fill('Zebra Panel Test Ltd');
+  await grace.getByRole('dialog').getByRole('button', { name: 'Add client' }).click();
+  await expect(grace.getByRole('dialog')).toHaveCount(0);
+  await expect(grace.getByText('Zebra Panel Test Ltd added.')).toBeVisible();
+  await expect(grace.getByRole('link', { name: 'Zebra Panel Test Ltd' })).toBeVisible();
 
   const brian = await (await browser.newContext()).newPage();
   await signIn(brian, 'brian.kiptoo@kangethe.example.test');

@@ -758,6 +758,15 @@ test('a partner can change a client\'s account manager; a manager cannot', async
   await expect(daniel.getByRole('heading', { name: 'Change the account manager' })).toHaveCount(0);
   await expect(daniel.getByRole('button', { name: 'Change the account manager' })).toHaveCount(0);
   await expect(daniel.getByRole('button', { name: 'Add a contact' })).toBeVisible();
+  await daniel.getByRole('button', { name: 'Add a contact' }).click();
+  const cp = daniel.getByRole('dialog');
+  await cp.getByLabel('Full name').fill('Zawadi Panel Test');
+  await cp.getByLabel('Phone').fill('0712345999');
+  await cp.getByRole('button', { name: 'Add contact' }).click();
+  await expect(daniel.getByRole('dialog')).toHaveCount(0);
+  await expect(daniel.getByText('Zawadi Panel Test added.')).toBeVisible();
+  await expect(daniel.getByRole('row', { name: /Zawadi Panel Test/ })).toBeVisible();
+  await expect(daniel.getByText('0712345999')).toHaveCount(0);
 });
 
 test('a person who still holds clients cannot be switched off, and the hand-over shows what they hold', async ({ page }) => {
