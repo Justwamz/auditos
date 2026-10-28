@@ -80,26 +80,25 @@ export function layoutDay<E extends Span>(events: E[], day?: string): { event: E
     const rawEnd = nairobiMinutes(event.endsAt) - d;
     const begin = Math.min(start, DAY_MIN);
     const end = Math.min(Math.max(rawEnd, begin), DAY_MIN);
-    return { event, begin, end };
+    return { event, begin, end, col: 0, cols: 1 };
   });
-  const order = items.map((_, i) => i).sort((a, b) => items[a].begin - items[b].begin || items[a].end - items[b].end);
-  const col: number[] = [];
-  const cols: number[] = [];
-  let cluster: number[] = [];
-  let clusterEnd = -1;
+  // Overlapping events form a cluster; every event in a cluster gets the cluster's column count.
+  const sorted = [...items].sort((x, y) => x.begin - y.begin || x.end - y.end);
+  let cluster: typeof items = [];
   let colEnds: number[] = [];
-  const close = () => { for (const i of cluster) cols[i] = colEnds.length; cluster = []; colEnds = []; };
-  for (const i of order) {
-    if (cluster.length && items[i].begin >= clusterEnd) close();
-    let c = colEnds.findIndex((end) => end <= items[i].begin);
+  let clusterEnd = 0;
+  const close = () => { for (const it of cluster) it.cols = colEnds.length; cluster = []; colEnds = []; };
+  for (const it of sorted) {
+    if (cluster.length && it.begin >= clusterEnd) close();
+    let c = colEnds.findIndex((end) => end <= it.begin);
     if (c === -1) c = colEnds.length;
-    colEnds[c] = items[i].end;
-    col[i] = c;
-    cluster.push(i);
-    clusterEnd = cluster.length === 1 ? items[i].end : Math.max(clusterEnd, items[i].end);
+    colEnds[c] = it.end;
+    it.col = c;
+    clusterEnd = cluster.length ? Math.max(clusterEnd, it.end) : it.end;
+    cluster.push(it);
   }
   close();
-  return items.map((it, i) => ({ event: it.event, col: col[i], cols: cols[i], top: it.begin, height: it.end - it.begin }));
+  return items.map((it) => ({ event: it.event, col: it.col, cols: it.cols, top: it.begin, height: it.end - it.begin }));
 }
 
 export const KIND_STYLES: Record<string, { label: string; token: string; icon: string }> = {
