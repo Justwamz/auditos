@@ -179,6 +179,7 @@ test('a manager drafts an invoice from unbilled time with VAT chosen, and a part
   const daniel = await (await browser.newContext()).newPage();
   await signIn(daniel, 'daniel.otieno@kangethe.example.test');
   await open(daniel, '/invoices/new', 'New invoice');
+  await plain(daniel, 'new invoice');
   await daniel.getByLabel('Client', { exact: true }).selectOption({ label: 'Mwangaza Traders Ltd' });
   await daniel.getByLabel(/Engagement \(to bill/).selectOption({ index: 1 });
   await expect(daniel.getByText('Not yet invoiced on this engagement')).toBeVisible();
@@ -225,10 +226,19 @@ test('a manager drafts an invoice from unbilled time with VAT chosen, and a part
   await expect(pay).toHaveCount(0);
   await expect(grace.getByRole('table', { name: 'Payments' }).getByRole('row', { name: /Browser test receipt/ })).toHaveCount(1);
   await expect(grace.getByText('Part paid').first()).toBeVisible();
+  // The next opening of the panel is not prefilled with the last payment.
+  await grace.getByRole('button', { name: 'Record payment' }).click();
+  await expect(pay).toBeVisible();
+  await expect(pay.getByLabel('Amount received (KES)')).toHaveValue('');
+  await expect(pay.getByLabel('Reference')).toHaveValue('');
+  await pay.getByRole('button', { name: 'Cancel' }).click();
+  await expect(pay).toHaveCount(0);
 
   // Send from the side panel; it lands in Sent emails and says it was not actually sent.
   await grace.getByRole('button', { name: 'Send to the client' }).click();
   const send = grace.getByRole('dialog', { name: 'Send to the client' });
+  await expect(send.getByRole('link', { name: 'Sent emails' })).toHaveAttribute('href', '/billing/outbox');
+  await plain(grace, 'send panel');
   await send.getByLabel('Send to email address').fill('client@example.com');
   await send.getByRole('button', { name: 'Send', exact: true }).click();
   await expect(grace.getByText(/Kept in the sent emails list/)).toBeVisible();
@@ -237,7 +247,11 @@ test('a manager drafts an invoice from unbilled time with VAT chosen, and a part
   await expect(grace.getByRole('heading', { name: 'Sent emails', level: 1 })).toBeVisible();
   await expect(grace.getByText('Not actually sent (practice mode)').first()).toBeVisible();
   await expect(grace.getByText('client@example.com').first()).toBeVisible();
-  await plain(grace, 'sent emails');
+  // Open one message: its text must be plain too.
+  await grace.getByRole('button', { name: /client@example.com/ }).first().click();
+  await expect(grace.getByText(/Please find invoice KA-/).first()).toBeVisible();
+  await plain(grace, 'sent emails with a message open');
+  expect(await grace.locator('main').innerText()).not.toMatch(/simulat/i);
 });
 
 test('every tab of the billing bar can be reached with the keyboard', async ({ browser }) => {
@@ -247,6 +261,7 @@ test('every tab of the billing bar can be reached with the keyboard', async ({ b
   const bar = grace.getByRole('navigation', { name: 'Billing sections' });
   const names = ['Overview', 'Invoices', 'Quotations', 'Sent emails', 'Settings'];
   await expect(bar.getByRole('link')).toHaveText(names);
+  await expect(grace.getByText('Open prospects')).toBeVisible();
   await bar.getByRole('link', { name: names[0] }).focus();
   for (const n of names.slice(1)) {
     await grace.keyboard.press('Tab');
@@ -298,11 +313,12 @@ test('the administrator sees invoicing but not hours; a manager can read but not
   await expect(grace.locator(MAIN)).toHaveCount(1);
   await grace.getByRole('button', { name: 'Taxes', exact: true }).click();
   await expect(grace.getByRole('button', { name: 'Add tax' })).toBeVisible();
+  await plain(grace, 'settings, taxes open');
   await expect(grace.getByRole('button', { name: 'Save invoice details' })).toBeHidden();
   await grace.getByRole('button', { name: 'Hourly rates (KES)', exact: true }).click();
   await grace.getByRole('button', { name: 'Save rates' }).click();
   await expect(grace.getByText(/^Hourly rates saved\./)).toBeVisible();
-  await plain(grace, 'settings');
+  await plain(grace, 'settings, rates open');
 });
 
 test('quotations are a table for managers and partners; the fee card is on the engagement overview', async ({ browser }) => {
@@ -324,6 +340,10 @@ test('quotations are a table for managers and partners; the fee card is on the e
   await plain(daniel, 'quotations');
   await table.getByRole('row', { name: /Mlima Coffee Cooperative/ }).first().getByRole('cell', { name: 'Mlima Coffee Cooperative' }).click();
   await expect(daniel).toHaveURL(/\/quotes\/[0-9a-f-]{36}/);
+  await expect(daniel.getByRole('heading', { level: 1, name: /Quotation|Draft quotation/ })).toBeVisible();
+  await open(daniel, '/quotes/new', 'New quotation');
+  await plain(daniel, 'new quotation');
+  await daniel.goBack();
   await expect(daniel.getByRole('heading', { level: 1, name: /Quotation|Draft quotation/ })).toBeVisible();
   await expect(daniel.getByRole('button', { name: 'Download PDF' })).toBeVisible();
   await plain(daniel, 'quotation document');

@@ -124,7 +124,7 @@ export default function QuotePage() {
           <form id={SEND_FORM} className="stack" onSubmit={submitIn(() => api.post(`/quotes/${d.id}/send`, to.trim() ? { to } : {}), 'Sent. It now has its number and can no longer be changed. Email is not connected, so nothing was actually sent (practice mode).')}>
             <ErrorNote error={error} />
             <div className="field"><label htmlFor="qe">Send to email address (optional)</label><input id="qe" type="email" placeholder="client@example.com" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-            <p className="muted small">Sending gives the quotation its number and locks it. Email is not connected yet, so a message is only kept under Sent emails (practice mode).</p>
+            <p className="muted small">Sending gives the quotation its number and locks it. Email is not connected yet, so a message is only kept under <Link href="/billing/outbox">Sent emails</Link> (practice mode).</p>
           </form>
         </SidePanel>
       )}

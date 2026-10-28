@@ -62,9 +62,12 @@ export default function InvoicePage() {
   }
   const openPanel = (p: Panel) => { setError(undefined); setInfo(''); setPanel(p); };
   const closePanel = () => { setPanel(null); setError(undefined); };
-  const submitIn = (fn: () => Promise<unknown>, message: string) => async (e: FormEvent) => {
+  const submitIn = (fn: () => Promise<unknown>, message: string, after?: () => void) => async (e: FormEvent) => {
     e.preventDefault();
-    if (await run(fn, message)) setPanel(null);
+    if (await run(fn, message)) {
+      setPanel(null);
+      after?.();
+    }
   };
 
   if (inv.error) return <ErrorNote error={inv.error} />;
@@ -165,7 +168,7 @@ export default function InvoicePage() {
           onClose={closePanel}
           footer={<><button type="button" className="quiet" onClick={closePanel}>Cancel</button><button type="submit" form={PAY_FORM} disabled={busy}>Record payment</button></>}
         >
-          <form id={PAY_FORM} className="stack" onSubmit={submitIn(() => api.post(`/invoices/${i.id}/payments`, { amount: pay.amount, paidOn: pay.paidOn, method: pay.method, ...(pay.reference.trim() ? { reference: pay.reference } : {}) }), 'Payment recorded.')}>
+          <form id={PAY_FORM} className="stack" onSubmit={submitIn(() => api.post(`/invoices/${i.id}/payments`, { amount: pay.amount, paidOn: pay.paidOn, method: pay.method, ...(pay.reference.trim() ? { reference: pay.reference } : {}) }), 'Payment recorded.', () => setPay({ amount: '', paidOn: todayNairobi(), method: 'bank', reference: '' }))}>
             <ErrorNote error={error} />
             <div className="field"><label htmlFor="pa">Amount received (KES)</label><input id="pa" required inputMode="decimal" placeholder="0.00" value={pay.amount} onChange={(e) => setPay({ ...pay, amount: e.target.value })} /></div>
             <div className="field"><label htmlFor="pd">Date received</label><input id="pd" type="date" required value={pay.paidOn} onChange={(e) => setPay({ ...pay, paidOn: e.target.value })} /></div>
@@ -189,7 +192,7 @@ export default function InvoicePage() {
             <ErrorNote error={error} />
             <div className="field"><label htmlFor="se">Send to email address</label><input id="se" type="email" required placeholder="client@example.com" value={mail.to} onChange={(e) => setMail({ ...mail, to: e.target.value })} /></div>
             <div className="field"><label htmlFor="sm">Message (optional)</label><input id="sm" value={mail.message} onChange={(e) => setMail({ ...mail, message: e.target.value })} /></div>
-            <p className="muted small">Email is not connected yet, so nothing is actually sent (practice mode). The message is kept under Sent emails so you can see it.</p>
+            <p className="muted small">Email is not connected yet, so nothing is actually sent (practice mode). The message is kept under <Link href="/billing/outbox">Sent emails</Link> so you can see it.</p>
           </form>
         </SidePanel>
       )}

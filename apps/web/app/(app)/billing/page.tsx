@@ -82,7 +82,7 @@ export default function BillingPage() {
           <Tile label="Utilisation" value={`${d.time.utilisation}%`} note="billable share of hours" />
           <Tile label="Billable value" value={kes(d.time.value)} note="at the rate when logged" />
           <Tile label="Not yet invoiced" value={kes(d.wip.total)} note={`time ${kes(d.wip.time)} · expenses ${kes(d.wip.expenses)}`} />
-          {d.pipeline && <Tile label="Open pipeline" value={kes(d.pipeline.open.value)} note={`${d.pipeline.open.count} prospect(s)`} />}
+          {d.pipeline && <Tile label="Open prospects" value={kes(d.pipeline.open.value)} note={`${d.pipeline.open.count} prospect(s)`} />}
         </section>
       )}
 
