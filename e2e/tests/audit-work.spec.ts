@@ -46,6 +46,7 @@ test('a statement that does not add up is flagged, and confirming it needs a rea
   await signIn(page, 'daniel.otieno@kangethe.example.test');
   await openMwangaza(page, 'Bank statements');
 
+  await page.getByRole('button', { name: '+ Upload a statement' }).click();
   await page.getByLabel('Statement file').setInputFiles({ name: 'april-missing-page.csv', mimeType: 'text/csv', buffer: Buffer.from(STATEMENT(true)) });
   await page.getByRole('button', { name: 'Read statement' }).click();
 
@@ -62,10 +63,13 @@ test('a file that cannot be read says why, and a discarded upload goes away', as
   await signIn(page, 'daniel.otieno@kangethe.example.test');
   await openMwangaza(page, 'Bank statements');
 
+  await page.getByRole('button', { name: '+ Upload a statement' }).click();
   await page.getByLabel('Statement file').setInputFiles({ name: 'scan.pdf', mimeType: 'application/pdf', buffer: Buffer.from('this is not a pdf') });
   await page.getByRole('button', { name: 'Read statement' }).click();
   await expect(page.locator('.notice.error')).toContainText(/not a PDF/i, SLOW);
 
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await page.getByRole('button', { name: '+ Upload a statement' }).click();
   await page.getByLabel('Statement file').setInputFiles({ name: 'discard-me.csv', mimeType: 'text/csv', buffer: Buffer.from(STATEMENT(false)) });
   await page.getByRole('button', { name: 'Read statement' }).click();
   await expect(page.getByRole('heading', { name: 'Check what was read' })).toBeVisible(SLOW);
@@ -79,6 +83,7 @@ test('a partner who is not on the team can read the statements but not upload', 
   await signIn(page, 'charles.kamau@kangethe.example.test');
   await openMwangaza(page, 'Bank statements');
   await expect(page.getByRole('row', { name: /demo-bank-statement-march/ })).toBeVisible(SLOW);
+  await expect(page.getByRole('button', { name: '+ Upload a statement' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Upload a bank statement' })).toHaveCount(0);
 });
 
@@ -99,6 +104,7 @@ test('a sampling schedule shows its progress, takes a result, and a new sample c
   await expect(schedule.getByText('4 of 8')).toBeVisible();
 
   const pop = ['Invoice,Description,Amount', ...Array.from({ length: 30 }, (_, i) => `SI-${i + 1},Customer ${i + 1},${(2000 + i * 100).toFixed(2)}`)].join('\n');
+  await page.getByRole('button', { name: '+ Draw a sample' }).click();
   await page.getByLabel('What is being tested').fill('Revenue invoices');
   await page.getByLabel('How many items').fill('5');
   await page.getByLabel('Seed (leave blank to make one)').fill('browser-test');
@@ -113,8 +119,47 @@ test('a sampling schedule shows its progress, takes a result, and a new sample c
 test('a population with an unreadable amount is refused, with the row', async ({ page }) => {
   await signIn(page, 'daniel.otieno@kangethe.example.test');
   await openMwangaza(page, 'Sampling');
+  await page.getByRole('button', { name: '+ Draw a sample' }).click();
   await page.getByLabel('What is being tested').fill('Bad file');
   await page.getByLabel('Population file').setInputFiles({ name: 'bad.csv', mimeType: 'text/csv', buffer: Buffer.from('Invoice,Amount\nA-1,100.00\nA-2,not money') });
   await page.getByRole('button', { name: 'Draw sample' }).click();
   await expect(page.getByText(/Row 3: The amount "not money" could not be read/)).toBeVisible(SLOW);
+});
+
+const BANNED = [/authenticator/i, /outbox/i, /simulatw*/i, /session/i, /csrf/i, /malware/i, /quarantinw*/i, /fingerprint/i, /sha-?256/i, /tenant/i, /token/i, /payload/i, /api/i, /mfa/i, /totp/i];
+const TAB_NAMES = ['Overview', 'Working papers', 'Checklists', 'Evidence', 'Financial statements', 'Bank statements', 'Sampling'];
+
+test('every engagement tab speaks plainly and has one main button', async ({ page }) => {
+  await signIn(page, 'daniel.otieno@kangethe.example.test');
+  for (const name of TAB_NAMES) {
+    await openMwangaza(page, name);
+    const text = await page.locator('main').innerText();
+    for (const re of BANNED) expect(text, `${name} contains ${re}`).not.toMatch(re);
+    // A main button is a filled one: not secondary, quiet or danger, and not a tab.
+    const main = page.locator('main button:visible:not(.secondary):not(.quiet):not(.danger):not([role="tab"])');
+    expect(await main.count(), `${name}: ${await main.allInnerTexts()}`).toBeLessThanOrEqual(1);
+  }
+});
+
+test('a working paper is added from a side panel, and materiality stays inline', async ({ page }) => {
+  await signIn(page, 'daniel.otieno@kangethe.example.test');
+  await openMwangaza(page, 'Working papers');
+  await expect(page.getByLabel('Benchmark amount (KES)')).toBeVisible();
+  await expect(page.getByLabel('Title', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: '+ Add a paper' }).click();
+  const panel = page.getByRole('dialog', { name: 'Add a working paper' });
+  await panel.getByLabel('Title', { exact: true }).fill('Inventory count attendance');
+  await panel.getByRole('button', { name: 'Add paper' }).click();
+  await expect(panel).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Inventory count attendance', level: 3 })).toBeVisible(SLOW);
+});
+
+test('evidence is uploaded inline and reported in plain words', async ({ page }) => {
+  await signIn(page, 'daniel.otieno@kangethe.example.test');
+  await openMwangaza(page, 'Evidence');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByLabel('File', { exact: true }).setInputFiles({ name: 'count-sheet.txt', mimeType: 'text/plain', buffer: Buffer.from('Stock count sheet, 31 December') });
+  await page.getByRole('button', { name: 'Upload file' }).click();
+  await expect(page.getByText(/count-sheet.txt: saved and checked/)).toBeVisible(SLOW);
+  await expect(page.getByRole('columnheader', { name: 'Virus check' })).toBeVisible();
 });

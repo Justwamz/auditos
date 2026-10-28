@@ -6,6 +6,8 @@ import { fmtDate } from '@/lib/text';
 import { Empty, ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
 import type { Viewer } from '@/components/ItemPanel';
+import { SectionHead } from '@/components/ui/SectionHead';
+import { SidePanel } from '@/components/ui/SidePanel';
 import type { Engagement } from '../page';
 
 const kes = (v: string | null | undefined) => (v === null || v === undefined || v === '' ? '' : Number(v).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -45,6 +47,7 @@ export function BankStatements({ engagement: e, viewer }: { engagement: Engageme
   const [error, setError] = useState<unknown>();
   const [needPassword, setNeedPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [panel, setPanel] = useState(false);
   const [openId, setOpenId] = useState<string>();
   const file = useRef<HTMLInputElement>(null);
   const password = useRef<HTMLInputElement>(null);
@@ -65,6 +68,7 @@ export function BankStatements({ engagement: e, viewer }: { engagement: Engageme
       const r = await api.upload<Preview>(`/engagements/${e.id}/bank-statements`, fd);
       setPreview(r);
       setNeedPassword(false);
+      setPanel(false);
       if (file.current) file.current.value = '';
       if (password.current) password.current.value = '';
       list.reload();
@@ -78,24 +82,38 @@ export function BankStatements({ engagement: e, viewer }: { engagement: Engageme
 
   return (
     <div className="stack">
+      <SectionHead
+        title="Bank statements"
+        sentence="Read from the client's file, checked for completeness, confirmed by a person, then analysed."
+        help={<HelpLink topic="engagement.bank-statements" label="How it works" />}
+        action={!readOnly ? <button type="button" className={preview ? 'secondary' : undefined} onClick={() => { setError(undefined); setPanel(true); }}>+ Upload a statement</button> : undefined}
+      />
       {!readOnly && (
-        <form className="sheet stack" onSubmit={upload}>
-          <div className="row between"><h2>Upload a bank statement</h2><HelpLink topic="engagement.bank-statements" label="How it works" /></div>
-          <p className="muted">
-            A PDF with text in it, a CSV or an Excel file. Scanned PDFs (pictures of paper) cannot be read: ask the client for the original download.
-            The system reads the entries and checks they add up before anything is analysed.
-          </p>
-          <div className="form-grid">
+        <SidePanel
+          open={panel}
+          title="Upload a bank statement"
+          onClose={() => { setPanel(false); setError(undefined); }}
+          footer={
+            <>
+              <button type="button" className="quiet" onClick={() => { setPanel(false); setError(undefined); }}>Cancel</button>
+              <button type="submit" form="bank-upload-form" disabled={busy}>{busy ? 'Reading…' : 'Read statement'}</button>
+            </>
+          }
+        >
+          <form id="bank-upload-form" className="stack" onSubmit={upload}>
+            <p className="muted">
+              A PDF with text in it, a CSV or an Excel file. Scanned PDFs (pictures of paper) cannot be read: ask the client for the original download.
+              The entries are read and checked to add up before anything is analysed.
+            </p>
             <div className="field"><label htmlFor="bsf">Statement file</label><input id="bsf" type="file" ref={file} required accept=".pdf,.csv,.xlsx" /></div>
             <div className="field">
               <label htmlFor="bsp">{needPassword ? 'Password for this PDF (required)' : 'PDF password, if it has one'}</label>
               <input id="bsp" type="password" ref={password} autoComplete="off" />
-              <span className="muted">Used once to open the file. It is never saved.</span>
+              <span className="muted small">Used once to open the file. It is never saved.</span>
             </div>
-          </div>
-          <ErrorNote error={error} />
-          <div><button disabled={busy}>{busy ? 'Reading…' : 'Read statement'}</button></div>
-        </form>
+            <ErrorNote error={error} />
+          </form>
+        </SidePanel>
       )}
 
       {preview && <PreviewCard e={e} p={preview} onDone={() => { setPreview(undefined); list.reload(); }} readOnly={readOnly} />}
@@ -103,7 +121,7 @@ export function BankStatements({ engagement: e, viewer }: { engagement: Engageme
       <section className="sheet stack">
         <h2>Statements on this engagement</h2>
         {list.error ? <ErrorNote error={list.error} /> : !list.data ? <p className="muted">Loading…</p> : list.data.statements.length === 0 ? (
-          <Empty>No statements yet. Upload one above.</Empty>
+          <Empty>No statements yet. Use Upload a statement at the top to add one.</Empty>
         ) : (
           <table>
             <thead><tr><th>Statement</th><th>Period</th><th className="num">Entries</th><th className="num">Closing (KES)</th><th>Check</th><th>Confirmed</th><th /></tr></thead>
@@ -229,7 +247,7 @@ function StatementDetail({ e, s, readOnly, onChanged }: { e: Engagement; s: Summ
             <div className="field"><label htmlFor="bsl">Bank balance in the books (KES), to reconcile to</label><input id="bsl" inputMode="decimal" value={ledger} onChange={(ev) => setLedger(ev.target.value)} /></div>
             <div className="field"><label htmlFor="bsn">Related party names, separated by commas</label><input id="bsn" value={parties} onChange={(ev) => setParties(ev.target.value)} /></div>
           </div>
-          <div><button>Analyse</button></div>
+          <div><button className="secondary">Analyse</button></div>
         </form>
       )}
       {analysis && <AnalysisView a={analysis} />}

@@ -4,6 +4,8 @@ import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, StateBadge } from '@/components/bits';
 import { ItemPanel, type Viewer } from '@/components/ItemPanel';
+import { SectionHead } from '@/components/ui/SectionHead';
+import { SidePanel } from '@/components/ui/SidePanel';
 import type { Engagement } from '../page';
 import { Materiality } from './Materiality';
 
@@ -18,6 +20,7 @@ const KINDS: { id: string; label: string }[] = [
   { id: 'eqr_review', label: 'Quality review' },
   { id: 'addendum', label: 'Addendum (after locking)' },
 ];
+const FORM = 'add-paper-form';
 const HIDDEN = ['checklist', 'evidence', 'trial_balance', 'trial_balance_prior', 'fs_mapping', 'adjustments', 'fs_note'];
 
 function Body({ itemId, content, state, locked, onSaved }: { itemId: string; content: Record<string, unknown>; state: string; locked: boolean; onSaved: () => void }) {
@@ -64,6 +67,7 @@ export function Papers({ engagement: e, viewer, focusItem }: { engagement: Engag
   const [open, setOpen] = useState<string | null>(focusItem);
   const [form, setForm] = useState({ kind: 'workpaper', title: '', addendumOf: '' });
   const [error, setError] = useState<unknown>();
+  const [panel, setPanel] = useState(false);
 
   const rows = list.data?.items.filter((i) => !HIDDEN.includes(i.kind)) ?? [];
 
@@ -78,6 +82,7 @@ export function Papers({ engagement: e, viewer, focusItem }: { engagement: Engag
         ...(form.kind === 'addendum' && form.addendumOf ? { addendumOf: form.addendumOf } : {}),
       });
       setForm({ ...form, title: '' });
+      setPanel(false);
       setOpen(r.id);
       list.reload();
     } catch (err) {
@@ -87,34 +92,45 @@ export function Papers({ engagement: e, viewer, focusItem }: { engagement: Engag
 
   return (
     <div className="stack-lg">
+      <SectionHead
+        title="Working papers"
+        sentence="Materiality first, then every paper of the file. Open a paper to write it up, sign it off or raise review points."
+        action={<button type="button" onClick={() => { setError(undefined); setPanel(true); }}>+ Add a paper</button>}
+      />
       <Materiality engagement={e} locked={viewer.engagementLocked} />
-      {(
-        <form className="sheet stack" onSubmit={create}>
-          <h2>Add a working paper</h2>
-          <div className="form-grid">
+      <SidePanel
+        open={panel}
+        title="Add a working paper"
+        onClose={() => { setPanel(false); setError(undefined); }}
+        footer={
+          <>
+            <button type="button" className="quiet" onClick={() => { setPanel(false); setError(undefined); }}>Cancel</button>
+            <button type="submit" form={FORM}>Add paper</button>
+          </>
+        }
+      >
+        <form id={FORM} className="stack" onSubmit={create}>
+          <div className="field">
+            <label htmlFor="pk">Type</label>
+            <select id="pk" value={form.kind} onChange={(ev) => setForm({ ...form, kind: ev.target.value })}>
+              {KINDS.filter((k) => (viewer.engagementLocked ? k.id === 'addendum' : k.id !== 'addendum')).map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
+            </select>
+          </div>
+          <div className="field"><label htmlFor="pt">Title</label><input id="pt" required maxLength={300} value={form.title} onChange={(ev) => setForm({ ...form, title: ev.target.value })} /></div>
+          {form.kind === 'addendum' && (
             <div className="field">
-              <label htmlFor="pk">Type</label>
-              <select id="pk" value={form.kind} onChange={(ev) => setForm({ ...form, kind: ev.target.value })}>
-                {KINDS.filter((k) => (viewer.engagementLocked ? k.id === 'addendum' : k.id !== 'addendum')).map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
+              <label htmlFor="pa">Paper this adds to</label>
+              <select id="pa" required value={form.addendumOf} onChange={(ev) => setForm({ ...form, addendumOf: ev.target.value })}>
+                <option value="">Choose a paper</option>
+                {rows.map((r) => <option key={r.id} value={r.id}>{r.title}</option>)}
               </select>
             </div>
-            <div className="field"><label htmlFor="pt">Title</label><input id="pt" required maxLength={300} value={form.title} onChange={(ev) => setForm({ ...form, title: ev.target.value })} /></div>
-            {form.kind === 'addendum' && (
-              <div className="field">
-                <label htmlFor="pa">Paper this adds to</label>
-                <select id="pa" required value={form.addendumOf} onChange={(ev) => setForm({ ...form, addendumOf: ev.target.value })}>
-                  <option value="">Choose a paper</option>
-                  {rows.map((r) => <option key={r.id} value={r.id}>{r.title}</option>)}
-                </select>
-              </div>
-            )}
-          </div>
+          )}
           <ErrorNote error={error} />
-          <div><button>Add paper</button></div>
         </form>
-      )}
+      </SidePanel>
 
-      <section className="stack">
+      <section className="sheet stack">
         <h2>Papers on this engagement</h2>
         <ErrorNote error={list.error} />
         {list.data && rows.length === 0 && <Empty>No papers yet. Start with the client acceptance and the engagement letter.</Empty>}
@@ -126,7 +142,7 @@ export function Papers({ engagement: e, viewer, focusItem }: { engagement: Engag
                 <tr key={r.id}>
                   <td>{r.title}</td><td>{KINDS.find((k) => k.id === r.kind)?.label ?? r.kind.replace(/_/g, ' ')}</td>
                   <td><StateBadge state={r.state} /></td>
-                  <td className="right"><button className="quiet" onClick={() => setOpen(open === r.id ? null : r.id)}>{open === r.id ? 'Close' : 'Open'}</button></td>
+                  <td className="right"><button className="secondary" onClick={() => setOpen(open === r.id ? null : r.id)}>{open === r.id ? 'Close' : 'Open'}</button></td>
                 </tr>
               ))}
             </tbody>

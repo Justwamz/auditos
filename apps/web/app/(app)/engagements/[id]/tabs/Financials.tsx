@@ -6,6 +6,8 @@ import { Empty, ErrorNote, Notice } from '@/components/bits';
 import type { Viewer } from '@/components/ItemPanel';
 import { useStepUp } from '@/components/StepUp';
 import { fmtCents } from '@/lib/text';
+import { SectionHead } from '@/components/ui/SectionHead';
+import { SidePanel } from '@/components/ui/SidePanel';
 import type { Engagement } from '../page';
 
 type Section = 'tb' | 'mapping' | 'adjustments' | 'statements' | 'notes' | 'export';
@@ -25,6 +27,7 @@ function TrialBalance({ e, viewer }: { e: Engagement; viewer: Viewer }) {
   const cur = useApi<{ lines: TbLine[]; version: number }>(`/engagements/${e.id}/tb`);
   const prior = useApi<{ lines: TbLine[]; version: number }>(`/engagements/${e.id}/tb?prior=true`);
   const [isPrior, setIsPrior] = useState(false);
+  const [panel, setPanel] = useState(false);
   const [error, setError] = useState<unknown>();
   const [rows, setRows] = useState<RowErr[]>([]);
   const [info, setInfo] = useState('');
@@ -44,6 +47,7 @@ function TrialBalance({ e, viewer }: { e: Engagement; viewer: Viewer }) {
       const r = await api.upload<{ rows: number; totalDebit: string; totalCredit: string; balanced: boolean }>(`/engagements/${e.id}/tb/import`, fd);
       setInfo(`Imported ${r.rows} accounts. Debits ${r.totalDebit}, credits ${r.totalCredit}${r.balanced ? '.' : '. They do not balance yet.'}`);
       if (file.current) file.current.value = '';
+      setPanel(false);
       cur.reload();
       prior.reload();
     } catch (err) {
@@ -66,19 +70,32 @@ function TrialBalance({ e, viewer }: { e: Engagement; viewer: Viewer }) {
 
   return (
     <div className="stack">
+      <SectionHead
+        title="Trial balance"
+        sentence="The year's account balances, as the client gave them. Importing again replaces them as a new version."
+        action={!viewer.engagementLocked ? <button type="button" onClick={() => { setError(undefined); setRows([]); setPanel(true); }}>+ Import a trial balance</button> : undefined}
+      />
+      {info && <Notice>{info}</Notice>}
       {!viewer.engagementLocked && (
-        <form className="sheet stack" onSubmit={upload}>
-          <h2>Import a trial balance</h2>
-          <p className="muted">A CSV or XLSX file with the columns code, name, debit, credit. Amounts must be plain numbers with at most two decimals. Formulas are not accepted. Importing again replaces the trial balance as a new version and removes any reviews.</p>
-          <div className="form-grid">
+        <SidePanel
+          open={panel}
+          title="Import a trial balance"
+          onClose={() => setPanel(false)}
+          footer={
+            <>
+              <button type="button" className="quiet" onClick={() => setPanel(false)}>Cancel</button>
+              <button type="submit" form="tb-import-form">Import</button>
+            </>
+          }
+        >
+          <form id="tb-import-form" className="stack" onSubmit={upload}>
+            <p className="muted">A CSV or XLSX file with the columns code, name, debit, credit. Amounts must be plain numbers with at most two decimals. Formulas are not accepted. Importing again replaces the trial balance as a new version and removes any reviews.</p>
             <div className="field"><label htmlFor="tbf">File</label><input id="tbf" type="file" ref={file} required accept=".csv,.xlsx" /></div>
-            <label className="row" style={{ fontWeight: 400 }}><input type="checkbox" checked={isPrior} onChange={(ev) => setIsPrior(ev.target.checked)} /> This is last year’s trial balance (comparatives)</label>
-          </div>
-          <ErrorNote error={error} />
-          {rows.length > 0 && <div className="notice error"><ul>{rows.slice(0, 20).map((r) => <li key={`${r.row}-${r.message}`}>Row {r.row}: {r.message}</li>)}</ul>{rows.length > 20 && <p>…and {rows.length - 20} more.</p>}</div>}
-          {info && <Notice>{info}</Notice>}
-          <div><button>Import</button></div>
-        </form>
+            <label className="row check-row"><input type="checkbox" checked={isPrior} onChange={(ev) => setIsPrior(ev.target.checked)} /> This is last year’s trial balance (comparatives)</label>
+            <ErrorNote error={error} />
+            {rows.length > 0 && <div className="notice error"><ul>{rows.slice(0, 20).map((r) => <li key={`${r.row}-${r.message}`}>Row {r.row}: {r.message}</li>)}</ul>{rows.length > 20 && <p>…and {rows.length - 20} more.</p>}</div>}
+          </form>
+        </SidePanel>
       )}
       {cur.data && show(cur.data.lines, `Current year (version ${cur.data.version})`)}
       {prior.data && prior.data.lines.length > 0 && show(prior.data.lines, 'Prior year')}
@@ -153,6 +170,7 @@ function Adjustments({ e, viewer }: { e: Engagement; viewer: Viewer }) {
   const tb = useApi<{ lines: TbLine[] }>(`/engagements/${e.id}/tb`);
   const [form, setForm] = useState({ description: '', status: 'proposed', lines: [{ code: '', debit: '', credit: '' }, { code: '', debit: '', credit: '' }] });
   const [error, setError] = useState<unknown>();
+  const [panel, setPanel] = useState(false);
   const canAgree = viewer.role === 'manager' || viewer.role === 'partner';
 
   async function add(ev: FormEvent) {
@@ -161,6 +179,7 @@ function Adjustments({ e, viewer }: { e: Engagement; viewer: Viewer }) {
     try {
       await api.post(`/engagements/${e.id}/adjustments`, { ...form, lines: form.lines.map((l) => ({ code: l.code, debit: l.debit || '0', credit: l.credit || '0' })) });
       setForm({ ...form, description: '', lines: [{ code: '', debit: '', credit: '' }, { code: '', debit: '', credit: '' }] });
+      setPanel(false);
       list.reload();
     } catch (err) {
       setError(err);
@@ -176,10 +195,24 @@ function Adjustments({ e, viewer }: { e: Engagement; viewer: Viewer }) {
 
   return (
     <div className="stack">
+      <SectionHead
+        title="Adjusting entries"
+        sentence="Only entries marked agreed change the statements. Unadjusted entries are tracked for the summary of unadjusted misstatements."
+        action={!viewer.engagementLocked ? <button type="button" onClick={() => { setError(undefined); setPanel(true); }}>+ Record an entry</button> : undefined}
+      />
       {!viewer.engagementLocked && (
-        <form className="sheet stack" onSubmit={add}>
-          <h2>Record an adjusting entry</h2>
-          <p className="muted">Only entries marked agreed change the statements. Unadjusted entries are tracked for the summary of unadjusted misstatements.</p>
+        <SidePanel
+          open={panel}
+          title="Record an adjusting entry"
+          onClose={() => setPanel(false)}
+          footer={
+            <>
+              <button type="button" className="quiet" onClick={() => setPanel(false)}>Cancel</button>
+              <button type="submit" form="adjust-form">Record entry</button>
+            </>
+          }
+        >
+          <form id="adjust-form" className="stack" onSubmit={add}>
           <div className="form-grid">
             <div className="field"><label htmlFor="ad">Description</label><input id="ad" required value={form.description} onChange={(ev) => setForm({ ...form, description: ev.target.value })} /></div>
             <div className="field">
@@ -206,11 +239,11 @@ function Adjustments({ e, viewer }: { e: Engagement; viewer: Viewer }) {
           ))}
           <div className="row"><button type="button" className="quiet" onClick={() => setForm({ ...form, lines: [...form.lines, { code: '', debit: '', credit: '' }] })}>Add a line</button></div>
           <ErrorNote error={error} />
-          <div><button>Record entry</button></div>
-        </form>
+            <ErrorNote error={error} />
+          </form>
+        </SidePanel>
       )}
       <section className="sheet stack">
-        <h2>Adjusting entries</h2>
         {list.data && list.data.entries.length === 0 && <Empty>No entries yet.</Empty>}
         {list.data && list.data.unadjustedTotal !== '0.00' && <Notice kind="warn">Unadjusted misstatements total {list.data.unadjustedTotal} (debit side).</Notice>}
         {list.data?.entries.map((en) => (
@@ -418,7 +451,7 @@ function Export({ e }: { e: Engagement }) {
   return (
     <section className="sheet stack">
       <h2>Export</h2>
-      <p className="muted">Exports carry your name and the time. Until the partner approves the engagement they are marked DRAFT. You confirm with your authenticator first.</p>
+      <p className="muted">Exports carry your name and the time. Until the partner approves the engagement they are marked DRAFT. You confirm with a 6-digit code from your phone first.</p>
       <div className="row">
         <button disabled={!!busy} onClick={() => run('docx')}>Word document</button>
         <button disabled={!!busy} className="secondary" onClick={() => run('xlsx')}>Excel workbook</button>

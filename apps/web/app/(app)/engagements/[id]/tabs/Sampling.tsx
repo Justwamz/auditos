@@ -6,6 +6,8 @@ import { fmtDate } from '@/lib/text';
 import { Empty, ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
 import type { Viewer } from '@/components/ItemPanel';
+import { SectionHead } from '@/components/ui/SectionHead';
+import { SidePanel } from '@/components/ui/SidePanel';
 import type { Engagement } from '../page';
 
 const kes = (v: string | null | undefined) => (v === null || v === undefined || v === '' ? '' : Number(v).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -33,6 +35,7 @@ export function Sampling({ engagement: e, viewer }: { engagement: Engagement; vi
   const [openId, setOpenId] = useState<string>();
   const [method, setMethod] = useState<keyof typeof METHODS>('random');
   const [busy, setBusy] = useState(false);
+  const [panel, setPanel] = useState(false);
   const form = useRef<HTMLFormElement>(null);
   const readOnly = viewer.engagementLocked;
 
@@ -51,6 +54,7 @@ export function Sampling({ engagement: e, viewer }: { engagement: Engagement; vi
     try {
       const r = await api.upload<{ id: string }>(`/engagements/${e.id}/sampling`, fd);
       form.current?.reset();
+      setPanel(false);
       list.reload();
       setOpenId(r.id);
     } catch (err) {
@@ -63,11 +67,27 @@ export function Sampling({ engagement: e, viewer }: { engagement: Engagement; vi
 
   return (
     <div className="stack">
+      <SectionHead
+        title="Sampling"
+        sentence="Draw a sample that can be repeated, then record what testing each item found."
+        help={<HelpLink topic="engagement.sampling" label="How sampling works" />}
+        action={!readOnly ? <button type="button" className={openId ? 'secondary' : undefined} onClick={() => { setError(undefined); setRows([]); setPanel(true); }}>+ Draw a sample</button> : undefined}
+      />
       {!readOnly && (
-        <form className="sheet stack" ref={form} onSubmit={draw}>
-          <div className="row between"><h2>Draw a sample</h2><HelpLink topic="engagement.sampling" label="How sampling works" /></div>
-          <p className="muted">Upload everything the sample is drawn from (a CSV or Excel file with an Amount column, and ideally a Reference and a Description). The draw can be repeated: the seed, the method and a fingerprint of the file are recorded.</p>
-          <div className="form-grid">
+        <SidePanel
+          open={panel}
+          title="Draw a sample"
+          onClose={() => { setPanel(false); setError(undefined); setRows([]); }}
+          footer={
+            <>
+              <button type="button" className="quiet" onClick={() => { setPanel(false); setError(undefined); setRows([]); }}>Cancel</button>
+              <button type="submit" form="sample-form" disabled={busy}>{busy ? 'Drawing…' : 'Draw sample'}</button>
+            </>
+          }
+        >
+          <form id="sample-form" className="stack" ref={form} onSubmit={draw}>
+            <p className="muted">Upload everything the sample is drawn from (a CSV or Excel file with an Amount column, and ideally a Reference and a Description). The draw can be repeated: the seed, the method and a check code of the file are recorded.</p>
+          <div className="stack">
             <div className="field"><label htmlFor="st">What is being tested</label><input id="st" name="title" required maxLength={200} placeholder="Trade payables at year end" /></div>
             <div className="field">
               <label htmlFor="sm">Method</label>
@@ -83,14 +103,14 @@ export function Sampling({ engagement: e, viewer }: { engagement: Engagement; vi
           {method === 'top' && <Notice kind="warn">Top items are tested in full and are not a sample of the rest, so nothing is projected from them.</Notice>}
           <ErrorNote error={error} />
           {rows.length > 0 && <div className="notice error"><ul>{rows.slice(0, 20).map((r) => <li key={`${r.row}-${r.message}`}>Row {r.row}: {r.message}</li>)}</ul></div>}
-          <div><button disabled={busy}>{busy ? 'Drawing…' : 'Draw sample'}</button></div>
-        </form>
+          </form>
+        </SidePanel>
       )}
 
       <section className="sheet stack">
         <h2>Sampling schedules</h2>
         {list.error ? <ErrorNote error={list.error} /> : !list.data ? <p className="muted">Loading…</p> : list.data.schedules.length === 0 ? (
-          <Empty>No schedules yet. Draw a sample above.</Empty>
+          <Empty>No schedules yet. Use Draw a sample at the top to start one.</Empty>
         ) : (
           <table>
             <thead><tr><th>Schedule</th><th>Method</th><th className="num">Population</th><th className="num">Selected</th><th>Progress</th><th /></tr></thead>
@@ -132,7 +152,7 @@ function ScheduleView({ e, id, readOnly, onChanged, onDeleted }: { e: Engagement
     <section className="sheet stack" aria-label={`Schedule ${s.title}`}>
       <h2>{s.title}</h2>
       <p className="muted">
-        {METHODS[s.method]} · seed <code>{s.seed}</code> · {s.populationCount} items worth {kes(s.populationTotal)}{s.interval ? ` · interval ${kes(s.interval)}` : ''} · population fingerprint <code>{s.populationFingerprint.slice(0, 12)}</code>
+        {METHODS[s.method]} · seed <code>{s.seed}</code> · {s.populationCount} items worth {kes(s.populationTotal)}{s.interval ? ` · interval ${kes(s.interval)}` : ''} · file check code <code>{s.populationFingerprint.slice(0, 12)}</code>
         {s.objective ? ` · ${s.objective}` : ''}
       </p>
       <div className="notice" role="status">
