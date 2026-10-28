@@ -11,14 +11,29 @@ export function StagePill({ stage }: { stage: Stage }) {
   return <span className={`state ${STAGE_LOOK[stage]}`}>{STAGE_LABELS[stage]}</span>;
 }
 
-export function ProspectDetails({ p }: { p: Prospect }) {
+export function ProspectDetails({ p, actions, manager }: { p: Prospect; actions: ProspectActions; manager: boolean }) {
   const sector = p.sector ? SECTOR_LABELS[p.sector] ?? p.sector : null;
   return (
+    <>
     <dl className="prospects-details">
       <div><dt>Sector</dt><dd>{sector ?? 'Not given'}</dd></div>
       <div><dt>Contact</dt><dd>{p.contactName ?? 'Not given'}</dd></div>
       {p.notes ? <div><dt>Notes</dt><dd>{p.notes}</dd></div> : null}
     </dl>
+      <div className="prospects-actions">
+        <label className="small" htmlFor={`mv-${p.id}`}>Move to</label>
+        <select
+          id={`mv-${p.id}`}
+          value={p.stage}
+          onChange={(e) => (e.target.value === 'lost' ? actions.lose(p) : actions.move(p, e.target.value as Stage))}
+        >
+          {OPEN_STAGES.map((s) => <option key={s} value={s}>{STAGE_LABELS[s]}</option>)}
+          <option value="lost">Lost...</option>
+        </select>
+        {manager && <button type="button" className="quiet" onClick={() => actions.handOver(p)}>Hand over</button>}
+        {manager && <button type="button" className="quiet" onClick={() => actions.convert(p)}>Make a client</button>}
+      </div>
+    </>
   );
 }
 
@@ -69,7 +84,7 @@ export function ProspectTable({ rows, actions, manager }: { rows: Prospect[]; ac
             <tr key={p.id} className="prospects-row" onClick={(e) => onRow(e, p.id)}>
               <td>
                 <Disclosure open={open.has(p.id)} onToggle={() => toggle(p.id)} summary={<strong className="prospect-name">{p.name}</strong>}>
-                  <ProspectDetails p={p} />
+                  <ProspectDetails p={p} actions={actions} manager={manager} />
                 </Disclosure>
               </td>
               <td><StagePill stage={p.stage} /></td>

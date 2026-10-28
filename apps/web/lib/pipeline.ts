@@ -60,3 +60,21 @@ export interface ProspectActions {
 
 export const kes = (v: string | null): string =>
   v === null ? 'No fee yet' : `KES ${Number(v).toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+
+/**
+ * The total fee of each open stage. With no filter the server's own totals are used;
+ * with a person or search filter the total is summed from the rows still in view.
+ */
+export function stageTotals(
+  rows: { stage: Stage; expectedFee: string | null }[],
+  byStage: Record<string, { value: string }> | undefined,
+  filtered: boolean,
+): Record<'lead' | 'proposal' | 'loe_sent', string> {
+  const out = { lead: '0', proposal: '0', loe_sent: '0' };
+  for (const s of ['lead', 'proposal', 'loe_sent'] as const) {
+    out[s] = filtered
+      ? String(rows.filter((r) => r.stage === s).reduce((sum, r) => sum + Number(r.expectedFee ?? 0), 0))
+      : byStage?.[s]?.value ?? '0';
+  }
+  return out;
+}

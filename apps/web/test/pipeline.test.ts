@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { countByStage, filterProspects, STAGE_LABELS, type Stage } from '../lib/pipeline';
+import { countByStage, filterProspects, stageTotals, STAGE_LABELS, type Stage } from '../lib/pipeline';
 
 function row(name: string, ownerId: string, ownerName: string, stage: Stage, contactName: string | null = null) {
   return { name, ownerId, ownerName, stage, contactName };
@@ -58,5 +58,24 @@ describe('STAGE_LABELS', () => {
       won: 'Won',
       lost: 'Lost',
     });
+  });
+});
+
+describe('stageTotals', () => {
+  const fees = [
+    { stage: 'lead' as const, expectedFee: '100' },
+    { stage: 'lead' as const, expectedFee: null },
+    { stage: 'proposal' as const, expectedFee: '250.5' },
+    { stage: 'won' as const, expectedFee: '999' },
+  ];
+  const byStage = { lead: { value: '5000' }, proposal: { value: '6000' } };
+  test('with a filter the totals are summed from the rows in view', () => {
+    expect(stageTotals(fees, byStage, true)).toEqual({ lead: '100', proposal: '250.5', loe_sent: '0' });
+  });
+  test('without a filter the totals come from the server summary', () => {
+    expect(stageTotals(fees, byStage, false)).toEqual({ lead: '5000', proposal: '6000', loe_sent: '0' });
+  });
+  test('a missing summary gives zero', () => {
+    expect(stageTotals([], undefined, false)).toEqual({ lead: '0', proposal: '0', loe_sent: '0' });
   });
 });

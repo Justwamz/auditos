@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { usePref } from '@/lib/prefs';
-import { countByStage, filterProspects, STAGE_LABELS, type Prospect, type ProspectActions, type Stage } from '@/lib/pipeline';
+import { countByStage, filterProspects, stageTotals, STAGE_LABELS, type Prospect, type ProspectActions, type Stage } from '@/lib/pipeline';
 import { ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
 import { ProspectCards } from '@/components/ProspectCards';
@@ -27,6 +27,7 @@ export default function PipelinePage() {
   const [ownerId, setOwnerId] = useState('');
   const [query, setQuery] = useState('');
   const [panel, setPanel] = useState<{ mode: PanelMode; prospect?: Prospect } | null>(null);
+  const [closedOpen, setClosedOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const [actionError, setActionError] = useState<unknown>();
   const manager = me.data?.role === 'manager' || me.data?.role === 'partner';
@@ -44,15 +45,8 @@ export default function PipelinePage() {
   const rows = useMemo(() => filterProspects(all, { stage, ownerId, query }), [all, stage, ownerId, query]);
   const closed = useMemo(() => [...filterProspects(all, { stage: 'won', ownerId, query }), ...filterProspects(all, { stage: 'lost', ownerId, query })], [all, ownerId, query]);
   const filtered = ownerId !== '' || query.trim() !== '';
-  const totals = useMemo(() => {
-    const out: Record<string, string> = {};
-    for (const s of ['lead', 'proposal', 'loe_sent'] as const) {
-      out[s] = filtered
-        ? String(scoped.filter((p) => p.stage === s).reduce((sum, p) => sum + Number(p.expectedFee ?? 0), 0))
-        : summary?.byStage[s]?.value ?? '0';
-    }
-    return out;
-  }, [filtered, scoped, summary]);
+  const filterActive = filtered || stage !== 'open';
+  const totals = useMemo(() => stageTotals(scoped, summary?.byStage, filtered), [scoped, summary, filtered]);
 
   async function move(p: Prospect, to: Stage) {
     setActionError(undefined);
@@ -133,9 +127,15 @@ export default function PipelinePage() {
 
           {rows.length === 0 ? (
             <section className="sheet">
-              <EmptyState kind="folder" title="No prospects match" action={<button type="button" className="secondary" onClick={() => { setStage('open'); setOwnerId(''); setQuery(''); }}>Show everything</button>}>
-                Try a different word, person or stage.
-              </EmptyState>
+              {filterActive ? (
+                <EmptyState kind="folder" title="No prospects match" action={<button type="button" className="secondary" onClick={() => { setStage('open'); setOwnerId(''); setQuery(''); }}>Show everything</button>}>
+                  {filtered && closed.length > 0 ? 'The ones that match are no longer open. You can see them under Closed below.' : 'Try a different word, person or stage.'}
+                </EmptyState>
+              ) : (
+                <EmptyState kind="folder" title="No open prospects right now" action={addButton}>
+                  {closed.length > 0 ? 'Everything you had has been won or lost. See Closed below.' : 'Add a prospect to get started.'}
+                </EmptyState>
+              )}
             </section>
           ) : view === 'table' ? (
             <section className="sheet prospects-sheet"><ProspectTable rows={rows} actions={actions} manager={!!manager} /></section>
@@ -145,7 +145,7 @@ export default function PipelinePage() {
 
           {closed.length > 0 && (
             <section className="sheet">
-              <Disclosure summary={<span>Closed <span className="muted small">({closed.length})</span></span>}>
+              <Disclosure open={closedOpen || (filtered && rows.length === 0)} onToggle={setClosedOpen} summary={<span>Closed <span className="muted small">({closed.length})</span></span>}>
                 <table className="prospects-table">
                   <thead><tr><th>Prospect</th><th>Outcome</th><th>Owner</th></tr></thead>
                   <tbody>

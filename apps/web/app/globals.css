@@ -393,3 +393,15 @@ table.ledger td.num { min-width: 8.5rem; }
 .prospects-card-top { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
 .prospects-cards { grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); padding: var(--space-2) 0 var(--space-3) var(--space-2); }
 .prospects-loading { display: grid; gap: var(--space-3); }
+.prospects-actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding-left: var(--space-5); margin-bottom: var(--space-3); }
+.prospects-actions select { width: auto; }
+/* Long unbroken names and notes wrap instead of pushing the menu button out */
+.prospects-table td { min-width: 0; overflow-wrap: anywhere; }
+.prospects-row .disclosure-btn { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.prospect-name { min-width: 0; overflow-wrap: anywhere; }
+.prospects-details dd { overflow-wrap: anywhere; min-width: 0; }
+.prospects-card { min-width: 0; overflow-wrap: anywhere; }
+.prospects-card-top > .prospect-name { flex: 1 1 0; min-width: 0; }
+.prospects-card-top .row-menu { flex: none; }
+.prospects-table { table-layout: auto; }
+.notice { overflow-wrap: anywhere; }

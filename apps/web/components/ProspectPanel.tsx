@@ -52,7 +52,7 @@ export function ProspectPanel({
       if (add.expectedFee.trim()) body.expectedFee = add.expectedFee;
       if (add.expectedStart) body.expectedStart = add.expectedStart;
       if (add.ownerId) body.ownerId = add.ownerId;
-      void run(() => api.post('/prospects', body), `${add.name} added to the pipeline.`);
+      void run(() => api.post('/prospects', body), `${add.name} added to your prospects.`);
     } else if (!p) {
       return;
     } else if (mode === 'lost') {
@@ -68,7 +68,7 @@ export function ProspectPanel({
   }
 
   const title = mode === 'add' ? 'Add a prospect' : mode === 'lost' ? `Why was ${p?.name} lost?` : mode === 'handover' ? `Hand over ${p?.name}` : `Make ${p?.name} a client`;
-  const action = mode === 'add' ? 'Add to pipeline' : mode === 'lost' ? 'Mark as lost' : mode === 'handover' ? 'Hand over' : 'Create the client';
+  const action = mode === 'add' ? 'Add prospect' : mode === 'lost' ? 'Mark as lost' : mode === 'handover' ? 'Hand over' : 'Create the client';
 
   return (
     <SidePanel
