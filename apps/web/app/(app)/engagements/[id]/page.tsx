@@ -65,7 +65,7 @@ function Workspace() {
   const viewer: Viewer = { userId: me.data.userId, role: me.data.role, engagementLocked: e.state === 'locked' || !e.member };
 
   return (
-    <div className="stack-lg">
+    <div className="stack">
       <PageHead
         title={e.clientName}
         sentence={`${SECTOR_LABELS[e.sector] ?? e.sector} · year ended ${fmtDate(e.periodEnd)} · ${e.framework === 'IFRS_SME' ? 'IFRS for SMEs' : 'Full IFRS'}`}
