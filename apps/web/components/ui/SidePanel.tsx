@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
-
-const FOCUSABLE = 'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
+import { trapTarget, visibleFocusable } from '@/lib/focus';
 
 /** Right-hand dialog. Focus moves in when it opens and returns to the opener when it closes. */
 export function SidePanel({
@@ -25,7 +24,9 @@ export function SidePanel({
   useEffect(() => {
     if (!open) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const first = panel.current?.querySelector<HTMLElement>(FOCUSABLE);
+    const body = panel.current?.querySelector<HTMLElement>('.side-panel-body');
+    const control = body ? visibleFocusable(body).find((el) => /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) : undefined;
+    const first = control ?? (panel.current ? visibleFocusable(panel.current)[0] : undefined);
     (first ?? panel.current)?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -34,19 +35,13 @@ export function SidePanel({
         return;
       }
       if (e.key !== 'Tab' || !panel.current) return;
-      const items = Array.from(panel.current.querySelectorAll<HTMLElement>(FOCUSABLE));
-      if (items.length === 0) {
+      const items = visibleFocusable(panel.current);
+      const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const to = trapTarget(items, active, panel.current, e.shiftKey);
+      if (items.length === 0) e.preventDefault();
+      if (to) {
         e.preventDefault();
-        return;
-      }
-      const head = items[0]!;
-      const tail = items[items.length - 1]!;
-      if (e.shiftKey && (document.activeElement === head || document.activeElement === panel.current)) {
-        e.preventDefault();
-        tail.focus();
-      } else if (!e.shiftKey && document.activeElement === tail) {
-        e.preventDefault();
-        head.focus();
+        to.focus();
       }
     };
     document.addEventListener('keydown', onKey);

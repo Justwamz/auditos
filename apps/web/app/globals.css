@@ -175,7 +175,7 @@ input:hover:not(:disabled), select:hover:not(:disabled), textarea:hover:not(:dis
 input:focus, select:focus, textarea:focus { border-color: var(--ledger); }
 input:disabled, select:disabled, textarea:disabled { background: var(--paper); color: var(--pencil); }
 textarea { min-height: 5rem; resize: vertical; }
-input[type='radio'], input[type='checkbox'] { width: auto; }
+input[type='radio'], input[type='checkbox'] { width: auto; min-height: 0; height: auto; padding: 0; }
 .field { margin-bottom: 0.9rem; }
 .hint { font-weight: 400; color: var(--pencil); font-size: 0.82rem; }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.9rem; align-items: end; }
@@ -199,9 +199,6 @@ input[type='radio'], input[type='checkbox'] { width: auto; }
 table { border-collapse: collapse; width: 100%; }
 th, td { text-align: left; padding: 0.5rem 0.75rem; height: 48px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
 th {
-  position: sticky;
-  top: 0;
-  background: var(--sheet);
   font-weight: 600;
   font-size: 13px;
   letter-spacing: 0.04em;
@@ -209,13 +206,14 @@ th {
   color: var(--pencil);
   border-bottom: 1px solid var(--rule-strong);
 }
+thead th { position: sticky; top: 0; z-index: 1; background: var(--sheet); }
 td.num, th.num { text-align: right; white-space: nowrap; }
 tbody tr { transition: background var(--dur-fast) var(--ease); }
 tbody tr:hover { background: rgba(46, 107, 76, 0.05); }
 
 /* Ledger: financial statements. Single rule above a total, double rule below a grand total. */
 table.ledger td, table.ledger th { border-bottom: none; padding: 0.25rem 0.6rem; height: auto; vertical-align: top; }
-table.ledger th { position: static; text-transform: none; letter-spacing: normal; font-size: 0.85rem; background: transparent; }
+table.ledger thead th { position: static; text-transform: none; letter-spacing: normal; font-size: 0.85rem; background: transparent; }
 table.ledger tbody tr:hover { background: transparent; }
 table.ledger .group td { padding-top: 0.9rem; font-weight: 600; font-family: var(--sans); }
 table.ledger .sub td { border-top: 1px solid var(--ink); font-weight: 600; }
