@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
+import { PageHead } from '@/components/ui/PageHead';
 import { blankLine, LinesEditor, TaxPicker, type LineInput } from '@/components/billing';
 import { hoursLabel, kes } from '@/lib/dates';
 
@@ -66,11 +67,12 @@ function Builder() {
 
   return (
     <div className="stack-lg">
-      <div className="page-head">
-        <p className="small"><Link href="/invoices">Invoices</Link></p>
-        <div className="row between"><h1>{editing ? 'Change the draft invoice' : 'New invoice'}</h1><HelpLink topic="invoices" /></div>
-        <p>Choose the client. To bill time, expenses or the fixed fee from an engagement, choose the engagement too. You can add lines of your own as well.</p>
-      </div>
+      <p className="small"><Link href="/invoices">Invoices</Link></p>
+      <PageHead
+        title={editing ? 'Change the draft invoice' : 'New invoice'}
+        sentence="Choose the client. To bill time, expenses or the fixed fee from an engagement, choose the engagement too. You can add lines of your own as well."
+        help={<HelpLink topic="invoices" />}
+      />
       <BillingTabs />
       <form className="stack-lg" onSubmit={save}>
         <section className="sheet stack">
@@ -100,7 +102,7 @@ function Builder() {
             )}
             {billable.data.time.length === 0 && billable.data.expenses.length === 0 && !billable.data.fee && <p className="muted">Nothing unbilled here.</p>}
             {billable.data.time.length > 0 && (
-              <table>
+              <table className="prospects-table">
                 <thead><tr><th /><th>Date</th><th>Person</th><th>Work</th><th>Time</th><th>Value</th></tr></thead>
                 <tbody>
                   {billable.data.time.map((t) => (
@@ -113,7 +115,7 @@ function Builder() {
               </table>
             )}
             {billable.data.expenses.length > 0 && (
-              <table>
+              <table className="prospects-table">
                 <thead><tr><th /><th>Date</th><th>Expense</th><th>Amount</th></tr></thead>
                 <tbody>
                   {billable.data.expenses.map((x) => (

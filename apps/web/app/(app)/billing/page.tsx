@@ -5,6 +5,9 @@ import { useState } from 'react';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
+import { PageHead } from '@/components/ui/PageHead';
+import { SectionHead } from '@/components/ui/SectionHead';
+import { Skeleton } from '@/components/ui/EmptyState';
 import { hoursLabel, kes, monthEnd, monthStart, todayNairobi } from '@/lib/dates';
 
 interface Summary {
@@ -34,30 +37,34 @@ export default function BillingPage() {
   const [to, setTo] = useState(() => monthEnd(todayNairobi()));
   const s = useApi<Summary>(`/billing/summary?from=${from}&to=${to}`);
   const me = useApi<{ role: string; isAdmin: boolean }>('/me');
-  const manage = me.data?.role === 'partner' || me.data?.role === 'firm_admin' || me.data?.isAdmin;
   const d = s.data;
+  const loading = s.loading && !s.data;
 
   return (
     <div className="stack-lg">
-      <div className="page-head">
-        <div className="row between"><h1>Billing</h1><HelpLink topic="billing" /></div>
-        <p>Hours, work in progress, invoices and what is owed. You see the engagements you work on{me.data?.role === 'partner' ? ', and the whole firm as a partner' : ''}.</p>
-      </div>
+      <PageHead
+        title="Billing"
+        sentence={`Hours, work in progress, invoices and what is owed. You see the engagements you work on${me.data?.role === 'partner' ? ', and the whole firm as a partner' : ''}.`}
+        action={<Link href="/invoices/new" className="button">+ New invoice</Link>}
+        help={<HelpLink topic="billing" />}
+      />
       <BillingTabs />
       <ErrorNote error={s.error} />
 
-      <section className="sheet row between">
-        <div className="row">
+      <div className="prospects-toolbar">
+        <div className="row date-range">
           <label className="small" htmlFor="bf">From</label><input id="bf" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           <label className="small" htmlFor="bt">To</label><input id="bt" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </div>
-        <div className="row">
-          <Link href="/invoices">Invoices</Link>
-          <Link href="/quotes">Quotations</Link>
-          <Link href="/billing/outbox">Sent emails</Link>
-          {manage && <Link href="/billing/settings">Rates, taxes and settings</Link>}
-        </div>
-      </section>
+      </div>
+
+      {loading && (
+        <section className="sheet prospects-loading" aria-label="Loading billing">
+          <Skeleton height={64} />
+          <Skeleton height={48} />
+          <Skeleton height={48} />
+        </section>
+      )}
 
       {d?.invoicing && (
         <section className="tiles" aria-label="Invoicing">
@@ -80,36 +87,36 @@ export default function BillingPage() {
       )}
 
       {d?.time && d.time.byEngagement.length > 0 && (
-        <section className="sheet">
-          <h2>By engagement</h2>
-          <table>
-            <thead><tr><th>Client</th><th>Hours</th><th>Value</th><th>Fee</th><th>Budget used</th></tr></thead>
+        <section className="sheet stack">
+          <SectionHead title="By engagement" sentence="Hours against the budget, and how each job is billed." />
+          <div className="prospects-scroll"><table className="prospects-table" aria-label="By engagement">
+            <thead><tr><th>Client</th><th className="num">Hours</th><th className="num">Value</th><th>Fee</th><th>Budget used</th></tr></thead>
             <tbody>
               {d.time.byEngagement.map((e) => (
                 <tr key={e.engagementId}>
                   <td><Link href={`/engagements/${e.engagementId}`}>{e.clientName}</Link></td>
-                  <td>{hoursLabel(e.minutes)}</td>
-                  <td>{kes(e.value)}</td>
+                  <td className="num">{hoursLabel(e.minutes)}</td>
+                  <td className="num">{kes(e.value)}</td>
                   <td>{e.feeBasis === 'flat' ? `Flat ${kes(e.flatFee)}` : e.feeBasis === 'hourly' ? 'Hourly' : 'Not set'}</td>
                   <td>{e.budgetHours ? `${e.hoursUsed} of ${e.budgetHours} h (${e.budgetUsedPercent}%)` : `${e.hoursUsed} h, no budget`}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </section>
       )}
 
       {d?.time && d.time.byPerson.length > 0 && (
-        <section className="sheet">
-          <h2>By person</h2>
-          <table>
-            <thead><tr><th>Person</th><th>Hours</th><th>Billable</th><th>Utilisation</th><th>Value</th></tr></thead>
+        <section className="sheet stack">
+          <SectionHead title="By person" sentence="Hours, billable share and value for each person." />
+          <div className="prospects-scroll"><table className="prospects-table" aria-label="By person">
+            <thead><tr><th>Person</th><th className="num">Hours</th><th className="num">Billable</th><th className="num">Utilisation</th><th className="num">Value</th></tr></thead>
             <tbody>
               {d.time.byPerson.map((p) => (
-                <tr key={p.userId}><td>{p.name}</td><td>{hoursLabel(p.minutes)}</td><td>{hoursLabel(p.billableMinutes)}</td><td>{p.utilisation}%</td><td>{kes(p.value)}</td></tr>
+                <tr key={p.userId}><td>{p.name}</td><td className="num">{hoursLabel(p.minutes)}</td><td className="num">{hoursLabel(p.billableMinutes)}</td><td className="num">{p.utilisation}%</td><td className="num">{kes(p.value)}</td></tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </section>
       )}
 

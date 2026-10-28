@@ -1,11 +1,12 @@
 'use client';
-import Link from 'next/link';
 import { BillingTabs } from '@/components/BillingTabs';
 import { useEffect, useState, type FormEvent } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
+import { Disclosure } from '@/components/ui/Disclosure';
+import { PageHead } from '@/components/ui/PageHead';
 import { ROLE_LABELS } from '@/lib/text';
 
 interface Settings {
@@ -24,6 +25,7 @@ export default function BillingSettingsPage() {
   const [tax, setTax] = useState({ name: '', rate: '', onPrevious: false });
   const [error, setError] = useState<unknown>();
   const [done, setDone] = useState('');
+  const [section, setSection] = useState<'rates' | 'taxes' | 'details' | ''>('rates');
 
   useEffect(() => {
     const d = data.data;
@@ -66,68 +68,78 @@ export default function BillingSettingsPage() {
     }, 'Tax added to the list. It is only applied to an invoice when someone chooses it there.');
   };
 
+
+  const toggle = (id: 'rates' | 'taxes' | 'details') => (open: boolean) => setSection(open ? id : '');
+
   return (
     <div className="stack-lg">
-      <div className="page-head">
-        <p className="small"><Link href="/billing">Billing</Link></p>
-        <div className="row between"><h1>Rates, taxes and settings</h1><HelpLink topic="billing.settings" /></div>
-        <p>The firm's hourly rates by role, the taxes that can be put on an invoice, and the details printed on invoices.{canEdit ? '' : ' You can read these; partners and administrators change them.'}</p>
-      </div>
+      <PageHead
+        title="Rates, taxes and settings"
+        sentence={`The firm's hourly rates by role, the taxes that can be put on an invoice, and the details printed on invoices.${canEdit ? '' : ' You can read these; partners and administrators change them.'}`}
+        help={<HelpLink topic="billing.settings" />}
+      />
       <BillingTabs />
       <ErrorNote error={error ?? data.error} />
       {done && <Notice>{done}</Notice>}
 
-      <form className="sheet stack" onSubmit={saveRates}>
-        <h2>Hourly rates (KES)</h2>
-        <div className="form-grid">
-          {RATE_ROLES.map((r) => (
-            <div className="field" key={r}>
-              <label htmlFor={`r-${r}`}>{ROLE_LABELS[r] ?? r}</label>
-              <input id={`r-${r}`} inputMode="decimal" disabled={!canEdit} value={rates[r] ?? ''} onChange={(e) => setRates({ ...rates, [r]: e.target.value })} placeholder="not set" />
-            </div>
-          ))}
-        </div>
-        {canEdit && <div><button>Save rates</button></div>}
-      </form>
-
       <section className="sheet stack">
-        <h2>Taxes that can be applied to an invoice</h2>
-        <p className="muted">No tax is added to an invoice unless the person making it chooses one, and chooses whether prices include it. Several can be applied, and one can be charged on top of another, for example VAT on top of excise duty.</p>
-        <table>
-          <thead><tr><th>Tax</th><th>Rate</th><th>Charged</th><th>Status</th><th /></tr></thead>
-          <tbody>
-            {data.data?.taxes.map((t) => (
-              <tr key={t.id}>
-                <td>{t.name}</td><td>{t.rate}%</td><td>{t.onPrevious ? 'on top of the tax before it' : 'on the net amount'}</td><td>{t.active ? 'In use' : 'Switched off'}</td>
-                <td>{canEdit && <button className="quiet" onClick={() => run(() => api.patch(`/billing/taxes/${t.id}`, { active: !t.active }), t.active ? 'Tax switched off.' : 'Tax switched on.')}>{t.active ? 'Switch off' : 'Switch on'}</button>}</td>
-              </tr>
-            ))}
-            {data.data?.taxes.length === 0 && <tr><td colSpan={5} className="muted">No taxes yet.</td></tr>}
-          </tbody>
-        </table>
-        {canEdit && (
-          <form className="row" onSubmit={addTax}>
-            <input aria-label="Tax name" placeholder="Name, for example VAT" required maxLength={60} value={tax.name} onChange={(e) => setTax({ ...tax, name: e.target.value })} />
-            <input aria-label="Tax rate in percent" placeholder="Rate %" required inputMode="decimal" style={{ width: '6rem' }} value={tax.rate} onChange={(e) => setTax({ ...tax, rate: e.target.value })} />
-            <label className="row small"><input type="checkbox" checked={tax.onPrevious} onChange={(e) => setTax({ ...tax, onPrevious: e.target.checked })} /> Charged on top of the tax before it</label>
-            <button className="secondary">Add tax</button>
+        <Disclosure summary="Hourly rates (KES)" open={section === 'rates'} onToggle={toggle('rates')}>
+          <form className="stack" onSubmit={saveRates}>
+            <div className="form-grid">
+              {RATE_ROLES.map((r) => (
+                <div className="field" key={r}>
+                  <label htmlFor={`r-${r}`}>{ROLE_LABELS[r] ?? r}</label>
+                  <input id={`r-${r}`} inputMode="decimal" disabled={!canEdit} value={rates[r] ?? ''} onChange={(e) => setRates({ ...rates, [r]: e.target.value })} placeholder="not set" />
+                </div>
+              ))}
+            </div>
+            {canEdit && <div><button>Save rates</button></div>}
           </form>
-        )}
-      </section>
+        </Disclosure>
 
-      <form className="sheet stack" onSubmit={saveSettings}>
-        <h2>Invoice details</h2>
-        <div className="form-grid">
-          <div className="field"><label htmlFor="sl">Firm name on invoices</label><input id="sl" disabled={!canEdit} maxLength={200} value={form.legalName} onChange={(e) => setForm({ ...form, legalName: e.target.value })} /></div>
-          <div className="field"><label htmlFor="sa">Address</label><input id="sa" disabled={!canEdit} maxLength={500} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
-          <div className="field"><label htmlFor="sk">Firm KRA PIN</label><input id="sk" disabled={!canEdit} placeholder="P051234567Q" maxLength={11} value={form.kraPin} onChange={(e) => setForm({ ...form, kraPin: e.target.value })} /></div>
-          <div className="field"><label htmlFor="sb">Bank details for payment</label><input id="sb" disabled={!canEdit} maxLength={500} value={form.bankDetails} onChange={(e) => setForm({ ...form, bankDetails: e.target.value })} /></div>
-          <div className="field"><label htmlFor="si">Invoice number prefix</label><input id="si" disabled={!canEdit} maxLength={6} value={form.invoicePrefix} onChange={(e) => setForm({ ...form, invoicePrefix: e.target.value.toUpperCase() })} /></div>
-          <div className="field"><label htmlFor="sq">Quotation number prefix</label><input id="sq" disabled={!canEdit} maxLength={6} value={form.quotePrefix} onChange={(e) => setForm({ ...form, quotePrefix: e.target.value.toUpperCase() })} /></div>
-          <div className="field"><label htmlFor="sd">Days to pay</label><input id="sd" disabled={!canEdit} inputMode="numeric" value={form.paymentTermsDays} onChange={(e) => setForm({ ...form, paymentTermsDays: e.target.value })} /></div>
-        </div>
-        {canEdit && <div><button>Save invoice details</button></div>}
-      </form>
+        <Disclosure summary="Taxes" open={section === 'taxes'} onToggle={toggle('taxes')}>
+          <div className="stack">
+            <p className="muted">No tax is added to an invoice unless the person making it chooses one, and chooses whether prices include it. Several can be applied, and one can be charged on top of another, for example VAT on top of excise duty.</p>
+            <div className="prospects-scroll">
+              <table className="prospects-table" aria-label="Taxes">
+                <thead><tr><th>Tax</th><th className="num">Rate</th><th>Charged</th><th>Status</th><th /></tr></thead>
+                <tbody>
+                  {data.data?.taxes.map((t) => (
+                    <tr key={t.id}>
+                      <td>{t.name}</td><td className="num">{t.rate}%</td><td>{t.onPrevious ? 'on top of the tax before it' : 'on the net amount'}</td><td>{t.active ? 'In use' : 'Switched off'}</td>
+                      <td>{canEdit && <button type="button" className="quiet" onClick={() => run(() => api.patch(`/billing/taxes/${t.id}`, { active: !t.active }), t.active ? 'Tax switched off.' : 'Tax switched on.')}>{t.active ? 'Switch off' : 'Switch on'}</button>}</td>
+                    </tr>
+                  ))}
+                  {data.data?.taxes.length === 0 && <tr><td colSpan={5} className="muted">No taxes yet.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            {canEdit && (
+              <form className="row" onSubmit={addTax}>
+                <input aria-label="Tax name" placeholder="Name, for example VAT" required maxLength={60} value={tax.name} onChange={(e) => setTax({ ...tax, name: e.target.value })} />
+                <input aria-label="Tax rate in percent" placeholder="Rate %" required inputMode="decimal" style={{ width: '6rem' }} value={tax.rate} onChange={(e) => setTax({ ...tax, rate: e.target.value })} />
+                <label className="row small"><input type="checkbox" checked={tax.onPrevious} onChange={(e) => setTax({ ...tax, onPrevious: e.target.checked })} /> Charged on top of the tax before it</label>
+                <button>Add tax</button>
+              </form>
+            )}
+          </div>
+        </Disclosure>
+
+        <Disclosure summary="Invoice details" open={section === 'details'} onToggle={toggle('details')}>
+          <form className="stack" onSubmit={saveSettings}>
+            <div className="form-grid">
+              <div className="field"><label htmlFor="sl">Firm name on invoices</label><input id="sl" disabled={!canEdit} maxLength={200} value={form.legalName} onChange={(e) => setForm({ ...form, legalName: e.target.value })} /></div>
+              <div className="field"><label htmlFor="sa">Address</label><input id="sa" disabled={!canEdit} maxLength={500} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+              <div className="field"><label htmlFor="sk">Firm KRA PIN</label><input id="sk" disabled={!canEdit} placeholder="P051234567Q" maxLength={11} value={form.kraPin} onChange={(e) => setForm({ ...form, kraPin: e.target.value })} /></div>
+              <div className="field"><label htmlFor="sb">Bank details for payment</label><input id="sb" disabled={!canEdit} maxLength={500} value={form.bankDetails} onChange={(e) => setForm({ ...form, bankDetails: e.target.value })} /></div>
+              <div className="field"><label htmlFor="si">Invoice number prefix</label><input id="si" disabled={!canEdit} maxLength={6} value={form.invoicePrefix} onChange={(e) => setForm({ ...form, invoicePrefix: e.target.value.toUpperCase() })} /></div>
+              <div className="field"><label htmlFor="sq">Quotation number prefix</label><input id="sq" disabled={!canEdit} maxLength={6} value={form.quotePrefix} onChange={(e) => setForm({ ...form, quotePrefix: e.target.value.toUpperCase() })} /></div>
+              <div className="field"><label htmlFor="sd">Days to pay</label><input id="sd" disabled={!canEdit} inputMode="numeric" value={form.paymentTermsDays} onChange={(e) => setForm({ ...form, paymentTermsDays: e.target.value })} /></div>
+            </div>
+            {canEdit && <div><button>Save invoice details</button></div>}
+          </form>
+        </Disclosure>
+      </section>
     </div>
   );
 }

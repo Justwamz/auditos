@@ -1,34 +1,59 @@
 'use client';
-import Link from 'next/link';
 import { BillingTabs } from '@/components/BillingTabs';
 import { useApi } from '@/lib/hooks';
-import { Empty, ErrorNote } from '@/components/bits';
+import { ErrorNote } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
+import { Disclosure } from '@/components/ui/Disclosure';
+import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
+import { PageHead } from '@/components/ui/PageHead';
+import { mailText } from '@/lib/billing';
 
 interface Message { id: string; kind: string; to: string; subject: string; body: string; sentBy: string; at: string; provider: string }
 
 export default function SentEmailsPage() {
   const box = useApi<{ messages: Message[] }>('/outbox');
+  const loading = box.loading && !box.data;
   return (
     <div className="stack-lg">
-      <div className="page-head">
-        <p className="small"><Link href="/billing">Billing</Link></p>
-        <div className="row between"><h1>Sent emails</h1><HelpLink topic="billing" /></div>
-        <p>Messages the system would email to clients. Email is not connected yet, so none of these were delivered: this is where you can see what would have been sent.</p>
-      </div>
+      <PageHead
+        title="Sent emails"
+        sentence="Emails you asked to send to clients are kept here. Email is not connected yet, so none of them were actually sent."
+        help={<HelpLink topic="billing" />}
+      />
       <BillingTabs />
       <ErrorNote error={box.error} />
-      {box.data?.messages.length === 0 && <Empty>No emails have been sent yet.</Empty>}
-      {box.data?.messages.map((m) => (
-        <article key={m.id} className="sheet stack">
-          <div className="row between">
-            <strong>{m.subject}</strong>
-            <span className="small muted">Not delivered (simulated) · {new Date(m.at).toLocaleString('en-GB')}</span>
-          </div>
-          <div className="small muted">To {m.to} · prepared by {m.sentBy}</div>
-          <pre className="mail">{m.body}</pre>
-        </article>
-      ))}
+      {loading && !box.error && (
+        <section className="sheet prospects-loading" aria-label="Loading sent emails">
+          <Skeleton height={48} />
+          <Skeleton height={48} />
+        </section>
+      )}
+      {box.data?.messages.length === 0 && (
+        <section className="sheet">
+          <EmptyState kind="ledger" title="No emails yet">When you send an invoice or a quotation, the email is kept here.</EmptyState>
+        </section>
+      )}
+      {box.data && box.data.messages.length > 0 && (
+        <section className="sheet stack" aria-label="Emails">
+          {box.data.messages.map((m) => (
+            <div key={m.id} className="mail-item">
+              <Disclosure
+                summary={
+                  <span className="mail-summary">
+                    <span className="mail-subject">{m.subject}</span>
+                    <span className="small muted">To {m.to}</span>
+                    <span className="small muted">{new Date(m.at).toLocaleString('en-GB')}</span>
+                    <span className="practice-tag">Not actually sent (practice mode)</span>
+                  </span>
+                }
+              >
+                <div className="small muted">Prepared by {m.sentBy}</div>
+                <pre className="mail">{mailText(m.body)}</pre>
+              </Disclosure>
+            </div>
+          ))}
+        </section>
+      )}
     </div>
   );
 }

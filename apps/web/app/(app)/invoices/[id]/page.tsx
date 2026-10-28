@@ -8,6 +8,10 @@ import { useApi } from '@/lib/hooks';
 import { ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
 import { statusLabel } from '@/components/billing';
+import { PageHead } from '@/components/ui/PageHead';
+import { RowMenu } from '@/components/ui/RowMenu';
+import { SidePanel } from '@/components/ui/SidePanel';
+import { Skeleton } from '@/components/ui/EmptyState';
 import { kes, todayNairobi } from '@/lib/dates';
 import { saveBlob } from '@/lib/download';
 
@@ -19,6 +23,11 @@ interface Invoice {
   payments: { amount: string; paidOn: string; method: string; reference: string | null }[];
 }
 const METHODS = [['bank', 'Bank transfer'], ['mpesa', 'M-Pesa'], ['cash', 'Cash'], ['cheque', 'Cheque'], ['other', 'Other']] as const;
+const METHOD_LABEL: Record<string, string> = Object.fromEntries(METHODS);
+type Panel = 'pay' | 'send' | 'void' | null;
+const PAY_FORM = 'invoice-pay-form';
+const SEND_FORM = 'invoice-send-form';
+const VOID_FORM = 'invoice-void-form';
 
 export default function InvoicePage() {
   const { id } = useParams<{ id: string }>();
@@ -29,49 +38,82 @@ export default function InvoicePage() {
   const [pay, setPay] = useState({ amount: '', paidOn: todayNairobi(), method: 'bank', reference: '' });
   const [voidReason, setVoidReason] = useState('');
   const [mail, setMail] = useState({ to: '', message: '' });
+  const [panel, setPanel] = useState<Panel>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
   const [info, setInfo] = useState('');
 
-  async function run(fn: () => Promise<unknown>, message = '') {
+  /** Runs one action. Returns whether it worked; a failure is kept in `error` (shown in the open panel, or on the page). */
+  async function run(fn: () => Promise<unknown>, message = ''): Promise<boolean> {
     setError(undefined);
     setInfo('');
+    setBusy(true);
     try {
       await fn();
       if (message) setInfo(message);
       inv.reload();
+      return true;
     } catch (e) {
       setError(e);
+      return false;
+    } finally {
+      setBusy(false);
     }
   }
+  const openPanel = (p: Panel) => { setError(undefined); setInfo(''); setPanel(p); };
+  const closePanel = () => { setPanel(null); setError(undefined); };
+  const submitIn = (fn: () => Promise<unknown>, message: string) => async (e: FormEvent) => {
+    e.preventDefault();
+    if (await run(fn, message)) setPanel(null);
+  };
 
   if (inv.error) return <ErrorNote error={inv.error} />;
-  if (!inv.data) return <p className="muted">Loading invoice…</p>;
+  if (!inv.data) {
+    return (
+      <section className="sheet prospects-loading" aria-label="Loading invoice">
+        <Skeleton height={36} width="40%" />
+        <Skeleton height={48} />
+        <Skeleton height={48} />
+      </section>
+    );
+  }
   const i = inv.data;
   const issued = i.status !== 'draft';
+  const canPay = !!manage && (i.status === 'sent' || i.status === 'part_paid');
+  const canVoid = !!manage && i.status === 'sent';
+  const canIssue = i.status === 'draft' && !!manage;
+
+  const main = canIssue
+    ? <button type="button" disabled={busy} onClick={() => run(() => api.post(`/invoices/${i.id}/issue`, {}), 'Issued. The invoice now has its number and can no longer be changed.')}>Issue the invoice</button>
+    : canPay
+      ? <button type="button" onClick={() => openPanel('pay')}>Record payment</button>
+      : undefined;
 
   return (
     <div className="stack-lg">
-      <div className="page-head">
-        <p className="small"><Link href="/invoices">Invoices</Link></p>
-        <div className="row between"><h1>{i.number ? `Invoice ${i.number}` : 'Draft invoice'}</h1><HelpLink topic="invoices" /></div>
-        <p>{i.clientName} · {statusLabel(i.status, i.overdue)}{i.issueDate ? ` · issued ${i.issueDate}` : ''}{i.dueDate ? ` · due ${i.dueDate}` : ''}</p>
-      </div>
+      <p className="small"><Link href="/invoices">Invoices</Link></p>
+      <PageHead
+        title={i.number ? `Invoice ${i.number}` : 'Draft invoice'}
+        sentence={`${i.clientName} · ${statusLabel(i.status, i.overdue)}${i.issueDate ? ` · issued ${i.issueDate}` : ''}${i.dueDate ? ` · due ${i.dueDate}` : ''}`}
+        action={main}
+        help={<HelpLink topic="invoices" />}
+      />
       <BillingTabs />
-      <ErrorNote error={error} />
+      {!panel && <ErrorNote error={error} />}
       {info && <Notice>{info}</Notice>}
 
       {i.tax?.simulated && (
         <div className="sim-warning" role="alert">
-          SIMULATION: this invoice has not been submitted to KRA and is not a valid tax invoice. Control number {i.tax.controlNumber} is made up. {i.tax.message}
+          PRACTICE ONLY: this invoice has not been sent to KRA and is not a valid tax invoice. {i.tax.controlNumber ? `The control number ${i.tax.controlNumber} is made up.` : ''}
         </div>
       )}
       {i.tax && !i.tax.simulated && i.tax.status !== 'submitted' && (
-        <div className="notice warn" role="alert">{i.tax.message} {manage && <button className="secondary" onClick={() => run(() => api.post(`/invoices/${i.id}/submit`, {}), 'Submitted again.')}>Submit again</button>}</div>
+        <div className="notice warn" role="alert">{i.tax.message} {manage && <button type="button" className="secondary" onClick={() => run(() => api.post(`/invoices/${i.id}/submit`, {}), 'Submitted again.')}>Submit again</button>}</div>
       )}
       {i.status === 'void' && <div className="notice error">This invoice was voided: {i.voidReason}</div>}
 
       <section className="sheet stack">
-        <table className="lines">
+        <table className="lines" aria-label="Invoice lines">
           <thead><tr><th>Description</th><th className="num">Qty</th><th className="num">Unit price</th><th className="num">Amount</th></tr></thead>
           <tbody>
             {i.lines.map((l, n) => <tr key={n}><td>{l.description}</td><td className="num">{Number(l.quantity).toFixed(2)}</td><td className="num">{kes(l.unitPrice)}</td><td className="num">{kes(l.amount)}</td></tr>)}
@@ -86,58 +128,85 @@ export default function InvoicePage() {
           </tfoot>
         </table>
         {i.notes && <p className="muted">{i.notes}</p>}
-        <div className="row">
-          <button className="secondary" onClick={() => run(async () => { const f = await api.downloadGet(`/invoices/${i.id}/pdf`); saveBlob(f.blob, f.filename); })}>Download PDF</button>
+        <div className="doc-actions">
+          <button type="button" className="secondary" onClick={() => run(async () => { const f = await api.downloadGet(`/invoices/${i.id}/pdf`); saveBlob(f.blob, f.filename); })}>Download PDF</button>
           {i.status === 'draft' && <Link href={`/invoices/new?edit=${i.id}`} className="button secondary">Change the draft</Link>}
-          {i.status === 'draft' && <button className="danger" onClick={() => run(async () => { await api.del(`/invoices/${i.id}`); router.push('/invoices'); })}>Discard the draft</button>}
-          {i.status === 'draft' && manage && <button onClick={() => run(() => api.post(`/invoices/${i.id}/issue`, {}), 'Issued. The invoice now has its number and can no longer be changed.')}>Issue the invoice</button>}
+          {issued && i.status !== 'void' && <button type="button" className="secondary" onClick={() => openPanel('send')}>Send to the client</button>}
           {i.status === 'draft' && !manage && <span className="muted small">A partner or administrator issues invoices.</span>}
+          <RowMenu
+            label="More actions for this invoice"
+            items={[
+              { label: 'Discard the draft', danger: true, hidden: i.status !== 'draft', onSelect: () => { void run(async () => { await api.del(`/invoices/${i.id}`); router.push('/invoices'); }); } },
+              { label: 'Void this invoice', danger: true, hidden: !canVoid, onSelect: () => openPanel('void') },
+            ]}
+          />
         </div>
       </section>
-
-      {issued && i.status !== 'void' && (
-        <form className="sheet stack" onSubmit={(e: FormEvent) => { e.preventDefault(); void run(() => api.post(`/invoices/${i.id}/send`, { to: mail.to, ...(mail.message.trim() ? { message: mail.message } : {}) }), 'Kept in the sent emails list. Email is simulated, so nothing was actually sent.'); }}>
-          <h2>Send to the client</h2>
-          <div className="row">
-            <input aria-label="Send to email address" type="email" required placeholder="client@example.com" value={mail.to} onChange={(e) => setMail({ ...mail, to: e.target.value })} />
-            <input aria-label="Message" placeholder="Message (optional)" value={mail.message} onChange={(e) => setMail({ ...mail, message: e.target.value })} style={{ minWidth: '18rem' }} />
-            <button className="secondary">Send</button>
-          </div>
-          <p className="muted small">Email is not connected yet: the message is kept in <Link href="/billing/outbox">sent emails</Link> and not delivered.</p>
-        </form>
-      )}
 
       {issued && (
         <section className="sheet stack">
           <h2>Payments</h2>
           {i.payments.length === 0 && <p className="muted">No payments recorded.</p>}
           {i.payments.length > 0 && (
-            <table>
-              <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th></tr></thead>
-              <tbody>{i.payments.map((p, n) => <tr key={n}><td>{p.paidOn}</td><td>{kes(p.amount)}</td><td>{p.method}</td><td>{p.reference}</td></tr>)}</tbody>
-            </table>
-          )}
-          {manage && (i.status === 'sent' || i.status === 'part_paid') && (
-            <form className="row" onSubmit={(e: FormEvent) => { e.preventDefault(); void run(() => api.post(`/invoices/${i.id}/payments`, { amount: pay.amount, paidOn: pay.paidOn, method: pay.method, ...(pay.reference.trim() ? { reference: pay.reference } : {}) }), 'Payment recorded.'); }}>
-              <input aria-label="Amount received (KES)" required inputMode="decimal" placeholder="Amount (KES)" value={pay.amount} onChange={(e) => setPay({ ...pay, amount: e.target.value })} style={{ width: '9rem' }} />
-              <input aria-label="Date received" type="date" required value={pay.paidOn} onChange={(e) => setPay({ ...pay, paidOn: e.target.value })} />
-              <select aria-label="Method" value={pay.method} onChange={(e) => setPay({ ...pay, method: e.target.value })}>{METHODS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-              <input aria-label="Reference" placeholder="Reference" value={pay.reference} onChange={(e) => setPay({ ...pay, reference: e.target.value })} />
-              <button className="secondary">Record payment</button>
-            </form>
+            <div className="prospects-scroll">
+              <table className="prospects-table" aria-label="Payments">
+                <thead><tr><th>Date</th><th className="num">Amount</th><th>Method</th><th>Reference</th></tr></thead>
+                <tbody>{i.payments.map((p, n) => <tr key={n}><td>{p.paidOn}</td><td className="num">{kes(p.amount)}</td><td>{METHOD_LABEL[p.method] ?? p.method}</td><td>{p.reference}</td></tr>)}</tbody>
+              </table>
+            </div>
           )}
         </section>
       )}
 
-      {manage && i.status === 'sent' && (
-        <form className="sheet stack" onSubmit={(e: FormEvent) => { e.preventDefault(); void run(() => api.post(`/invoices/${i.id}/void`, { reason: voidReason }), 'Voided. The time and expenses it billed can be invoiced again.'); }}>
-          <h2>Void this invoice</h2>
-          <p className="muted">An issued invoice cannot be changed. If it is wrong, void it with a reason and issue a new one. An invoice that has had a payment cannot be voided.</p>
-          <div className="row">
-            <input aria-label="Reason for voiding" required minLength={5} placeholder="Why? (recorded)" value={voidReason} onChange={(e) => setVoidReason(e.target.value)} style={{ minWidth: '20rem' }} />
-            <button className="danger">Void invoice</button>
-          </div>
-        </form>
+      {canPay && (
+        <SidePanel
+          open={panel === 'pay'}
+          title="Record a payment"
+          onClose={closePanel}
+          footer={<><button type="button" className="quiet" onClick={closePanel}>Cancel</button><button type="submit" form={PAY_FORM} disabled={busy}>Record payment</button></>}
+        >
+          <form id={PAY_FORM} className="stack" onSubmit={submitIn(() => api.post(`/invoices/${i.id}/payments`, { amount: pay.amount, paidOn: pay.paidOn, method: pay.method, ...(pay.reference.trim() ? { reference: pay.reference } : {}) }), 'Payment recorded.')}>
+            <ErrorNote error={error} />
+            <div className="field"><label htmlFor="pa">Amount received (KES)</label><input id="pa" required inputMode="decimal" placeholder="0.00" value={pay.amount} onChange={(e) => setPay({ ...pay, amount: e.target.value })} /></div>
+            <div className="field"><label htmlFor="pd">Date received</label><input id="pd" type="date" required value={pay.paidOn} onChange={(e) => setPay({ ...pay, paidOn: e.target.value })} /></div>
+            <div className="field">
+              <label htmlFor="pm">Method</label>
+              <select id="pm" value={pay.method} onChange={(e) => setPay({ ...pay, method: e.target.value })}>{METHODS.map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+            </div>
+            <div className="field"><label htmlFor="pr">Reference</label><input id="pr" placeholder="For example the bank or M-Pesa reference" value={pay.reference} onChange={(e) => setPay({ ...pay, reference: e.target.value })} /></div>
+          </form>
+        </SidePanel>
+      )}
+
+      {issued && i.status !== 'void' && (
+        <SidePanel
+          open={panel === 'send'}
+          title="Send to the client"
+          onClose={closePanel}
+          footer={<><button type="button" className="quiet" onClick={closePanel}>Cancel</button><button type="submit" form={SEND_FORM} disabled={busy}>Send</button></>}
+        >
+          <form id={SEND_FORM} className="stack" onSubmit={submitIn(() => api.post(`/invoices/${i.id}/send`, { to: mail.to, ...(mail.message.trim() ? { message: mail.message } : {}) }), 'Kept in the sent emails list. Nothing was actually sent (practice mode).')}>
+            <ErrorNote error={error} />
+            <div className="field"><label htmlFor="se">Send to email address</label><input id="se" type="email" required placeholder="client@example.com" value={mail.to} onChange={(e) => setMail({ ...mail, to: e.target.value })} /></div>
+            <div className="field"><label htmlFor="sm">Message (optional)</label><input id="sm" value={mail.message} onChange={(e) => setMail({ ...mail, message: e.target.value })} /></div>
+            <p className="muted small">Email is not connected yet, so nothing is actually sent (practice mode). The message is kept under Sent emails so you can see it.</p>
+          </form>
+        </SidePanel>
+      )}
+
+      {canVoid && (
+        <SidePanel
+          open={panel === 'void'}
+          title="Void this invoice"
+          onClose={closePanel}
+          footer={<><button type="button" className="quiet" onClick={closePanel}>Cancel</button><button type="submit" form={VOID_FORM} className="danger" disabled={busy}>Void invoice</button></>}
+        >
+          <form id={VOID_FORM} className="stack" onSubmit={submitIn(() => api.post(`/invoices/${i.id}/void`, { reason: voidReason }), 'Voided. The time and expenses it billed can be invoiced again.')}>
+            <ErrorNote error={error} />
+            <p className="muted">An issued invoice cannot be changed. If it is wrong, void it with a reason and issue a new one. An invoice that has had a payment cannot be voided.</p>
+            <div className="field"><label htmlFor="vr">Reason for voiding</label><input id="vr" required minLength={5} placeholder="Why? (recorded)" value={voidReason} onChange={(e) => setVoidReason(e.target.value)} /></div>
+          </form>
+        </SidePanel>
       )}
     </div>
   );

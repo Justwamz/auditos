@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
+import { PageHead } from '@/components/ui/PageHead';
 import { blankLine, LinesEditor, TaxPicker, type LineInput } from '@/components/billing';
 
 export default function NewQuotePage() {
@@ -38,10 +39,12 @@ export default function NewQuotePage() {
 
   return (
     <div className="stack-lg">
-      <div className="page-head">
-        <p className="small"><Link href="/quotes">Quotations</Link></p>
-        <div className="row between"><h1>New quotation</h1><HelpLink topic="quotes" /></div>
-      </div>
+      <p className="small"><Link href="/quotes">Quotations</Link></p>
+      <PageHead
+        title="New quotation"
+        sentence="Choose who it is for, give it a title, then add the lines you want to price."
+        help={<HelpLink topic="quotes" />}
+      />
       <BillingTabs />
       <form className="stack-lg" onSubmit={save}>
         <section className="sheet stack">
