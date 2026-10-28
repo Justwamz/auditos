@@ -48,9 +48,15 @@ export function buildToday(input: TodayInput): TodayRow[] {
     warn.push({ id: 'overdue', tone: 'warn', text: `${n} ${n === 1 ? 'invoice is' : 'invoices are'} overdue (${input.overdue.total})`, href: '/invoices' });
   }
   const last = addDays(input.today, LOOKAHEAD_DAYS);
-  for (const m of input.milestones) {
+  for (const [i, m] of input.milestones.entries()) {
     if (m.date < input.today || m.date > last) continue;
-    warn.push({ id: `milestone-${m.engagementId}-${m.date}-${m.title}`, tone: 'warn', text: `${m.title}, ${label(m.date)}`, href: `/engagements/${m.engagementId}` });
+    warn.push({ id: `milestone-${i}-${m.engagementId}-${m.date}`, tone: 'warn', text: `${m.title}, ${label(m.date)}`, href: `/engagements/${m.engagementId}` });
   }
   return [...action, ...warn];
+}
+
+/** "Good morning" by the hour in Nairobi. */
+export function greetingFor(now: Date): string {
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Nairobi', hour: '2-digit', hourCycle: 'h23' }).format(now));
+  return hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 }

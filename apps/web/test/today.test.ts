@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { buildToday } from '../lib/today';
+import { buildToday, greetingFor } from '../lib/today';
 
 const base = { role: 'manager', isAdmin: false, awaitingReview: [], myDrafts: [], openNotes: 0, milestones: [], today: '2026-10-28' };
 const papers = [
@@ -61,5 +61,21 @@ describe('buildToday', () => {
     expect(tones).toEqual([...tones].sort((a, b) => (a === b ? 0 : a === 'action' ? -1 : 1)));
     expect(tones[0]).toBe('action');
     expect(tones.at(-1)).toBe('warn');
+  });
+});
+
+describe('greetingFor (Nairobi hour, UTC+3)', () => {
+  const at = (utc: string) => greetingFor(new Date(utc));
+  test('morning until 11:59, afternoon from 12:00', () => {
+    expect(at('2026-10-28T08:59:00Z')).toBe('Good morning'); // 11:59 Nairobi
+    expect(at('2026-10-28T09:00:00Z')).toBe('Good afternoon'); // 12:00
+  });
+  test('afternoon until 16:59, evening from 17:00', () => {
+    expect(at('2026-10-28T13:59:00Z')).toBe('Good afternoon'); // 16:59
+    expect(at('2026-10-28T14:00:00Z')).toBe('Good evening'); // 17:00
+  });
+  test('around midnight', () => {
+    expect(at('2026-10-28T20:59:00Z')).toBe('Good evening'); // 23:59
+    expect(at('2026-10-28T21:00:00Z')).toBe('Good morning'); // 00:00
   });
 });

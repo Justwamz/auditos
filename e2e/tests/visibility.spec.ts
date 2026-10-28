@@ -4,7 +4,7 @@ import { signIn } from '../helpers';
 const ALL = ['Lakeview Rentals Ltd', 'Mwangaza Traders Ltd', 'Savannah Farms Ltd', 'Umoja Staff Pension Scheme'];
 
 /** Who sees which client in the demo firm, and the reason shown for each. */
-const PROFILES: { who: string; email: string; clients: string[] }[] = [
+const PROFILES: { who: string; email: string; clients: string[]; landsOnToday?: boolean }[] = [
   { who: 'Grace Kangethe (partner)', email: 'grace.kangethe@kangethe.example.test', clients: ALL },
   { who: 'Charles Kamau (partner)', email: 'charles.kamau@kangethe.example.test', clients: ALL },
   { who: 'Daniel Otieno (manager)', email: 'daniel.otieno@kangethe.example.test', clients: ['Lakeview Rentals Ltd', 'Mwangaza Traders Ltd'] },
@@ -12,7 +12,7 @@ const PROFILES: { who: string; email: string; clients: string[] }[] = [
   { who: 'Faith Njeri (senior)', email: 'faith.njeri@kangethe.example.test', clients: ['Mwangaza Traders Ltd', 'Savannah Farms Ltd'] },
   { who: 'Brian Kiptoo (staff)', email: 'brian.kiptoo@kangethe.example.test', clients: ['Lakeview Rentals Ltd', 'Mwangaza Traders Ltd'] },
   { who: 'Tom Odhiambo (staff, no assignments)', email: 'tom.odhiambo@kangethe.example.test', clients: [] },
-  { who: 'Wanjiru Mugo (firm administrator)', email: 'wanjiru.mugo@kangethe.example.test', clients: ALL },
+  { who: 'Wanjiru Mugo (firm administrator)', email: 'wanjiru.mugo@kangethe.example.test', clients: ALL, landsOnToday: false },
 ];
 
 const clientNames = async (page: Page) => {
@@ -25,8 +25,8 @@ const clientNames = async (page: Page) => {
 for (const p of PROFILES) {
   test(`${p.who} sees exactly the right clients`, async ({ page }) => {
     await signIn(page, p.email);
-    // The firm administrator has no Today page, so the "What you can see" panel is for everyone else.
-    if (!p.who.includes('administrator')) await expect(page.getByRole('heading', { name: 'What you can see' })).toBeVisible();
+    if (p.landsOnToday === false) await expect(page).toHaveURL(/clients$/);
+    else await expect(page.getByRole('heading', { name: 'What you can see' })).toBeVisible();
     expect(await clientNames(page)).toEqual(p.clients);
     if (p.clients.length === 0) {
       await page.goto('/');

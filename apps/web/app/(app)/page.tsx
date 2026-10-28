@@ -11,7 +11,7 @@ import { useMe } from '@/components/Me';
 import { PageHead } from '@/components/ui/PageHead';
 import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
 import { addDays, today as todayNairobi } from '@/lib/calendar';
-import { buildToday } from '@/lib/today';
+import { buildToday, greetingFor } from '@/lib/today';
 
 interface Dash {
   engagements: { id: string; clientName: string; sector: string; periodEnd: string; state: string }[];
@@ -19,17 +19,11 @@ interface Dash {
   myDrafts: { id: string; title: string; engagementId: string; clientName: string }[];
   openNotes: number;
 }
-interface Me { email: string; fullName: string | null }
 interface Summary { overdue?: { count: number; total: string } }
 interface Cal { milestones: { date: string; title: string; engagementId: string }[] }
 
 const BILLING_ROLES = ['partner', 'manager', 'firm_admin'];
 
-/** "Good morning" by the hour in Nairobi. */
-function greetingFor(now: Date): string {
-  const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Nairobi', hour: '2-digit', hourCycle: 'h23' }).format(now));
-  return hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-}
 
 export default function Today() {
   const router = useRouter();
@@ -47,14 +41,16 @@ export default function Today() {
 
   const seesBilling = isAdmin || BILLING_ROLES.includes(role);
   const dash = useApi<Dash>(gone ? null : '/dashboard');
-  const me = useApi<Me>(gone ? null : '/me');
+  const me = useApi<{ fullName: string | null }>(gone ? null : '/me');
   const summary = useApi<Summary>(gone || !seesBilling || !day ? null : `/billing/summary?from=${addDays(day, -30)}&to=${day}`);
   const cal = useApi<Cal>(gone || !day ? null : `/calendar?from=${day}&to=${addDays(day, 14)}`);
 
   if (gone) return null;
 
   const d = dash.data;
-  const ready = !!d && !!day && !!now && !!me.data && !cal.loading && !(seesBilling && summary.loading);
+  const settled = (x: { data: unknown; error: unknown }) => !!x.data || !!x.error;
+  const ready = !!d && !!day && !!now && settled(me) && settled(cal) && (!seesBilling || settled(summary));
+  const sideError = me.error ?? cal.error ?? summary.error;
   const rows = ready
     ? buildToday({
         role, isAdmin, awaitingReview: d.awaitingReview, myDrafts: d.myDrafts, openNotes: d.openNotes,
@@ -72,7 +68,7 @@ export default function Today() {
         sentence={dateText ? `${dateText}. Here is what needs you today.` : 'Here is what needs you today.'}
         help={<HelpLink topic="dashboard" />}
       />
-      <ErrorNote error={dash.error} />
+      <ErrorNote error={dash.error ?? sideError} />
 
       <section className="today-list" aria-label="Needs you today">
         {!ready && !dash.error && (
