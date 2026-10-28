@@ -79,13 +79,17 @@ function LoginFlow() {
   return (
     <main className="login">
       <div className="sheet stack">
-        <div>
+        <div className="login-brand">
           <h1>AuditOS</h1>
           <p className="muted">Working papers, review and draft financial statements for your firm.</p>
         </div>
 
         {step === 'credentials' && (
           <form className="stack" onSubmit={submitCredentials}>
+            <div className="login-step">
+              <h2>Sign in</h2>
+              <p className="muted">Use your work email and password.</p>
+            </div>
             <div className="field">
               <label htmlFor="email">Email</label>
               <input id="email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -101,14 +105,16 @@ function LoginFlow() {
 
         {step === 'enrol' && secret && (
           <form className="stack" onSubmit={submitCode}>
-            <h2>Set up your authenticator</h2>
-            <p>Add this key to an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password), then enter the 6-digit code it shows.</p>
+            <div className="login-step">
+              <h2>Set up your sign-in code</h2>
+              <p className="muted">Add the setup code to a code app on your phone, then type the 6-digit code it shows.</p>
+            </div>
             <div>
-              <div className="small muted">Setup key</div>
+              <div className="small muted">Setup code</div>
               <div className="secret">{secret.secret}</div>
             </div>
             <details>
-              <summary className="small">Setup link for apps that accept one</summary>
+              <summary className="small">Can&apos;t scan? Use this link</summary>
               <div className="secret small">{secret.otpauthUri}</div>
             </details>
             <div className="field">
@@ -122,9 +128,12 @@ function LoginFlow() {
 
         {step === 'code' && (
           <form className="stack" onSubmit={submitCode}>
-            <h2>Enter your code</h2>
+            <div className="login-step">
+              <h2>Enter your code</h2>
+              <p className="muted">Type the 6-digit code from your phone.</p>
+            </div>
             <div className="field">
-              <label htmlFor="code">6-digit code from your authenticator app</label>
+              <label htmlFor="code">6-digit code from your phone</label>
               <input id="code" inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6} required autoFocus value={code} onChange={(e) => setCode(e.target.value)} />
             </div>
             <ErrorNote error={error} />
@@ -134,12 +143,18 @@ function LoginFlow() {
 
         {step === 'tenant' && (
           <div className="stack">
-            <h2>Choose a firm</h2>
-            {me?.memberships.map((m) => (
-              <button key={m.tenantId} className="secondary" disabled={busy} onClick={() => chooseTenant(m.tenantId)}>
-                {m.tenantName} ({ROLE_LABELS[m.role] ?? m.role})
-              </button>
-            ))}
+            <div className="login-step">
+              <h2>Choose a firm</h2>
+              <p className="muted">Pick the firm you want to work in now.</p>
+            </div>
+            <div className="choice-list">
+              {me?.memberships.map((m) => (
+                <button key={m.tenantId} type="button" className="choice-row" disabled={busy} onClick={() => chooseTenant(m.tenantId)}>
+                  <span className="choice-name">{m.tenantName}</span>
+                  <span className="choice-role">{ROLE_LABELS[m.role] ?? m.role}</span>
+                </button>
+              ))}
+            </div>
             <ErrorNote error={error} />
           </div>
         )}

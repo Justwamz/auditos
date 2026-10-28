@@ -74,9 +74,9 @@ export function StepUpProvider({ children }: { children: ReactNode }) {
         <div className="backdrop" role="dialog" aria-modal="true" aria-labelledby="stepup-title">
           <form className="modal stack" onSubmit={submit}>
             <h2 id="stepup-title">Confirm it is you</h2>
-            <p className="muted">This action is recorded in the activity history. Enter the current 6-digit code from your authenticator app. If you just signed in, wait for the next code.</p>
+            <p className="muted">This is recorded in the activity history. Enter the 6-digit code from your phone.</p>
             <div className="field">
-              <label htmlFor="stepup-code">Authenticator code</label>
+              <label htmlFor="stepup-code">6-digit code from your phone</label>
               <input id="stepup-code" inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6} required autoFocus value={code} onChange={(e) => setCode(e.target.value)} />
             </div>
             {error && <div className="notice error" role="alert">{error}</div>}

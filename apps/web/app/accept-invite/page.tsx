@@ -29,8 +29,10 @@ function Accept() {
   return (
     <main className="login">
       <form className="sheet stack" onSubmit={submit}>
-        <h1>Set your password</h1>
-        <p className="muted">Choose a password of at least 12 characters. You will set up your authenticator app on first sign-in.</p>
+        <div className="login-brand">
+          <h1>Set your password</h1>
+          <p className="muted">Choose a password of at least 12 characters. You will set up your sign-in code on your phone the first time you sign in.</p>
+        </div>
         <div className="field">
           <label htmlFor="pw">New password</label>
           <input id="pw" type="password" autoComplete="new-password" minLength={12} required value={password} onChange={(e) => setPassword(e.target.value)} />
