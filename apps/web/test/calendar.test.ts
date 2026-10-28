@@ -113,17 +113,17 @@ describe('layoutDay', () => {
   });
   test('an event from 22:00 to 02:00 is clipped to 22:00-24:00 on the first day', () => {
     const [o] = layoutDay([ev('a', '2026-11-03T19:00:00Z', '2026-11-03T23:00:00Z')]);
-    expect(o.top).toBe(1320);
-    expect(o.height).toBe(120);
+    expect(o?.top).toBe(1320);
+    expect(o?.height).toBe(120);
   });
   test('the same event is clipped to 00:00-02:00 on the next day', () => {
     const [o] = layoutDay([ev('a', '2026-11-03T19:00:00Z', '2026-11-03T23:00:00Z')], '2026-11-04');
-    expect(o.top).toBe(0);
-    expect(o.height).toBe(120);
+    expect(o?.top).toBe(0);
+    expect(o?.height).toBe(120);
   });
   test('an event ending before it starts does not throw', () => {
     const [o] = layoutDay([ev('a', '2026-11-03T10:00:00Z', '2026-11-03T08:00:00Z')]);
-    expect(o.height).toBe(0);
+    expect(o?.height).toBe(0);
   });
 });
 
