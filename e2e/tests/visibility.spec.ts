@@ -35,6 +35,32 @@ for (const p of PROFILES) {
   });
 }
 
+test('the clients list has a search box, and only managers and partners can add a client in a side panel', async ({ browser }) => {
+  const grace = await (await browser.newContext()).newPage();
+  await signIn(grace, 'grace.kangethe@kangethe.example.test');
+  await grace.goto('/clients');
+  await expect(grace.getByRole('heading', { name: 'Clients', level: 1 })).toBeVisible();
+  await grace.getByLabel('Search clients').fill('savannah');
+  await expect(grace.locator('table tbody tr')).toHaveCount(1);
+  await expect(grace.getByRole('link', { name: 'Savannah Farms Ltd' })).toBeVisible();
+  await grace.getByLabel('Search clients').fill('zzzz');
+  await expect(grace.getByText('No clients match')).toBeVisible();
+  await grace.getByLabel('Search clients').fill('');
+  await grace.getByRole('button', { name: '+ Add a client' }).click();
+  const panel = grace.getByRole('dialog');
+  await expect(panel.getByRole('heading', { name: 'Add a client' })).toBeVisible();
+  await expect(panel.getByLabel('Name')).toBeVisible();
+  await expect(panel.getByLabel('Account manager')).toBeVisible();
+  await panel.getByRole('button', { name: 'Cancel' }).click();
+  await expect(panel).toHaveCount(0);
+
+  const brian = await (await browser.newContext()).newPage();
+  await signIn(brian, 'brian.kiptoo@kangethe.example.test');
+  await brian.goto('/clients');
+  await expect(brian.getByRole('heading', { name: 'Clients', level: 1 })).toBeVisible();
+  await expect(brian.getByRole('button', { name: '+ Add a client' })).toHaveCount(0);
+});
+
 test('a partner reads an engagement they are not on, but is told it is view only', async ({ page }) => {
   await signIn(page, 'grace.kangethe@kangethe.example.test');
   await page.goto('/engagements');

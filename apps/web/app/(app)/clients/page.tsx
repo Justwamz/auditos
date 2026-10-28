@@ -1,15 +1,20 @@
 'use client';
 import Link from 'next/link';
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { HelpLink } from '@/components/HelpLink';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
-import { Empty, ErrorNote, Notice } from '@/components/bits';
+import { ErrorNote, Notice } from '@/components/bits';
+import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
+import { PageHead } from '@/components/ui/PageHead';
+import { SidePanel } from '@/components/ui/SidePanel';
 import { SECTOR_LABELS } from '@/lib/text';
 
 interface Client { id: string; name: string; sector: string; legalForm: string; framework: string; yearEndMonth: number; accountManagerName: string | null; relationship: 'account_manager' | 'team' | 'oversight' }
 const WHY = { account_manager: 'You manage it', team: 'You are on the team', oversight: 'Partner or administrator view' } as const;
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const FORM = 'add-client-form';
+const BLANK = { name: '', sector: 'trading', legalForm: 'Limited company', framework: 'IFRS_SME', yearEndMonth: 12, accountManagerId: '' };
 
 export default function ClientsPage() {
   const list = useApi<{ clients: Client[] }>('/clients');
@@ -17,36 +22,124 @@ export default function ClientsPage() {
   const people = useApi<{ people: { id: string; fullName: string | null; email: string; role: string }[] }>('/people');
   const canAdd = me.data?.role === 'manager' || me.data?.role === 'partner';
   const managers = people.data?.people.filter((p) => p.role === 'manager' || p.role === 'partner') ?? [];
-  const [form, setForm] = useState({ name: '', sector: 'trading', legalForm: 'Limited company', framework: 'IFRS_SME', yearEndMonth: 12, accountManagerId: '' });
+  const [form, setForm] = useState(BLANK);
   const [error, setError] = useState<unknown>();
-  const [done, setDone] = useState('');
+  const [notice, setNotice] = useState('');
+  const [panel, setPanel] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState('');
+
+  const all = useMemo(() => list.data?.clients ?? [], [list.data]);
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return q ? all.filter((c) => [c.name, c.accountManagerName ?? '', SECTOR_LABELS[c.sector] ?? c.sector].some((t) => t.toLowerCase().includes(q))) : all;
+  }, [all, query]);
+
+  function close() {
+    setPanel(false);
+    setError(undefined);
+    setBusy(false);
+  }
 
   async function submit(ev: FormEvent) {
     ev.preventDefault();
     setError(undefined);
-    setDone('');
+    setBusy(true);
     try {
       await api.post('/clients', { ...form, yearEndMonth: Number(form.yearEndMonth), accountManagerId: form.accountManagerId || undefined });
-      setDone(`${form.name} added.`);
-      setForm({ ...form, name: '' });
+      setNotice(`${form.name} added.`);
+      setForm(BLANK);
+      setPanel(false);
+      setBusy(false);
       list.reload();
     } catch (e) {
       setError(e);
+      setBusy(false);
     }
   }
 
+  const addButton = canAdd ? <button type="button" onClick={() => { setNotice(''); setPanel(true); }}>+ Add a client</button> : undefined;
+  const loading = list.loading && !list.data;
+
   return (
     <div className="stack-lg">
-      <div className="page-head">
-        <div className="row between"><h1>Clients</h1><HelpLink topic="clients" /></div>
-        <p>The clients you are assigned to. Each client has one account manager, who is accountable for the relationship. Partners and administrators see every client.</p>
-      </div>
+      <PageHead
+        title="Clients"
+        sentence="The clients you are assigned to. Each client has one account manager, who is accountable for the relationship. Partners and administrators see every client."
+        action={addButton}
+        help={<HelpLink topic="clients" />}
+      />
+      <ErrorNote error={list.error} />
+      {notice && <Notice>{notice}</Notice>}
+
+      {loading && (
+        <section className="sheet prospects-loading" aria-label="Loading clients">
+          <Skeleton height={36} width="40%" />
+          <Skeleton height={48} />
+          <Skeleton height={48} />
+          <Skeleton height={48} />
+        </section>
+      )}
+
+      {list.data && all.length === 0 && (
+        <section className="sheet">
+          <EmptyState kind="people" title="No clients yet" action={addButton}>
+            {canAdd ? 'Add your first client to start an engagement.' : 'No clients assigned to you yet.'}
+          </EmptyState>
+        </section>
+      )}
+
+      {list.data && all.length > 0 && (
+        <>
+          <div className="prospects-toolbar">
+            <input type="search" className="prospects-search" aria-label="Search clients" placeholder="Search by client, manager or sector" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <span className="small muted">{rows.length === all.length ? `${all.length} ${all.length === 1 ? 'client' : 'clients'}` : `${rows.length} of ${all.length}`}</span>
+          </div>
+          {rows.length === 0 ? (
+            <section className="sheet">
+              <EmptyState kind="folder" title="No clients match" action={<button type="button" className="secondary" onClick={() => setQuery('')}>Show everything</button>}>
+                Try a different word.
+              </EmptyState>
+            </section>
+          ) : (
+            <section className="sheet prospects-sheet">
+              <div className="prospects-scroll">
+                <table className="prospects-table">
+                  <thead><tr><th>Client</th><th>Account manager</th><th>Sector</th><th>Year end</th><th>Why you see it</th></tr></thead>
+                  <tbody>
+                    {rows.map((c) => (
+                      <tr key={c.id}>
+                        <td>
+                          <Link href={`/clients/${c.id}`}><strong>{c.name}</strong></Link>
+                          <div className="small muted">{c.legalForm} · {c.framework === 'IFRS_SME' ? 'IFRS for SMEs' : 'Full IFRS'}</div>
+                        </td>
+                        <td>{c.accountManagerName ?? 'Not set'}</td>
+                        <td>{SECTOR_LABELS[c.sector] ?? c.sector}</td>
+                        <td>{MONTHS[c.yearEndMonth - 1]}</td>
+                        <td className="muted">{WHY[c.relationship]}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+        </>
+      )}
 
       {canAdd && (
-      <section className="sheet">
-        <h2>Add a client</h2>
-        <form onSubmit={submit} className="stack">
-          <div className="form-grid">
+        <SidePanel
+          open={panel}
+          title="Add a client"
+          onClose={close}
+          footer={
+            <>
+              <button type="button" className="quiet" onClick={close}>Cancel</button>
+              <button type="submit" form={FORM} disabled={busy}>Add client</button>
+            </>
+          }
+        >
+          <form id={FORM} className="stack" onSubmit={submit}>
             <div className="field"><label htmlFor="cn">Name</label><input id="cn" required maxLength={200} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
             <div className="field">
               <label htmlFor="cs">Sector</label>
@@ -75,32 +168,10 @@ export default function ClientsPage() {
                 {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
               </select>
             </div>
-          </div>
-          <ErrorNote error={error} />
-          {done && <Notice>{done}</Notice>}
-          <div><button>Add client</button></div>
-        </form>
-      </section>
+            <ErrorNote error={error} />
+          </form>
+        </SidePanel>
       )}
-
-      <section className="sheet">
-        <h2>All clients</h2>
-        <ErrorNote error={list.error} />
-        {list.data && list.data.clients.length === 0 && <Empty>No clients assigned to you yet.</Empty>}
-        {list.data && list.data.clients.length > 0 && (
-          <table>
-            <thead><tr><th>Name</th><th>Why you see it</th><th>Account manager</th><th>Sector</th><th>Legal form</th><th>Framework</th><th>Year end</th></tr></thead>
-            <tbody>
-              {list.data.clients.map((c) => (
-                <tr key={c.id}>
-                  <td><Link href={`/clients/${c.id}`}>{c.name}</Link></td><td>{WHY[c.relationship]}</td><td>{c.accountManagerName ?? 'Not set'}</td><td>{SECTOR_LABELS[c.sector] ?? c.sector}</td><td>{c.legalForm}</td>
-                  <td>{c.framework === 'IFRS_SME' ? 'IFRS for SMEs' : 'Full IFRS'}</td><td>{MONTHS[c.yearEndMonth - 1]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
     </div>
   );
 }

@@ -738,7 +738,17 @@ test('a partner can change a client\'s account manager; a manager cannot', async
   await grace.getByRole('link', { name: 'Savannah Farms Ltd' }).click();
   // The client page compiles on first visit in the dev server, which can take a while on a busy machine.
   await expect(grace.getByRole('heading', { name: 'Savannah Farms Ltd', level: 1 })).toBeVisible({ timeout: 90_000 });
-  await expect(grace.getByRole('heading', { name: 'Change the account manager' })).toBeVisible({ timeout: 30_000 });
+  await grace.getByRole('button', { name: 'Change the account manager' }).click({ timeout: 30_000 });
+  const panel = grace.getByRole('dialog');
+  await expect(panel.getByRole('heading', { name: 'Change the account manager' })).toBeVisible();
+  await expect(panel.getByLabel('New account manager')).toBeVisible();
+  await expect(panel.getByLabel('Reason for the change')).toBeVisible();
+  await panel.getByRole('button', { name: 'Cancel' }).click();
+  await expect(panel).toHaveCount(0);
+  await grace.getByRole('button', { name: 'Add a contact' }).click();
+  await expect(grace.getByRole('dialog').getByRole('heading', { name: 'Add a contact' })).toBeVisible();
+  await grace.keyboard.press('Escape');
+  await expect(grace.getByRole('dialog')).toHaveCount(0);
 
   const daniel = await (await browser.newContext()).newPage();
   await signIn(daniel, 'daniel.otieno@kangethe.example.test');
@@ -746,6 +756,8 @@ test('a partner can change a client\'s account manager; a manager cannot', async
   await daniel.getByRole('link', { name: 'Mwangaza Traders Ltd' }).click();
   await expect(daniel.getByRole('heading', { name: 'Mwangaza Traders Ltd', level: 1 })).toBeVisible();
   await expect(daniel.getByRole('heading', { name: 'Change the account manager' })).toHaveCount(0);
+  await expect(daniel.getByRole('button', { name: 'Change the account manager' })).toHaveCount(0);
+  await expect(daniel.getByRole('button', { name: 'Add a contact' })).toBeVisible();
 });
 
 test('a person who still holds clients cannot be switched off, and the hand-over shows what they hold', async ({ page }) => {
