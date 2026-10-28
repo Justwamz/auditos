@@ -53,3 +53,8 @@ export function TaxPicker({ taxIds, mode, onChange }: { taxIds: string[]; mode: 
 
 const STATUS: Record<string, string> = { draft: 'Draft', sent: 'Sent', part_paid: 'Part paid', paid: 'Paid', void: 'Void', accepted: 'Accepted', declined: 'Declined' };
 export const statusLabel = (s: string, overdue = false): string => (overdue ? 'Overdue' : STATUS[s] ?? s);
+
+/** The small "practice" tag shown beside a document that has not really been sent to the tax authority. */
+export function PracticeTag() {
+  return <span className="practice-tag">practice</span>;
+}
