@@ -38,7 +38,7 @@ Receipts a client gives you (their fuel, stationery) are audit evidence, not ent
     audience: ['partner', 'manager', 'admin'],
     tags: ['billing', 'dashboard', 'summary', 'utilisation', 'work in progress', 'wip', 'overdue', 'outstanding', 'collected', 'budget'],
     topics: ['billing'],
-    body: `**Billing** shows how the firm is doing on time and money for the period you choose.
+    body: `**Billing** shows how the firm is doing on time and money for the period you choose. The tabs along the top take you to **Overview**, **Invoices**, **Quotations**, **Sent emails** and, for partners and administrators, **Settings**.
 
 ## What you see
 - **Partners** see the whole firm.
@@ -53,10 +53,10 @@ Receipts a client gives you (their fuel, stationery) are audit evidence, not ent
 - **Hours logged** and **Utilisation**: the share of logged hours that were billable.
 - **Billable value**: billable hours at the rate when they were logged.
 - **Not yet invoiced**: billable time and rebillable expenses not on any issued invoice (work in progress).
-- **Open pipeline**: expected fees of prospects not yet won or lost.
+- **Open prospects**: expected fees of prospects not yet won or lost.
 
-## By engagement
-Hours against the budget, and the fee arrangement. A fixed-fee job shows the fee and the value of time spent, so you can see whether the job is paying.`,
+## By engagement and by person
+Below the figures, two tables follow: **By engagement** and **By person**. By engagement shows hours against the budget, and the fee arrangement. A fixed-fee job shows the fee and the value of time spent, so you can see whether the job is paying.`,
   },
   {
     id: 'invoices-and-tax',
@@ -67,7 +67,7 @@ Hours against the budget, and the fee arrangement. A fixed-fee job shows the fee
     tags: ['invoice', 'add vat to an invoice', 'vat on an invoice', 'invoice tax', 'tax', 'vat', 'excise', 'inclusive', 'exclusive', 'issue', 'payment', 'void', 'number', 'draft', 'overdue'],
     topics: ['invoices'],
     body: `## Drafting
-Press **New invoice**. Choose the client. To bill work, choose the engagement too and tick the time, expenses and the fixed fee you want on this invoice. You can add lines of your own. Time is grouped by person at the rate it was logged.
+Press **+ New invoice**. Choose the client. To bill work, choose the engagement too and tick the time, expenses and the fixed fee you want on this invoice. You can add lines of your own. Time is grouped by person at the rate it was logged.
 
 ## Tax is your choice, per invoice
 No tax is added unless you choose it. Choose any of the firm's taxes (up to five), and say whether your prices are **before tax** (the tax is added) or **already include tax** (the tax is worked out of them). Where a tax is charged on top of another, such as VAT on top of excise duty, the order you tick them in is the order they are applied. Totals are exact to the cent either way.
@@ -76,16 +76,16 @@ No tax is added unless you choose it. Choose any of the firm's taxes (up to five
 A partner or a person with the administrator permission issues the invoice. Issuing gives it the next number, with no gaps, marks the time and expenses as billed, and locks the invoice: lines, taxes and totals can never change.
 
 ## Tax authority submission
-Until KRA is connected, issued invoices are registered with a **simulation** and say so on screen and on the PDF. They are not valid tax invoices. See "Tax invoices and the KRA simulation".
+Until KRA is connected, issued invoices are for **practice only**: they carry a "practice" tag in the list and a **PRACTICE ONLY** warning on screen, and the PDF is marked as not valid too. They are not valid tax invoices. See "Tax invoices and the KRA practice mode".
 
 ## Payments
-Record each payment with the date and method. A part payment makes the invoice **Part paid**; the full amount makes it **Paid**. Past the due date and not fully paid, it shows as **Overdue**.
+Press **Record payment**, then enter the date, method and amount. A part payment makes the invoice **Part paid**; the full amount makes it **Paid**. Past the due date and not fully paid, it shows as **Overdue**.
 
 ## If it is wrong
-Void it, with a reason. The time and expenses become billable again and you issue a new invoice. An invoice that has received a payment cannot be voided.
+Open the **...** menu and choose **Void this invoice**, with a reason. The time and expenses become billable again and you issue a new invoice. An invoice that has received a payment cannot be voided.
 
 ## Sending
-**Send** keeps an email in the outbox. Email is not connected, so nothing is delivered yet.`,
+**Send to the client** keeps an email in the **Sent emails** tab. Email is not connected, so each one says **Not actually sent (practice mode)**.`,
   },
   {
     id: 'quotations-using',
@@ -98,10 +98,10 @@ Void it, with a reason. The time and expenses become billable again and you issu
     body: `A quotation prices a job before the engagement exists.
 
 ## Making one
-Press **New quotation**. Choose a client or a prospect, give it a title and an optional validity date, add lines, and choose any taxes and whether prices include them, as on an invoice.
+Press **+ New quotation**. Choose a client or a prospect, give it a title and an optional validity date, add lines, and choose any taxes and whether prices include them, as on an invoice.
 
 ## Sending
-**Send and number it** gives it the next quotation number and locks it. If you give an email address, a message is kept in the outbox; email is not connected, so nothing is delivered.
+**Send and number it** gives it the next quotation number and locks it. If you give an email address, a message is kept in the **Sent emails** tab; email is not connected, so it is not actually sent (practice mode).
 
 ## Acceptance
 Record whether the client accepted or declined. Each can be recorded once.
@@ -120,7 +120,7 @@ Managers, partners and people with the administrator permission. Staff do not.`,
     audience: ['partner', 'admin', 'manager'],
     tags: ['rates', 'hourly rate', 'tax', 'vat', 'settings', 'invoice details', 'prefix', 'kra pin', 'bank', 'payment terms'],
     topics: ['billing.settings'],
-    body: `Open **Billing**, then **Rates, taxes and settings**. Partners and people with the administrator permission change them; managers can read them.
+    body: `Open **Billing**, then the **Settings** tab. It has three sections you open one at a time: **Hourly rates**, **Taxes** and **Invoice details**, each with its own Save button. Partners and people with the administrator permission change them; managers can read them.
 
 ## Hourly rates
 Set a rate in KES for each role. A rate applies to time logged from then on; time already logged keeps the rate it had.
@@ -132,7 +132,7 @@ The list holds the taxes that can be put on an invoice or quotation, for example
 The firm's name, address, KRA PIN and bank details print on invoices. The number prefixes (for example KA gives KA-2026-0001) and the days allowed for payment are set here.
 
 ## Changes are recorded
-Every change to rates, taxes and details is in the audit trail.`,
+Every change to rates, taxes and details is in the activity history.`,
   },
   {
     id: 'fees-flat-or-hourly',
@@ -158,16 +158,16 @@ An accepted quotation can set the fixed fee for you.`,
   },
   {
     id: 'kra-etims-simulation',
-    title: 'Tax invoices and the KRA simulation',
-    summary: 'What the simulation means and what is needed before invoices count as tax invoices.',
+    title: 'Tax invoices and the KRA practice mode',
+    summary: 'What practice mode means and what is needed before invoices count as tax invoices.',
     category: 'Time and billing',
     audience: ['partner', 'manager', 'admin'],
-    tags: ['kra', 'etims', 'tax invoice', 'control number', 'simulation', 'qr', 'compliance'],
+    tags: ['kra', 'etims', 'tax invoice', 'control number', 'practice', 'practice only', 'qr', 'compliance'],
     topics: ['invoices.tax'],
     body: `KRA requires tax invoices to be registered through eTIMS. AuditOS is not connected to KRA yet.
 
 ## What happens now
-When an invoice is issued it is passed to a **simulation**, which makes up a control number beginning SIM-. The invoice, its PDF and this screen all say **SIMULATION: not submitted to KRA. Not a valid tax invoice.** Nothing is sent to KRA.
+When an invoice is issued it is handled in practice mode, which makes up a control number beginning SIM-. The invoice screen says **PRACTICE ONLY: this invoice has not been sent to KRA and is not a valid tax invoice.** The PDF is marked the same way. Nothing is sent to KRA.
 
 ## What this means for you
 Use these invoices to run the practice and test the process. Do not give a client an invoice from AuditOS as your tax invoice until the connection exists, or register the invoice with KRA separately.
