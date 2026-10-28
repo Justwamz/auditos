@@ -109,3 +109,16 @@ export const KIND_STYLES: Record<string, { label: string; token: string; icon: s
   training: { label: 'Training', token: '--pencil', icon: '✎' },
   other: { label: 'Other', token: '--pencil', icon: '◆' },
 };
+
+/** The first day of the month `n` months from the month of `day` (n may be negative). */
+export function shiftMonth(day: string, n: number): string {
+  const d = new Date(`${day.slice(0, 7)}-01T00:00:00Z`);
+  d.setUTCMonth(d.getUTCMonth() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** The day to select after moving `n` months: today when that month is the current one, otherwise the 1st. */
+export function stepMonth(anchor: string, n: number, now: string): string {
+  const first = shiftMonth(anchor, n);
+  return first.slice(0, 7) === now.slice(0, 7) ? now : first;
+}

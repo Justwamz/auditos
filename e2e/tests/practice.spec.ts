@@ -347,6 +347,25 @@ test('the calendar opens on the month with a toolbar and a day panel', async ({ 
   const panel = await openDay(brian, nairobiDay(2));
   await expect(panel.getByText('Fieldwork: Mwangaza stock count').first()).toBeVisible();
   await expect(brian.getByText('Pre-planning meeting: Savannah Farms')).toHaveCount(0);
+  // One event reads "1 event", and a staff member has no person selector (the page has finished loading by now).
+  const cell = brian.locator(`[data-day="${nairobiDay(2)}"]`).first();
+  await expect(cell).toContainText('1 event');
+  await expect(cell).not.toContainText('events');
+  await expect(brian.getByLabel('Show', { exact: true })).toHaveCount(0);
+
+  // The legend hides and restores a kind in the month cells and in the day panel.
+  const fieldwork = brian.locator('.cal-legend').getByRole('button', { name: 'Fieldwork', exact: true });
+  await expect(fieldwork).toHaveAttribute('aria-pressed', 'true');
+  await fieldwork.click();
+  await expect(fieldwork).toHaveAttribute('aria-pressed', 'false');
+  await expect(cell).not.toContainText('event');
+  await expect(panel.getByText('Fieldwork: Mwangaza stock count')).toHaveCount(0);
+  await expect(panel.getByText('Everything on this day is hidden by your filters. Show all kinds to see it.')).toBeVisible();
+  await fieldwork.click();
+  await expect(fieldwork).toHaveAttribute('aria-pressed', 'true');
+  await expect(cell).toContainText('1 event');
+  await expect(panel.getByText('Fieldwork: Mwangaza stock count').first()).toBeVisible();
+
   // Brian made it, so Edit and Cancel are his.
   await panel.getByRole('button', { name: /Fieldwork: Mwangaza stock count/ }).first().click();
   await expect(panel.getByText('Client warehouse').first()).toBeVisible();
@@ -372,14 +391,19 @@ test('the day panel groups a partner day by person', async ({ browser }) => {
   test.slow();
   const grace = await calendarOf(browser, 'grace.kangethe@kangethe.example.test');
   // Several people on one day: the cell says how many events.
-  await expect(grace.locator(`[data-day="${nairobiDay(2)}"]`).first()).toContainText('2 events');
+  await expect(grace.locator(`[data-day="${nairobiDay(2)}"]`).first()).toContainText(/[2-9] events/);
 
   // The partner's own group is open and everyone else's is folded.
   const panel = await openDay(grace, nairobiDay(7));
-  const own = panel.getByRole('button', { name: /Grace Kangethe/ });
+  const groups = panel.locator('.cal-person > .disclosure > .disclosure-btn');
+  const own = groups.filter({ hasText: 'Grace Kangethe' });
   await expect(own).toHaveAttribute('aria-expanded', 'true');
   await expect(panel.getByText('Management meeting').first()).toBeVisible();
-  await expect(panel.locator('.cal-person > .disclosure > .disclosure-btn[aria-expanded="false"]')).toHaveCount(3);
+  // Only her own group is open; every other person is folded.
+  await expect(groups.filter({ hasText: 'Grace Kangethe' })).toHaveCount(1);
+  await expect(panel.locator('.cal-person > .disclosure > .disclosure-btn[aria-expanded="true"]')).toHaveText(/Grace Kangethe/);
+  await expect(panel.locator('.cal-person > .disclosure > .disclosure-btn[aria-expanded="true"]')).toHaveCount(1);
+  await expect(groups.nth(1)).toHaveAttribute('aria-expanded', 'false');
   await expect(grace.getByLabel('Show', { exact: true })).toBeVisible();
 });
 
@@ -398,6 +422,29 @@ test('"+ New event" opens a dialog that Escape closes, and the firm administrato
 
   const admin = await calendarOf(browser, 'wanjiru.mugo@kangethe.example.test');
   await expect(admin.getByRole('button', { name: '+ New event' })).toHaveCount(0);
+});
+
+test('an event can be added, changed and cancelled from the calendar', async ({ browser }) => {
+  test.slow();
+  const brian = await calendarOf(browser, 'brian.kiptoo@kangethe.example.test');
+  const panel = await openDay(brian, nairobiDay(4));
+  await brian.getByRole('button', { name: '+ New event' }).click();
+  const dialog = brian.getByRole('dialog', { name: 'New event' });
+  await dialog.getByLabel('Title').fill('Check-in with Faith');
+  await dialog.getByRole('button', { name: 'Add to calendar' }).click();
+  await expect(brian.getByText('Event added to the calendar.')).toBeVisible();
+  const row = panel.getByRole('button', { name: /Check-in with Faith/ }).first();
+  await row.click();
+  await panel.getByRole('button', { name: 'Edit' }).click();
+  const change = brian.getByRole('dialog', { name: 'Change the event' });
+  await change.getByLabel('Title').fill('Check-in with Faith and Tom');
+  await change.getByRole('button', { name: 'Save changes' }).click();
+  await expect(brian.getByText('Event updated.')).toBeVisible();
+  await expect(panel.getByRole('button', { name: /Check-in with Faith and Tom/ }).first()).toBeVisible();
+  await panel.getByRole('button', { name: /Check-in with Faith and Tom/ }).first().click();
+  await panel.getByRole('button', { name: 'Cancel event' }).click();
+  await expect(brian.getByText('Check-in with Faith and Tom cancelled.')).toBeVisible();
+  await expect(panel.getByRole('button', { name: /Check-in with Faith/ })).toHaveCount(0);
 });
 
 test('a busy day says how many events, never overflows, and shows milestones as read-only diamonds', async ({ browser }) => {

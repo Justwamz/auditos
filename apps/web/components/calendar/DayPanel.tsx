@@ -6,12 +6,14 @@ import { personColour, type CalEvent, type Milestone } from './types';
 
 /** One day, grouped by person. The signed-in person is open, the others are folded. */
 export function DayPanel({
-  day, events, milestones, meId, onEdit, onCancel,
+  day, events, milestones, meId, hiddenCount = 0, onEdit, onCancel,
 }: {
   day: string;
   events: CalEvent[];
   milestones: Milestone[];
   meId: string;
+  /** Events on this day that the kind filter is hiding. */
+  hiddenCount?: number;
   onEdit: (e: CalEvent) => void;
   onCancel: (e: CalEvent) => void;
 }) {
@@ -31,7 +33,9 @@ export function DayPanel({
           ))}
         </ul>
       )}
-      {groups.length === 0 && marks.length === 0 && <p className="muted">Nothing planned for this day.</p>}
+      {groups.length === 0 && marks.length === 0 && (
+        <p className="muted">{hiddenCount > 0 ? "Everything on this day is hidden by your filters. Show all kinds to see it." : "Nothing planned for this day."}</p>
+      )}
       {groups.map((g) => {
         const key = `${day}:${g.id}`;
         return (
@@ -58,6 +62,7 @@ export function DayPanel({
                           <span className="cal-event-sum">
                             <span className="small muted">{e.allDay ? 'All day' : `${timeOf(e.startsAt)} to ${timeOf(e.endsAt)}`}</span>
                             <span>{e.title}</span>
+                            <span className="small muted"><span aria-hidden="true">{k.icon} </span>{k.label}</span>
                           </span>
                         }
                       >

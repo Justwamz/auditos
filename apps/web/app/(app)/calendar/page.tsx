@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { usePref } from '@/lib/prefs';
-import { KIND_STYLES, monthGrid, today } from '@/lib/calendar';
+import { eventsOnDay, KIND_STYLES, monthGrid, stepMonth, today } from '@/lib/calendar';
 import { ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
 import { DayPanel } from '@/components/calendar/DayPanel';
@@ -21,13 +21,6 @@ const VIEWS = [
   { id: 'week', label: 'Week', ready: false },
   { id: 'month', label: 'Month', ready: true },
 ];
-
-const firstOf = (day: string) => `${day.slice(0, 7)}-01`;
-const shiftMonth = (day: string, n: number) => {
-  const d = new Date(`${firstOf(day)}T00:00:00Z`);
-  d.setUTCMonth(d.getUTCMonth() + n);
-  return d.toISOString().slice(0, 10);
-};
 
 export default function CalendarPage() {
   const [, setView] = usePref<string>('calendar.view', 'month');
@@ -49,16 +42,14 @@ export default function CalendarPage() {
   const canSchedule = me.data !== undefined && me.data.role !== 'firm_admin';
   const meId = me.data?.userId ?? '';
   const events = useMemo(() => (cal.data?.events ?? []).filter((e) => !hidden.includes(e.kind)), [cal.data, hidden]);
+  const hiddenCount = eventsOnDay(cal.data?.events ?? [], selected).length - eventsOnDay(events, selected).length;
   const milestones = cal.data?.milestones ?? [];
 
   function go(day: string) {
     setSelected(day);
     setAnchor(day);
   }
-  function step(n: number) {
-    const first = shiftMonth(anchor, n);
-    go(first.slice(0, 7) === today().slice(0, 7) ? today() : first);
-  }
+  const step = (n: number) => go(stepMonth(anchor, n, today()));
 
   async function cancel(e: CalEvent) {
     setError(undefined);
@@ -79,7 +70,7 @@ export default function CalendarPage() {
     <div className="stack-lg">
       <PageHead
         title="Calendar"
-        sentence={`${sees ? 'Your own events and those of the people on your teams. ' : 'Your own events and those of your engagements. '}Year ends, report dates and file-lock deadlines appear by themselves.`}
+        sentence={sees ? "Your own events and your teams' events, with year ends and report dates added for you." : "Your own events and your engagements' events, with year ends and report dates added for you."}
         action={addButton}
         help={<HelpLink topic="calendar" />}
       />
@@ -149,6 +140,7 @@ export default function CalendarPage() {
           events={events}
           milestones={milestones}
           meId={meId}
+          hiddenCount={hiddenCount}
           onEdit={(e) => { setDone(''); setPanel({ editing: e }); }}
           onCancel={(e) => void cancel(e)}
         />

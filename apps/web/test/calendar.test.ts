@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
-  KIND_STYLES, addDays, dayOf, eventsOnDay, groupByPerson, layoutDay, monthGrid, mondayOf, peopleOf, timeOf,
+  KIND_STYLES, addDays, dayOf, eventsOnDay, groupByPerson, layoutDay, monthGrid, mondayOf, peopleOf, shiftMonth, stepMonth, timeOf,
 } from '../lib/calendar';
 
 const ev = (id: string, startsAt: string, endsAt: string) => ({ id, startsAt, endsAt });
@@ -135,5 +135,23 @@ describe('KIND_STYLES', () => {
       expect(s.token).toMatch(/^--[a-z-]+$/);
     }
     expect(KIND_STYLES.deadline?.label).toBe('Deadline');
+  });
+});
+
+describe('month navigation', () => {
+  test('moves to the first of the next and the previous month', () => {
+    expect(shiftMonth('2026-10-28', 1)).toBe('2026-11-01');
+    expect(shiftMonth('2026-10-28', -1)).toBe('2026-09-01');
+    expect(shiftMonth('2026-03-31', -1)).toBe('2026-02-01');
+  });
+  test('crosses the year in both directions', () => {
+    expect(shiftMonth('2026-12-15', 1)).toBe('2027-01-01');
+    expect(shiftMonth('2027-01-20', -1)).toBe('2026-12-01');
+  });
+  test('stepping back into the current month lands on today, other months on the 1st', () => {
+    expect(stepMonth('2026-11-01', -1, '2026-10-28')).toBe('2026-10-28');
+    expect(stepMonth('2026-09-01', 1, '2026-10-28')).toBe('2026-10-28');
+    expect(stepMonth('2026-10-28', 1, '2026-10-28')).toBe('2026-11-01');
+    expect(stepMonth('2026-01-10', -1, '2026-10-28')).toBe('2025-12-01');
   });
 });
