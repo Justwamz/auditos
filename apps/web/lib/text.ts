@@ -45,9 +45,9 @@ export const GATE_LABELS: Record<string, string> = {
   eqrSignedOffWhereRequired: 'The engagement quality review needs final sign-off.',
 };
 
-const MESSAGES: Record<string, string> = {
+export const MESSAGES: Record<string, string> = {
   invalid_credentials: 'The email or password is wrong, or the account is temporarily locked.',
-  unauthenticated: 'Your session has ended. Sign in again.',
+  unauthenticated: 'You have been signed out. Sign in again.',
   forbidden: 'Your role cannot do that here.',
   not_found: 'That could not be found, or you are not on the engagement.',
   stale_content: 'This paper changed after you opened it. Reload and review the latest version before signing.',
@@ -63,9 +63,9 @@ const MESSAGES: Record<string, string> = {
   framework_not_supported: 'Full IFRS statements are not supported yet. Use IFRS for SMEs.',
   statements_blocked: 'Fix the blockers on the statements first.',
   invalid_file: 'That file was rejected.',
-  quarantined: 'That file failed the malware scan and cannot be downloaded.',
+  quarantined: 'That file failed the virus check and cannot be downloaded.',
   rate_limited: 'Too many attempts. Wait a minute and try again.',
-  csrf: 'Your session needs refreshing. Reload the page.',
+  csrf: 'Please reload the page.',
   entry_unbalanced: 'Debits and credits must be equal.',
   unknown_account: 'One of the accounts is not in the trial balance.',
   invalid_amount: 'Each line needs a debit or a credit, not both and not neither.',
@@ -110,7 +110,7 @@ export function explain(err: unknown): string {
     if (typeof raw === 'string' && err.code === 'invalid_file') return raw;
     // The statement reader says exactly what was wrong with the file (password, scanned, not a PDF…).
     if (READER_CODES.has(err.code) && typeof err.body.message === 'string') return err.body.message;
-    return MESSAGES[err.code] ?? `Something went wrong (${err.code}).`;
+    return MESSAGES[err.code] ?? `Something went wrong. Please try again. If it keeps happening, tell your administrator (reference: ${err.code}).`;
   }
   return 'Something went wrong. Check your connection and try again.';
 }
