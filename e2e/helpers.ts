@@ -56,7 +56,7 @@ export async function signIn(page: Page, email: string): Promise<void> {
   await page.waitForSelector('#code');
   await page.fill('#code', await freshCode(email));
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/[/](clients)?$/);
 }
 
 /** Answers the step-up prompt that appears before a sensitive action (if the server asks for one). */

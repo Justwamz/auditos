@@ -25,7 +25,8 @@ const clientNames = async (page: Page) => {
 for (const p of PROFILES) {
   test(`${p.who} sees exactly the right clients`, async ({ page }) => {
     await signIn(page, p.email);
-    await expect(page.getByRole('heading', { name: 'What you can see' })).toBeVisible();
+    // The firm administrator has no Today page, so the "What you can see" panel is for everyone else.
+    if (!p.who.includes('administrator')) await expect(page.getByRole('heading', { name: 'What you can see' })).toBeVisible();
     expect(await clientNames(page)).toEqual(p.clients);
     if (p.clients.length === 0) {
       await page.goto('/');

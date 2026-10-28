@@ -12,7 +12,7 @@ export const reviewAndApproval: Article[] = [
     body: `A paper moves through three levels: **Prepared**, **Reviewed** (manager) and **Approved** (partner).
 
 ## Manager review
-1. Open the paper from your dashboard under **Waiting for your review**.
+1. Open the paper from your Today page: each paper waiting for you has an **Open** button.
 2. Read it and its evidence. Raise review notes for anything unclear.
 3. Sign off as **Reviewed**. You need a fresh authenticator code.
 

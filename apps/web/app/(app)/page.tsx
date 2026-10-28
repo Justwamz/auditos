@@ -1,10 +1,17 @@
 'use client';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote, Empty, StateBadge } from '@/components/bits';
 import { fmtDate, SECTOR_LABELS } from '@/lib/text';
 import { HelpLink } from '@/components/HelpLink';
 import { WhatYouSee } from '@/components/WhatYouSee';
+import { useMe } from '@/components/Me';
+import { PageHead } from '@/components/ui/PageHead';
+import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
+import { addDays, today as todayNairobi } from '@/lib/calendar';
+import { buildToday } from '@/lib/today';
 
 interface Dash {
   engagements: { id: string; clientName: string; sector: string; periodEnd: string; state: string }[];
@@ -12,65 +19,83 @@ interface Dash {
   myDrafts: { id: string; title: string; engagementId: string; clientName: string }[];
   openNotes: number;
 }
-interface Me { email: string; role: string }
+interface Me { email: string; fullName: string | null }
+interface Summary { overdue?: { count: number; total: string } }
+interface Cal { milestones: { date: string; title: string; engagementId: string }[] }
 
-export default function Dashboard() {
-  const dash = useApi<Dash>('/dashboard');
-  const me = useApi<Me>('/me');
+const BILLING_ROLES = ['partner', 'manager', 'firm_admin'];
+
+/** "Good morning" by the hour in Nairobi. */
+function greetingFor(now: Date): string {
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Nairobi', hour: '2-digit', hourCycle: 'h23' }).format(now));
+  return hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+}
+
+export default function Today() {
+  const router = useRouter();
+  const { role, isAdmin } = useMe();
+  const gone = role === 'firm_admin';
+  const [day, setDay] = useState<string>();
+  const [now, setNow] = useState<Date>();
+  useEffect(() => {
+    setDay(todayNairobi());
+    setNow(new Date());
+  }, []);
+  useEffect(() => {
+    if (gone) router.replace('/clients');
+  }, [gone, router]);
+
+  const seesBilling = isAdmin || BILLING_ROLES.includes(role);
+  const dash = useApi<Dash>(gone ? null : '/dashboard');
+  const me = useApi<Me>(gone ? null : '/me');
+  const summary = useApi<Summary>(gone || !seesBilling || !day ? null : `/billing/summary?from=${addDays(day, -30)}&to=${day}`);
+  const cal = useApi<Cal>(gone || !day ? null : `/calendar?from=${day}&to=${addDays(day, 14)}`);
+
+  if (gone) return null;
+
   const d = dash.data;
+  const ready = !!d && !!day && !!now && !!me.data && !cal.loading && !(seesBilling && summary.loading);
+  const rows = ready
+    ? buildToday({
+        role, isAdmin, awaitingReview: d.awaitingReview, myDrafts: d.myDrafts, openNotes: d.openNotes,
+        overdue: summary.data?.overdue, milestones: cal.data?.milestones ?? [], today: day,
+      })
+    : [];
+  const first = me.data?.fullName?.trim().split(/\s+/)[0];
+  const title = now ? `${greetingFor(now)}${first ? `, ${first}` : ''}` : 'Hello';
+  const dateText = now ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Nairobi', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(now) : '';
 
   return (
     <div className="stack-lg">
-      <div className="page-head">
-        <div className="row between"><h1>Dashboard</h1><HelpLink topic="dashboard" /></div>
-        <p>{me.data ? `Signed in as ${me.data.email}.` : ''}</p>
-      </div>
+      <PageHead
+        title={title}
+        sentence={dateText ? `${dateText}. Here is what needs you today.` : 'Here is what needs you today.'}
+        help={<HelpLink topic="dashboard" />}
+      />
       <ErrorNote error={dash.error} />
-      <WhatYouSee />
 
-      {d && d.openNotes > 0 && (
-        <div className="notice warn">
-          {d.openNotes} open review {d.openNotes === 1 ? 'note is' : 'notes are'} waiting across your engagements.
-        </div>
-      )}
-
-      {d && d.awaitingReview.length > 0 && (
-        <section className="sheet">
-          <h2>Waiting for your review</h2>
-          <table>
-            <thead><tr><th>Paper</th><th>Client</th><th>Needs</th></tr></thead>
-            <tbody>
-              {d.awaitingReview.map((i) => (
-                <tr key={i.id}>
-                  <td><Link href={`/engagements/${i.engagementId}?tab=papers&item=${i.id}`}>{i.title}</Link></td>
-                  <td>{i.clientName}</td>
-                  <td>{i.level === 'manager' ? 'Manager review' : 'Partner approval'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
-
-      {d && d.myDrafts.length > 0 && (
-        <section className="sheet">
-          <h2>Your drafts</h2>
-          <table>
-            <thead><tr><th>Paper</th><th>Client</th></tr></thead>
-            <tbody>
-              {d.myDrafts.map((i) => (
-                <tr key={i.id}>
-                  <td><Link href={`/engagements/${i.engagementId}?tab=papers&item=${i.id}`}>{i.title}</Link></td>
-                  <td>{i.clientName}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
+      <section className="today-list" aria-label="Needs you today">
+        {!ready && !dash.error && (
+          <>
+            <Skeleton height={72} className="today-skeleton" />
+            <Skeleton height={72} className="today-skeleton" />
+            <Skeleton height={72} className="today-skeleton" />
+          </>
+        )}
+        {ready && rows.length === 0 && (
+          <EmptyState kind="calendar" title="Nothing needs you today.">Enjoy the quiet.</EmptyState>
+        )}
+        {rows.map((r) => (
+          <div key={r.id} className={`today-card ${r.tone}`}>
+            <p>{r.text}</p>
+            <Link href={r.href} className="button" aria-label={`Open: ${r.text}`}>Open</Link>
+          </div>
+        ))}
+      </section>
 
       <section className="sheet">
         <div className="row between"><h2>Your engagements</h2><Link href="/engagements">All engagements</Link></div>
+        {!d && !dash.error && <Skeleton height={64} />}
         {d && d.engagements.length === 0 && <Empty>You are not on any engagement yet. A manager or partner can add you from an engagement’s team list.</Empty>}
         {d && d.engagements.length > 0 && (
           <table>
@@ -88,6 +113,8 @@ export default function Dashboard() {
           </table>
         )}
       </section>
+
+      <WhatYouSee />
     </div>
   );
 }

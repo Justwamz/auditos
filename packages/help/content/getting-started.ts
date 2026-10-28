@@ -11,11 +11,11 @@ export const gettingStarted: Article[] = [
     topics: ['dashboard'],
     body: `AuditOS is where the firm plans, performs, reviews and reports its audits. Every action on a client file is recorded, and nothing that has been reviewed can be changed quietly.
 
-## Your dashboard
-The dashboard opens with **What you can see**: your role, the clients you manage, the clients you see through an engagement team, and why. Below it you find papers waiting for your review and your own drafts.
+## Your Today page
+Today opens with a greeting and a list of what needs you, each with an **Open** button: papers waiting for your review, your own drafts, overdue invoices and dates coming up. Below it are your engagements and **What you can see**: your role, the clients you manage, the clients you see through an engagement team, and why.
 
 ## The menu
-- **Dashboard**: your work and what you can see.
+- **Today**: what needs you and what you can see.
 - **Engagements**: one per client per financial year. Open one to see its roadmap, papers, checklists, evidence and draft financial statements.
 - **Clients**: the clients you can see, with their contacts.
 - **Independence**: your independence declaration, which you need before joining a team.

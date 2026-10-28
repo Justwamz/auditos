@@ -519,3 +519,13 @@ button.cal-day-head:hover:not(:disabled) { background: var(--ledger-wash); color
 .cal-block[data-cols='5'] { align-items: center; justify-content: center; padding-inline: 2px; }
 .cal-block[data-cols='5'] :is(.cal-block-title, .cal-block-when) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .cal-hint { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); background: var(--amber-wash); border-radius: var(--radius-sm); font-size: 14px; }
+
+/* Today page */
+.today-list { display: flex; flex-direction: column; gap: var(--space-3); max-width: 52rem; }
+.today-card { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-5); background: var(--sheet); border: 1px solid var(--rule); border-left: 4px solid var(--ledger); border-radius: var(--radius); box-shadow: var(--shadow-1); transition: box-shadow var(--dur) var(--ease); }
+.today-card:hover { box-shadow: var(--shadow-2); }
+.today-card.warn { border-left-color: var(--amber); }
+.today-card p { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
+.today-card .button { flex: none; text-decoration: none; }
+.today-skeleton { border-radius: var(--radius); }
+@media (max-width: 560px) { .today-card { flex-direction: column; align-items: stretch; } .today-card .button { text-align: center; } }
