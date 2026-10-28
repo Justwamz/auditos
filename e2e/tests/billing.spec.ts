@@ -15,13 +15,48 @@ test('staff log time and expenses but see no billing, rates or invoices', async 
   await expect(nav(page).getByRole('link', { name: 'Invoices' })).toHaveCount(0);
 
   await open(page, '/timesheet', 'Timesheet');
-  await page.getByLabel('Engagement', { exact: true }).first().selectOption({ index: 1 });
-  await page.getByLabel('Time (hours)').fill('1:30');
-  await page.getByLabel('What you did').fill('Browser test: attendance at the stock count');
-  await page.getByRole('button', { name: 'Log time' }).click();
+  // One main button; the week bar and the totals sit above the tables.
+  await expect(page.getByRole('button', { name: '+ Log time' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '+ Record expense' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Today', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Previous week' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Next week' })).toBeVisible();
+  await expect(page.getByText(/logged/).first()).toBeVisible();
+  await expect(page.getByLabel('Time (hours)')).toHaveCount(0);
+
+  const stamp = Date.now();
+  const doing = `Browser test: attendance at the stock count ${stamp}`;
+  await page.getByRole('button', { name: '+ Log time' }).click();
+  const panel = page.getByRole('dialog', { name: 'Log time' });
+  await expect(panel).toBeVisible();
+  await panel.getByLabel('Engagement', { exact: true }).selectOption({ index: 1 });
+  await panel.getByLabel('Time (hours)').fill('1:30');
+  await panel.getByLabel('What you did').fill(doing);
+  await panel.getByRole('button', { name: 'Log time', exact: true }).click();
   await expect(page.getByText('Logged 1h 30m.')).toBeVisible();
-  await expect(page.getByText('Browser test: attendance at the stock count')).toBeVisible();
+  await expect(panel).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '+ Log time' })).toBeFocused();
+  await expect(page.getByRole('row', { name: new RegExp(doing) })).toHaveCount(1);
   await expect(page.getByText(/KES [\d,]+\.\d\d/)).toHaveCount(0);
+
+  const spent = `Browser test: fuel to the client ${stamp}`;
+  await page.getByRole('button', { name: '+ Record expense' }).click();
+  const xpanel = page.getByRole('dialog', { name: 'Record an expense' });
+  await expect(xpanel).toBeVisible();
+  await xpanel.getByLabel('Engagement', { exact: true }).selectOption({ index: 1 });
+  await xpanel.getByLabel('What for').fill(spent);
+  await xpanel.getByLabel('Amount (KES)').fill('1250.00');
+  await xpanel.getByRole('button', { name: 'Record expense', exact: true }).click();
+  await expect(page.getByText('Expense recorded.')).toBeVisible();
+  await expect(page.getByRole('row', { name: new RegExp(spent) })).toHaveCount(1);
+
+  // Delete lives in the row menu.
+  await page.getByRole('row', { name: new RegExp(doing) }).getByRole('button', { name: /Actions for/ }).click();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await expect(page.getByRole('row', { name: new RegExp(doing) })).toHaveCount(0);
+  await page.getByRole('row', { name: new RegExp(spent) }).getByRole('button', { name: /Actions for/ }).click();
+  await page.getByRole('menuitem', { name: 'Delete' }).click();
+  await expect(page.getByRole('row', { name: new RegExp(spent) })).toHaveCount(0);
 
   // The billing pages answer "not found / not allowed" for staff.
   await page.goto('/invoices');
