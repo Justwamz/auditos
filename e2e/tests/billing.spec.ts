@@ -1,3 +1,4 @@
+import { deflateSync } from 'node:zlib';
 import { expect, test, type Page } from '@playwright/test';
 import { BANNED, signIn } from '../helpers';
 
@@ -360,4 +361,130 @@ test('quotations are a table for managers and partners; the fee card is on the e
   await expect(brian).toHaveURL(/\/engagements\/[0-9a-f-]{36}/, { timeout: 90_000 });
   await expect(brian.getByRole('heading', { name: 'Audit roadmap' })).toBeVisible();
   await expect(brian.getByRole('heading', { name: 'How this job is billed' })).toHaveCount(0);
+});
+
+// ---- Letterhead: frozen when an invoice is issued. Uses the second firm (Waweru); the main firm (Kangethe) keeps no branding.
+const crcTable = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+const crc32 = (b: Buffer): number => {
+  let c = 0xffffffff;
+  for (const x of b) c = crcTable[(c ^ x) & 255]! ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+};
+const pngChunk = (type: string, data: Buffer): Buffer => {
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length);
+  const body = Buffer.concat([Buffer.from(type, 'latin1'), data]);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(body));
+  return Buffer.concat([len, body, crc]);
+};
+function logoPng(): Buffer {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(4, 0);
+  ihdr.writeUInt32BE(4, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 2;
+  const row = Buffer.concat([Buffer.from([0]), Buffer.from(Array.from({ length: 4 }, () => [200, 30, 30]).flat())]);
+  const raw = Buffer.concat(Array.from({ length: 4 }, () => row));
+  return Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), pngChunk('IHDR', ihdr), pngChunk('IDAT', deflateSync(raw)), pngChunk('IEND', Buffer.alloc(0))]);
+}
+/** The text drawn on the PDF pages (pdfkit writes it as hex strings). */
+function pdfText(buf: Buffer): string {
+  const raw = buf.toString('latin1');
+  const hex = (x: string) => Buffer.from(x, 'hex').toString('latin1');
+  const out: string[] = [];
+  for (const m of raw.matchAll(/\[([^\]]*)\]\s*TJ|<([0-9a-fA-F]+)>\s*Tj/g)) {
+    if (m[1] !== undefined) out.push([...m[1].matchAll(/<([0-9a-fA-F]*)>/g)].map((x) => hex(x[1]!)).join(''));
+    else out.push(hex(m[2]!));
+  }
+  return out.join('\n');
+}
+const csrfOf = async (page: Page): Promise<string> => ((await (await page.request.get('/api/auth/csrf')).json()) as { token: string }).token;
+
+test('the invoice keeps the letterhead it was issued with, on screen and on the PDF, when the firm changes its details later', async ({ browser }) => {
+  const admin = await (await browser.newContext()).newPage();
+  const partner = await (await browser.newContext()).newPage();
+  const manager = await (await browser.newContext()).newPage();
+  await signIn(admin, 'peter.maina@waweru.example.test');
+  await signIn(partner, 'joseph.waweru@waweru.example.test');
+  await signIn(manager, 'esther.wairimu@waweru.example.test');
+  const send = async (page: Page, method: 'put' | 'post' | 'delete', url: string, data?: object) => {
+    const res = await page.request[method](url, { headers: { 'x-csrf-token': await csrfOf(page) }, ...(data ? { data } : {}) });
+    expect(res.ok(), `${method} ${url}: ${res.status()}`).toBe(true);
+    return res;
+  };
+  const got = (await (await partner.request.get('/api/billing/settings')).json()) as { settings?: Record<string, unknown> } & Record<string, unknown>;
+  const was = (got.settings ?? got) as { legalName: string | null; address: string | null; kraPin: string | null; bankDetails: string | null; invoicePrefix: string; quotePrefix: string; paymentTermsDays: number };
+  const restore = { ...(was.kraPin ? { kraPin: was.kraPin } : {}), legalName: was.legalName ?? '', address: was.address ?? '', bankDetails: was.bankDetails ?? '', invoicePrefix: was.invoicePrefix, quotePrefix: was.quotePrefix, paymentTermsDays: was.paymentTermsDays };
+  try {
+    await send(partner, 'put', '/api/billing/settings', { ...restore, legalName: 'Waweru Letterhead LLP', address: 'Old Mill Road 4, Nakuru', bankDetails: 'Old Bank account 777' });
+    await send(admin, 'put', '/api/branding', { primary: '#1d4ed8', secondary: '#e3eee4', phone: '+254 722 000 111', email: 'hello@waweru-old.example.test', website: 'https://waweru-old.example.test', footerNote: 'Thank you from the old letterhead' });
+    const up = await admin.request.post('/api/branding/logo', { headers: { 'x-csrf-token': await csrfOf(admin) }, multipart: { file: { name: 'logo.png', mimeType: 'image/png', buffer: logoPng() } } });
+    expect(up.ok()).toBe(true);
+
+    const clientId = ((await (await send(manager, 'post', '/api/clients', { name: 'Letterhead Client Ltd', sector: 'trading', legalForm: 'limited_company', yearEndMonth: 12 })).json()) as { id: string }).id;
+    const invoiceId = ((await (await send(manager, 'post', '/api/invoices', { clientId, taxMode: 'exclusive', taxIds: [], lines: [{ description: 'Audit fee', quantity: '1', unitPrice: '50000.00' }] })).json()) as { id: string }).id;
+
+    // A draft shows the letterhead as it stands; the partner then issues it from the page.
+    await partner.goto(`/invoices/${invoiceId}`);
+    await expect(partner.getByRole('heading', { name: 'Draft invoice' })).toBeVisible();
+    await expect(partner.getByLabel('Letterhead')).toContainText('Waweru Letterhead LLP');
+    await partner.getByRole('button', { name: 'Issue the invoice' }).click();
+    await expect(partner.getByText('Issued. The invoice now has its number')).toBeVisible();
+    const head = partner.getByLabel('Letterhead');
+    await expect(head).toContainText('Waweru Letterhead LLP');
+    await expect(head).toContainText('Old Mill Road 4, Nakuru');
+    await expect(head).toContainText('+254 722 000 111');
+    await expect(head).toContainText('hello@waweru-old.example.test');
+    await expect(head).toContainText('Powered by AuditOS');
+    await expect(head.locator('img')).toHaveCount(1);
+    await expect(head.locator('img')).toHaveAttribute('src', /\/api\/branding\/logo\//);
+    await partner.waitForLoadState('networkidle');
+    expect(await head.locator('img').evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+    await partner.screenshot({ path: process.env.TASK6_SHOT ?? 'task6-invoice.png', fullPage: true });
+    await plain(partner, 'issued invoice with letterhead');
+
+    // The PDF download carries the same letterhead.
+    const pdfBefore = await (await partner.request.get(`/api/invoices/${invoiceId}/pdf`)).body();
+    const t1 = pdfText(pdfBefore);
+    for (const s of ['Waweru Letterhead LLP', 'Old Mill Road 4, Nakuru', 'hello@waweru-old.example.test', 'Thank you from the old letterhead', 'Old Bank account 777', 'Powered by AuditOS']) expect(t1, s).toContain(s);
+    expect(pdfBefore.toString('latin1')).toContain('/Subtype /Image');
+
+    // The firm renames itself, moves, changes colour and drops the logo.
+    await send(partner, 'put', '/api/billing/settings', { ...restore, legalName: 'Completely Renamed Partners', address: 'New Tower 1, Kisumu', bankDetails: 'New Bank account 888' });
+    await send(admin, 'put', '/api/branding', { primary: '#7a1f1f', secondary: '#e3eee4', phone: '+254 733 999 888', email: 'hello@waweru-new.example.test', website: 'https://waweru-new.example.test', footerNote: 'Thank you from the new letterhead' });
+    await send(admin, 'delete', '/api/branding/logo');
+
+    await partner.reload();
+    const head2 = partner.getByLabel('Letterhead');
+    await expect(head2).toContainText('Waweru Letterhead LLP');
+    await expect(head2).toContainText('Old Mill Road 4, Nakuru');
+    await expect(head2).not.toContainText('Completely Renamed');
+    await expect(head2).toContainText('Powered by AuditOS');
+    await expect(head2.locator('img')).toHaveCount(1);
+    const pdfAfter = await (await partner.request.get(`/api/invoices/${invoiceId}/pdf`)).body();
+    const t2 = pdfText(pdfAfter);
+    expect(t2).toContain('Waweru Letterhead LLP');
+    expect(t2).toContain('Thank you from the old letterhead');
+    expect(t2).not.toContain('Completely Renamed');
+    expect(t2).not.toContain('new letterhead');
+    expect(pdfAfter.toString('latin1')).toContain('/Subtype /Image');
+
+    // A new draft takes the new letterhead.
+    const draftId = ((await (await send(manager, 'post', '/api/invoices', { clientId, taxMode: 'exclusive', taxIds: [], lines: [{ description: 'Second job', quantity: '1', unitPrice: '1000.00' }] })).json()) as { id: string }).id;
+    await partner.goto(`/invoices/${draftId}`);
+    await expect(partner.getByLabel('Letterhead')).toContainText('Completely Renamed Partners');
+    await expect(partner.getByLabel('Letterhead').locator('img')).toHaveCount(0);
+    await send(manager, 'delete', `/api/invoices/${draftId}`);
+  } finally {
+    await admin.request.delete('/api/branding/logo', { headers: { 'x-csrf-token': await csrfOf(admin) } });
+    const r1 = await admin.request.put('/api/branding', { headers: { 'x-csrf-token': await csrfOf(admin) }, data: { primary: '#2e6b4c', secondary: '#e3eee4', phone: '', email: '', website: '', footerNote: '' } });
+    expect(r1.ok()).toBe(true);
+    const r2 = await partner.request.put('/api/billing/settings', { headers: { 'x-csrf-token': await csrfOf(partner) }, data: restore });
+    expect(r2.ok(), await r2.text()).toBe(true);
+  }
 });
