@@ -213,8 +213,10 @@ const pngRaw = (w: number, h: number, depth: number, colour: number, interlace: 
 
 describe('pngDecodes limits and variants', () => {
   test('a decompression bomb (tiny file, claimed small, data far larger) is refused quickly', () => {
+    // Build the bomb first (compressing 300 MB is slow); only the check itself is timed.
+    const bomb = pngRaw(10, 10, 8, 2, 0, Buffer.alloc(300 * 1024 * 1024));
     const t = Date.now();
-    expect(pngDecodes(pngRaw(10, 10, 8, 2, 0, Buffer.alloc(300 * 1024 * 1024)))).toBe(false);
+    expect(pngDecodes(bomb)).toBe(false);
     expect(Date.now() - t).toBeLessThan(2000);
   });
 
