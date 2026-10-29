@@ -157,6 +157,8 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
       return reply.code(Number(dbCode.slice(2))).send({ error: err.message });
     }
     // Row-level security refused a write: the person can read the record but is not on the team that may change it.
+    // A value broke one of the database's own rules (a length or shape the form check did not catch).
+    if (dbCode === '23514') return reply.code(400).send({ error: 'invalid_request', message: 'One of the details is not in a form we can save. Please check them and try again.' });
     if (dbCode === '42501') return reply.code(403).send({ error: 'forbidden' });
     const status = (err as FastifyError).statusCode ?? 500;
     if (status >= 400 && status < 500) {

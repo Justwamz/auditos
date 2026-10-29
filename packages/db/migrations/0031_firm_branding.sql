@@ -84,7 +84,7 @@ create trigger quotes_letterhead_guard before insert or update on quotes for eac
 -- Saves the firm branding as a whole (blank values are stored as nothing). The list of what changed is worked out here by
 -- comparing with the saved row, never taken from the caller; nothing is recorded when nothing changed. The audit entry
 -- carries the list, and the old and new colour codes when a colour changed (a logo is only named as changed).
--- p_branding keys: primaryColor, secondaryColor, logoId, phone, email, website, footerNote.
+-- p_branding keys: primaryColor, secondaryColor, logoId, phone, email, website, footerNote (an absent key keeps the saved value).
 create function branding_save(p_branding jsonb) returns void
 language plpgsql security definer set search_path = public, pg_temp as
 $$
@@ -96,14 +96,17 @@ declare
 begin
   if not can_edit_branding() then raise exception 'forbidden' using errcode = 'AO403'; end if;
   if p_branding is null or jsonb_typeof(p_branding) <> 'object' then raise exception 'invalid_branding' using errcode = 'AO422'; end if;
-  v_logo := nullif(trim(p_branding ->> 'logoId'), '')::uuid;
-  v_pc := lower(nullif(trim(p_branding ->> 'primaryColor'), ''));
-  v_sc := lower(nullif(trim(p_branding ->> 'secondaryColor'), ''));
-  v_phone := nullif(trim(p_branding ->> 'phone'), '');
-  v_email := nullif(trim(p_branding ->> 'email'), '');
-  v_web := nullif(trim(p_branding ->> 'website'), '');
-  v_note := nullif(trim(p_branding ->> 'footerNote'), '');
+  -- One writer at a time per firm, so two overlapping saves (a logo upload and a details save) merge instead of overwriting.
+  perform pg_advisory_xact_lock(hashtextextended('branding:' || app_tenant()::text, 0));
   select * into o from firm_branding where tenant_id = app_tenant() for update;
+  -- A key that is absent keeps what is saved; a key that is present (even null or blank) replaces it.
+  v_logo := case when p_branding ? 'logoId' then nullif(trim(p_branding ->> 'logoId'), '')::uuid else o.logo_id end;
+  v_pc := case when p_branding ? 'primaryColor' then lower(nullif(trim(p_branding ->> 'primaryColor'), '')) else o.primary_color end;
+  v_sc := case when p_branding ? 'secondaryColor' then lower(nullif(trim(p_branding ->> 'secondaryColor'), '')) else o.secondary_color end;
+  v_phone := case when p_branding ? 'phone' then nullif(trim(p_branding ->> 'phone'), '') else o.phone end;
+  v_email := case when p_branding ? 'email' then nullif(trim(p_branding ->> 'email'), '') else o.email end;
+  v_web := case when p_branding ? 'website' then nullif(trim(p_branding ->> 'website'), '') else o.website end;
+  v_note := case when p_branding ? 'footerNote' then nullif(trim(p_branding ->> 'footerNote'), '') else o.footer_note end;
 
   insert into firm_branding (tenant_id, primary_color, secondary_color, logo_id, phone, email, website, footer_note, updated_at)
   values (app_tenant(), v_pc, v_sc, v_logo, v_phone, v_email, v_web, v_note, now())

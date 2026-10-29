@@ -26,7 +26,6 @@ export const paletteOf = (row: BrandingRow | null): Palette =>
 export async function loadTheme(tx: PoolClient, firmName: string): Promise<{ palette: Palette; name: string; logoId: string | null } | null> {
   const row = await loadBrandingRow(tx);
   if (!row) return null;
-  // Only people who may see billing details can read the legal name; everyone else sees the firm name.
-  const legal = (await tx.query('select legal_name from billing_settings where tenant_id = app_tenant()')).rows[0]?.legal_name as string | null | undefined;
-  return { palette: paletteOf(row), name: legal || firmName, logoId: row.logoId };
+  // The firm's own name for every role (the legal name sits behind billing permissions, so it is not used here).
+  return { palette: paletteOf(row), name: firmName, logoId: row.logoId };
 }

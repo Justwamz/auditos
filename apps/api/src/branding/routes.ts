@@ -22,10 +22,10 @@ const body = z
     primary: colour,
     secondary: colour,
     phone: blankOr(/^[0-9 +()[\]-]{1,30}$/, 'Phone numbers can use digits, spaces, + - and brackets, up to 30 characters.').optional(),
-    email: blankOr(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, 'That email address does not look right.')
+    email: blankOr(/^[\x21-\x3f\x41-\x7e]+@[\x21-\x3f\x41-\x7e]+\.[\x21-\x3f\x41-\x7e]+$/, 'That email address does not look right.')
       .refine((v) => v.length <= 254, 'That email address is too long.')
       .optional(),
-    website: blankOr(/^https?:\/\/\S+$/i, 'A website address starts with http:// or https://.')
+    website: blankOr(/^https?:\/\/[\x21-\x7e]+$/i, 'A website address starts with http:// or https://.')
       .refine((v) => v.length <= 300, 'That website address is too long.')
       .optional(),
     footerNote: z.string().trim().max(300, 'The footer note can be at most 300 characters.').optional(),
@@ -33,7 +33,6 @@ const body = z
   .strict();
 
 const save = (tx: PoolClient, b: object) => tx.query('select branding_save($1::jsonb)', [JSON.stringify(b)]);
-const asSave = (r: BrandingRow) => ({ primaryColor: r.primary, secondaryColor: r.secondary, logoId: r.logoId, phone: r.phone, email: r.email, website: r.website, footerNote: r.footerNote });
 const EMPTY: BrandingRow = { primary: null, secondary: null, logoId: null, phone: null, email: null, website: null, footerNote: null };
 
 export async function brandingRoutes(app: FastifyInstance): Promise<void> {
@@ -67,10 +66,8 @@ export async function brandingRoutes(app: FastifyInstance): Promise<void> {
     const b = body.parse(req.body);
     const { palette, adjustments } = derivePalette({ primary: b.primary, secondary: b.secondary });
     await withTenant(pool, tenantCtx(req), async (tx) => {
-      const cur = (await loadBrandingRow(tx)) ?? EMPTY;
-      // Only the adjusted colours are stored; an omitted field is kept, a blank one is cleared.
+      // Only the adjusted colours are stored. A field left out is kept (the database merges under a lock), a blank one is cleared.
       await save(tx, {
-        ...asSave(cur),
         primaryColor: palette.primary,
         secondaryColor: palette.secondary,
         ...(b.phone !== undefined ? { phone: b.phone } : {}),
@@ -98,8 +95,7 @@ export async function brandingRoutes(app: FastifyInstance): Promise<void> {
     if (!check.ok) return reply.code(422).send({ error: 'invalid_file', reason: check.reason });
     const logoId = await withTenant(pool, tenantCtx(req), async (tx) => {
       const id = (await tx.query('select branding_add_logo($1, $2, $3, $4) as id', [check.contentType, data, check.width, check.height])).rows[0].id as string;
-      const cur = (await loadBrandingRow(tx)) ?? EMPTY;
-      await save(tx, { ...asSave(cur), logoId: id });
+      await save(tx, { logoId: id });
       return id;
     });
     return { logoId };
@@ -109,8 +105,7 @@ export async function brandingRoutes(app: FastifyInstance): Promise<void> {
   app.delete('/branding/logo', { config: { access: 'tenant' } }, async (req) => {
     if (!canEdit(req)) throw httpError(403, 'forbidden');
     await withTenant(pool, tenantCtx(req), async (tx) => {
-      const cur = await loadBrandingRow(tx);
-      if (cur?.logoId) await save(tx, { ...asSave(cur), logoId: null });
+      if ((await loadBrandingRow(tx))?.logoId) await save(tx, { logoId: null });
     });
     return { ok: true };
   });
@@ -118,7 +113,7 @@ export async function brandingRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { id: string } }>('/branding/logo/:id', { config: { access: 'tenant' } }, async (req, reply) => {
     const id = uuid.safeParse(req.params.id);
     if (!id.success) throw httpError(404, 'not_found');
-    const row = await withTenant(pool, tenantCtx(req), async (tx) => (await tx.query('select content_type, bytes from firm_logos where id = $1', [id.data])).rows[0]);
+    const row = await withTenant(pool, { ...tenantCtx(req), readOnly: true }, async (tx) => (await tx.query('select content_type, bytes from firm_logos where id = $1', [id.data])).rows[0]);
     if (!row) throw httpError(404, 'not_found');
     return reply
       .header('cache-control', 'private, max-age=31536000, immutable')

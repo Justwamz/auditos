@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import type { TestTenant } from '@auditos/db/testing';
-import { harness, login, makeTenant, makeUser, multipartBody, type Harness, type Session, type TestUser } from './helpers';
+import { harness, login, makeTenant, makeUser, multipartBody, ownerQuery, type Harness, type Session, type TestUser } from './helpers';
 
 let h: Harness;
 let T: TestTenant, T2: TestTenant;
-let A: TestUser, P: TestUser, M: TestUser, F: TestUser, B: TestUser;
-let sA: Session, sP: Session, sM: Session, sF: Session, sB: Session;
+let A: TestUser, P: TestUser, M: TestUser, M2: TestUser, F: TestUser, B: TestUser;
+let sA: Session, sP: Session, sM: Session, sM2: Session, sF: Session, sB: Session;
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 const call = (s: Session, method: Method, url: string, payload?: object) =>
@@ -37,6 +37,11 @@ const upload = (s: Session, name: string, data: Buffer) => {
   const m = multipartBody(name, data);
   return h.app.inject({ method: 'POST', url: '/branding/logo', headers: { ...s.headers, 'content-type': m.contentType }, payload: m.payload });
 };
+const animatedPng = (): Buffer => {
+  const p = png(10, 10);
+  const idat = p.indexOf('IDAT') - 4;
+  return Buffer.concat([p.subarray(0, idat), chunk('acTL', Buffer.alloc(8, 1)), p.subarray(idat)]);
+};
 const body = (over: object = {}) => ({ primary: '#1f5f4a', secondary: '#e8c547', phone: '+254 700 000 000', email: 'info@firm.example.test', website: 'https://firm.example.test', footerNote: 'Thank you', ...over });
 
 beforeAll(async () => {
@@ -46,11 +51,13 @@ beforeAll(async () => {
   A = await makeUser(h, T.id, 'firm_admin', 0);
   P = await makeUser(h, T.id, 'partner', 4);
   M = await makeUser(h, T.id, 'manager', 3);
+  M2 = await makeUser(h, T.id, 'manager', 3);
   F = await makeUser(h, T.id, 'staff', 1);
   B = await makeUser(h, T2.id, 'firm_admin', 0);
   sA = await login(h, A);
   sP = await login(h, P);
   sM = await login(h, M);
+  sM2 = await login(h, M2);
   sF = await login(h, F);
   sB = await login(h, B);
 });
@@ -77,8 +84,13 @@ describe('administrator saves', () => {
       const me = (await call(s, 'GET', '/me')).json();
       expect(me.branding.palette['--ledger']).toBe('#1f5f4a');
       expect(me.branding.logoId).toBeNull();
-      expect(typeof me.branding.name).toBe('string');
     }
+  });
+  test('/me names the firm by its own name for every role, even when a different legal name is set', async () => {
+    const tenantName = (await h.owner.query('select name from tenants where id = $1', [T.id])).rows[0].name as string;
+    const r = await call(sP, 'PUT', '/billing/settings', { legalName: 'A Quite Different Legal Name Ltd' });
+    expect(r.statusCode).toBe(200);
+    for (const s of [sA, sP, sM, sF]) expect((await call(s, 'GET', '/me')).json().branding.name).toBe(tenantName);
   });
   test('a blank value clears a field, an omitted one is kept', async () => {
     await call(sA, 'PUT', '/branding', { primary: '#1f5f4a', secondary: '#e8c547', phone: '' });
@@ -96,9 +108,19 @@ describe('administrator saves', () => {
     await call(sA, 'PUT', '/branding', body());
   });
   test('bad phone, email, website and colour codes are refused with plain words', async () => {
-    for (const bad of [{ phone: 'call me' }, { email: 'nope' }, { website: 'ftp://x.test' }, { website: 'firm.test' }, { primary: 'green' }, { footerNote: 'x'.repeat(301) }]) {
+    const cases: [object, string][] = [
+      [{ phone: 'call me' }, 'Phone numbers can use digits, spaces, + - and brackets, up to 30 characters.'],
+      [{ email: 'nope' }, 'That email address does not look right.'],
+      [{ website: 'ftp://x.test' }, 'A website address starts with http:// or https://.'],
+      [{ website: 'firm.test' }, 'A website address starts with http:// or https://.'],
+      [{ website: 'https://firm.test/x' }, 'A website address starts with http:// or https://.'],
+      [{ primary: 'green' }, 'Colour codes look like #1a2b3c.'],
+      [{ footerNote: 'x'.repeat(301) }, 'The footer note can be at most 300 characters.'],
+    ];
+    for (const [bad, message] of cases) {
       const r = await call(sA, 'PUT', '/branding', body(bad));
       expect(r.statusCode, JSON.stringify(bad)).toBe(400);
+      expect((r.json().issues as { message: string }[]).map((i) => i.message), JSON.stringify(bad)).toContain(message);
       expect(JSON.stringify(r.json())).not.toMatch(/hex|token|css|regex/i);
     }
   });
@@ -113,12 +135,39 @@ describe('administrator saves', () => {
 });
 
 describe('who may change branding', () => {
-  test('partner, manager and staff are refused on PUT, POST and DELETE', async () => {
+  test('partner, manager and staff are refused on PUT, POST and DELETE, and nothing changes', async () => {
+    const before = (await call(sA, 'GET', '/branding')).json();
+    const logosBefore = Number((await h.owner.query('select count(*) as n from firm_logos where tenant_id = $1', [T.id])).rows[0].n);
     for (const s of [sP, sM, sF]) {
       expect((await call(s, 'PUT', '/branding', body())).statusCode).toBe(403);
       expect((await upload(s, 'logo.png', png(10, 10))).statusCode).toBe(403);
       expect((await call(s, 'DELETE', '/branding/logo')).statusCode).toBe(403);
     }
+    expect((await call(sA, 'GET', '/branding')).json()).toEqual(before);
+    expect(Number((await h.owner.query('select count(*) as n from firm_logos where tenant_id = $1', [T.id])).rows[0].n)).toBe(logosBefore);
+  });
+  test('a member with the administrator permission may change branding even without the firm_admin role; one without may not', async () => {
+    expect((await call(sM2, 'PUT', '/branding', body())).statusCode).toBe(403);
+    await ownerQuery(h, T.id, 'update memberships set is_admin = true where user_id = $1', [M2.id]);
+    expect((await call(sM2, 'GET', '/branding')).json().canEdit).toBe(true);
+    expect((await call(sM2, 'PUT', '/branding', body({ footerNote: 'Set by a permission holder' }))).statusCode).toBe(200);
+    expect((await upload(sM2, 'logo.png', png(10, 10))).statusCode).toBe(200);
+    expect((await call(sM, 'PUT', '/branding', body())).statusCode).toBe(403);
+    await call(sA, 'PUT', '/branding', body());
+    await call(sA, 'DELETE', '/branding/logo');
+  });
+  test('a logo upload and a details save at the same moment both survive', async () => {
+    for (let i = 0; i < 5; i++) {
+      await call(sA, 'DELETE', '/branding/logo');
+      const note = 'race ' + i;
+      const [up, put] = await Promise.all([upload(sA, 'logo.png', png(20 + i, 20)), call(sA, 'PUT', '/branding', { primary: '#1f5f4a', secondary: '#e8c547', footerNote: note })]);
+      expect(up.statusCode).toBe(200);
+      expect(put.statusCode).toBe(200);
+      const b = (await call(sA, 'GET', '/branding')).json().branding;
+      expect(b.logoId, 'logo').toBe(up.json().logoId);
+      expect(b.footerNote, 'details').toBe(note);
+    }
+    await call(sA, 'DELETE', '/branding/logo');
   });
 });
 
@@ -155,6 +204,9 @@ describe('logo upload', () => {
       ['big.png', png(100, 100, 3 * 1024 * 1024), 'Logos can be at most 1 MB.'],
       ['wide.png', png(3000, 100), 'Logos can be at most 2000 pixels wide or tall.'],
       ['tall.jpg', jpg(100, 3000), 'Logos can be at most 2000 pixels wide or tall.'],
+      ['cut.png', png(10, 10).subarray(0, 20), 'That file is not a PNG or JPG picture.'],
+      ['cut.jpg', Buffer.from('ffd8ffe000040000ffdb0004000011', 'hex'), 'That file is not a PNG or JPG picture.'],
+      ['moving.png', animatedPng(), 'Animated pictures cannot be used as a logo. Please use a still PNG or JPG.'],
     ];
     for (const [name, data, reason] of cases) {
       const r = await upload(sA, name, data);

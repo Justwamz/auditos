@@ -128,6 +128,16 @@ describe('the audit entry of a save', () => {
     await save(A, branding({ logoId: logo, secondaryColor: '#555555' }));
     expect((await lastAudit()).detail).toEqual({ changed: ['logo', 'secondaryColor'], secondaryColor: { old: '#444444', new: '#555555' } });
   });
+  test('a key that is absent keeps the saved value; a present null or blank clears it', async () => {
+    const logo = await addLogo(A);
+    await save(A, branding({ logoId: logo, phone: '+254 9', footerNote: 'keep me' }));
+    await save(A, { primaryColor: '#123456' });
+    const row = async () => (await ownerQuery(h, T.id, 'select * from firm_branding where tenant_id = $1', [T.id])).rows[0];
+    expect(await row()).toMatchObject({ primary_color: '#123456', logo_id: logo, phone: '+254 9', footer_note: 'keep me', secondary_color: '#e8c547' });
+    expect((await lastAudit()).detail).toEqual({ changed: ['primaryColor'], primaryColor: { old: '#1f5f4a', new: '#123456' } });
+    await save(A, { phone: '', logoId: null });
+    expect(await row()).toMatchObject({ primary_color: '#123456', logo_id: null, phone: null, footer_note: 'keep me' });
+  });
   test('the list the caller might want to send is not accepted, so it cannot be forged', async () => {
     expect(await code(asT(A, (tx) => tx.query('select branding_save($1::jsonb, $2::text[])', [JSON.stringify(branding()), ['bogus']])))).toBe('42883');
   });
