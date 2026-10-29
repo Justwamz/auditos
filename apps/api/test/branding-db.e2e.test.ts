@@ -352,3 +352,28 @@ describe('the letterhead cannot be forced in a raw session', () => {
     expect(await code(setInv(M, id, [1] as unknown as object))).toBe('AO403');
   });
 });
+
+describe('firm_letterhead_identity', () => {
+  test('gives any member the legal name, address and KRA PIN of their own firm only, never bank details', async () => {
+    await ownerQuery(h, T.id, 'update billing_settings set address = $1, bank_details = $2', ['Old Street 1, Nairobi', 'Secret Bank, account 111'], P.id);
+    const p2 = await makeUser(h, T2.id, 'partner', 4);
+    const f2 = await makeUser(h, T2.id, 'staff', 1);
+    await ownerQuery(h, T2.id, "insert into billing_settings (tenant_id, legal_name, kra_pin, bank_details) values ($1, 'Other Firm LLP', 'A000000001Z', 'Other Bank')", [T2.id], p2.id);
+    // The staff member cannot read the table itself...
+    expect((await asT(F, (tx) => tx.query('select * from billing_settings'))).rows).toEqual([]);
+    // ...but can read the three identity fields through the function.
+    const mine = (await asT(F, (tx) => tx.query('select * from firm_letterhead_identity()'))).rows;
+    expect(mine).toEqual([{ legal_name: 'Kangethe & Associates', address: 'Old Street 1, Nairobi', kra_pin: 'P051234567Q' }]);
+    expect(JSON.stringify(mine)).not.toMatch(/Bank|account 111/);
+    const theirs = (await as(T2, f2, (tx) => tx.query('select * from firm_letterhead_identity()'))).rows;
+    expect(theirs).toEqual([{ legal_name: 'Other Firm LLP', address: null, kra_pin: 'A000000001Z' }]);
+  });
+
+  test('the table stays closed: raising the flag from a raw session reveals nothing', async () => {
+    const rows = (await asT(F, async (tx) => {
+      await tx.query("select set_config('app.letterhead_identity', 'on', true)");
+      return tx.query('select * from billing_settings');
+    })).rows;
+    expect(rows).toEqual([]);
+  });
+});

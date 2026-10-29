@@ -263,6 +263,6 @@ IFRS for SMEs applies. The second edition applies to periods beginning before 1 
 ## Exports
 You can export Word, Excel or PDF. Exports are marked DRAFT until the engagement is approved. Exporting asks for a fresh sign-in code and is recorded.
 
-Exported statements carry your firm's letterhead: in Word and PDF your logo (if you added one), firm name and contact details at the top, and your footer note at the bottom. In Excel the first row of each sheet holds the firm name and contact details and the last row holds the footer. "Powered by AuditOS" always prints at the bottom, and no setting removes it. Unlike invoices and quotations, statements are not frozen: an export always uses your branding as it is today. If a logo cannot be read, your firm name is printed instead.`,
+Exported statements carry your firm's letterhead: in Word and PDF your logo (if you added one), firm name and contact details at the top, and your footer note at the bottom. In Excel the first row of each sheet holds the firm name and contact details and the last row holds the footer. "Powered by AuditOS" always prints at the bottom, and no setting removes it. Unlike invoices and quotations, statements are not frozen: an export always uses your branding as it is today. If a logo cannot be read, the logo is left out and the rest of the letterhead still prints.`,
   },
 ];

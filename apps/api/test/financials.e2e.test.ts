@@ -2,6 +2,8 @@ import ExcelJS from 'exceljs';
 import { deflateSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import type { TestTenant } from '@auditos/db/testing';
+import { withTenant } from '@auditos/db';
+import { loadLetterhead } from '../src/branding/letterhead';
 import { consultancy, trading } from '../../../packages/fs-engine/test/fixtures';
 import { csvOf, harness, importTb, login, makeTenant, makeUser, multipartBody, ownerQuery, stepUp, type Harness, type Session, type TestUser } from './helpers';
 
@@ -320,7 +322,8 @@ describe('branding on exported statements', () => {
     await stepUp(h, sF, F);
     const t = pdfText((await call(sF, 'POST', `/engagements/${e}/export`, { format: 'pdf' })).rawPayload);
     expect(t).toContain('Powered by AuditOS');
-    expect(t).toContain('Fin Client Ltd');
+    expect(t).toContain('Test Firm financials');
+    expect(t).not.toContain('Tel:');
   });
 
   test('the current branding (name, contact line, note, logo) appears in the PDF and the Excel file, and changes follow at once', async () => {
@@ -350,6 +353,22 @@ describe('branding on exported statements', () => {
     expect(pdfText(after)).toContain('+254 711 999 888');
     expect(pdfText(after)).not.toContain('Old footer note');
     expect(after.toString('latin1')).not.toContain('/Subtype /Image');
+  });
+});
+
+describe('statement letterhead does not depend on who exports', () => {
+  test('a staff member sees the same legal name and KRA PIN as a partner, and the letterhead never carries bank details for them', async () => {
+    const e = await newEngagement();
+    await withTrading(e);
+    await call(sP, 'PUT', '/billing/settings', { legalName: 'Kangethe & Associates', kraPin: 'P051234567Q', bankDetails: 'Secret Bank, account 111' });
+    await stepUp(h, sF, F);
+    const pdf = (await call(sF, 'POST', `/engagements/${e}/export`, { format: 'pdf' })).rawPayload;
+    const t = pdfText(pdf);
+    expect(t).toContain('Kangethe & Associates');
+    expect(t).toContain('KRA PIN: P051234567Q');
+    expect(t).not.toContain('Secret Bank');
+    const lh = await withTenant(h.app.pools.app, { tenantId: T.id, userId: F.id }, (tx) => loadLetterhead(tx));
+    expect(lh).toMatchObject({ name: 'Kangethe & Associates', kraPin: 'P051234567Q', bankDetails: null });
   });
 });
 

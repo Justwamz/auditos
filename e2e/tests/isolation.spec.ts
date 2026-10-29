@@ -42,8 +42,12 @@ test('the statements page shows the draft statements with comparatives after car
   await page.goto('/engagements');
   await page.getByRole('link', { name: 'Mwangaza Traders Ltd' }).first().click();
   await page.getByRole('tab', { name: 'Financial statements' }).click();
-  await page.getByRole('button', { name: 'Carry forward from last year' }).click();
-  await expect(page.getByText('Carried forward')).toBeVisible();
+  // Another spec may already have carried the figures forward; do it only if the button is still offered.
+  const carry = page.getByRole('button', { name: 'Carry forward from last year' });
+  if (await carry.waitFor({ state: 'visible', timeout: 8000 }).then(() => true, () => false)) {
+    await carry.click();
+    await expect(page.getByText('Carried forward')).toBeVisible();
+  }
   await page.getByRole('tab', { name: 'Statements', exact: true }).click();
   await expect(page.getByText('Draft: not approved for issue')).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Profit for the year' }).first()).toBeVisible();

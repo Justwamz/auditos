@@ -34,19 +34,23 @@ export function exportPdf(s: Statements, meta: ExportMeta): Promise<Buffer> {
         doc.restore();
       }
       const foot = footerParts(meta);
-      doc.font('Helvetica').fontSize(8).fillColor('#666666').opacity(1);
-      if (foot.note) {
-        // One line, cut by width, so a long note can never run off the page or push over Powered by AuditOS.
-        let note = foot.note;
-        if (doc.widthOfString(note) > RIGHT - LEFT) {
-          while (note.length > 1 && doc.widthOfString(`${note}...`) > RIGHT - LEFT) note = note.slice(0, -1);
-          note = `${note}...`;
-        }
-        doc.text(note, LEFT, 788, { lineBreak: false });
-      }
-      doc.text(foot.exported, LEFT, 800, { lineBreak: false });
-      // No width here: text with a width is wrapped, and this line sits below the bottom margin on purpose.
-      if (foot.powered) doc.text(foot.powered, RIGHT - doc.widthOfString(foot.powered), 800, { lineBreak: false });
+      // Without a letterhead the footer is drawn exactly as before (in whatever font is current).
+      if (meta.letterhead) doc.font('Helvetica');
+      doc.fontSize(8).fillColor('#666666').opacity(1);
+      const cut = (t: string, max: number): string => {
+        if (doc.widthOfString(t) <= max) return t;
+        let r = t;
+        while (r.length > 1 && doc.widthOfString(`${r}...`) > max) r = r.slice(0, -1);
+        return `${r}...`;
+      };
+      // One line each, cut by width, so a long note or e-mail address can never run off the page or over Powered by AuditOS.
+      if (foot.note) doc.text(cut(foot.note, RIGHT - LEFT), LEFT, 788, { lineBreak: false });
+      if (foot.powered) {
+        const pw = doc.widthOfString(foot.powered);
+        doc.text(cut(foot.exported, RIGHT - LEFT - pw - 12), LEFT, 800, { lineBreak: false });
+        // No width here: text with a width is wrapped, and this line sits below the bottom margin on purpose.
+        doc.text(foot.powered, RIGHT - pw, 800, { lineBreak: false });
+      } else doc.text(foot.exported, LEFT, 800, { lineBreak: false });
       doc.fillColor('#000000');
       doc.y = cursorY;
     };

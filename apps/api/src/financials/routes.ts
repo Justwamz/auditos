@@ -334,7 +334,7 @@ export async function financialRoutes(app: FastifyInstance): Promise<void> {
       const email = (await tx.query('select email from users where id = $1', [ctx.userId])).rows[0]?.email as string;
       // Statements show the firm's branding as it is now (only invoices and quotes are frozen when issued).
       const lh = await loadLetterhead(tx);
-      const letterhead = { ...lh, logo: await loadLogo(tx, lh.logoId) };
+      const letterhead = { ...lh, bankDetails: null, logo: await loadLogo(tx, lh.logoId) };
       return { eng, f, email, letterhead };
     });
     let computed;

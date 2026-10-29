@@ -19,9 +19,11 @@ export interface Letterhead {
  * document is issued (the copy is then frozen with the document). The name is the legal name, then the firm name.
  */
 export async function loadLetterhead(tx: PoolClient): Promise<Letterhead> {
+  // The legal name, address and KRA PIN come through a narrow function, so every member of the firm sees the same ones.
+  // Bank details are read from the table itself, which only people with billing rights can see: for anyone else they are null.
   const r = (
     await tx.query(
-      `select t.name as firm_name, bs.legal_name, bs.address, bs.kra_pin, bs.bank_details,
+      `select t.name as firm_name, bs.bank_details,
               fb.primary_color, fb.secondary_color, fb.logo_id, fb.phone, fb.email, fb.website, fb.footer_note
          from tenants t
          left join billing_settings bs on bs.tenant_id = t.id
@@ -29,16 +31,17 @@ export async function loadLetterhead(tx: PoolClient): Promise<Letterhead> {
         where t.id = app_tenant()`,
     )
   ).rows[0] as Record<string, string | null> | undefined;
+  const id = (await tx.query('select legal_name, address, kra_pin from firm_letterhead_identity()')).rows[0] as { legal_name: string | null; address: string | null; kra_pin: string | null } | undefined;
   const primary = r?.primary_color
     ? derivePalette({ primary: r.primary_color, secondary: r.secondary_color ?? DEFAULT_BRAND.secondary }).palette.primary
     : DEFAULT_BRAND.primary;
   return {
-    name: r?.legal_name || r?.firm_name || 'Audit firm',
-    address: r?.address ?? null,
+    name: id?.legal_name || r?.firm_name || 'Audit firm',
+    address: id?.address ?? null,
     phone: r?.phone ?? null,
     email: r?.email ?? null,
     website: r?.website ?? null,
-    kraPin: r?.kra_pin ?? null,
+    kraPin: id?.kra_pin ?? null,
     bankDetails: r?.bank_details ?? null,
     footerNote: r?.footer_note ?? null,
     primary,

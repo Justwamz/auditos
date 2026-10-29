@@ -24,7 +24,7 @@ test('an exported PDF carries the firm name and Powered by AuditOS, and no conta
   // The seeded engagement needs last year's closing figures carried forward before statements can be built.
   await page.getByRole('tab', { name: 'Financial statements' }).click();
   const carry = page.getByRole('button', { name: 'Carry forward from last year' });
-  if (await carry.isVisible({ timeout: 5000 }).catch(() => false)) {
+  if (await carry.waitFor({ state: 'visible', timeout: 8000 }).then(() => true, () => false)) {
     await carry.click();
     await expect(page.getByText('Carried forward')).toBeVisible();
   }
@@ -40,6 +40,9 @@ test('an exported PDF carries the firm name and Powered by AuditOS, and no conta
   expect(res.status(), await res.text()).toBe(200);
   const text = pdfText(await res.body());
   expect(text).toContain('Powered by AuditOS');
-  expect(text).toContain('Mwangaza Traders Ltd');
+  // The letterhead names the firm itself (not the client, which is in the title anyway).
+  const settings = (await (await page.request.get('/api/billing/settings')).json()) as { settings: { legalName: string | null } };
+  expect(text).toContain(settings.settings.legalName ?? 'Kangethe');
+  expect(text).toContain('Kangethe');
   expect(text).not.toContain('Tel:');
 });

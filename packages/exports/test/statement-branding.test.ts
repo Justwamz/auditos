@@ -69,7 +69,22 @@ const docxParts = async (buf: Buffer, kind: 'header' | 'footer') => {
   return { xml, hasMedia: names.some((n) => /word\/media\//.test(n)) };
 };
 
+// A minimal JPEG: signature, a start-of-frame segment giving 4 x 3 pixels, end of image.
+const tinyJpeg = (): Buffer => Buffer.from('ffd8ffc0001108000300040103110022000000ffd9', 'hex');
+
 describe('branded statements: PDF', () => {
+  test('a very long exporter address is cut so it cannot run into Powered by AuditOS', async () => {
+    const buf = await exportPdf(statements, meta({ exportedBy: `${'a'.repeat(300)}@firm.example.test`, letterhead: brand() }));
+    const t = pdfText(buf);
+    expect(t).toContain('Powered by AuditOS');
+    expect(t).toContain('...');
+    expect(t).not.toContain('a'.repeat(300));
+  });
+  test('a valid JPEG logo is embedded in the PDF and in the Word file', async () => {
+    const logo = { bytes: tinyJpeg(), type: 'image/jpeg' as const };
+    expect((await exportPdf(statements, meta({ letterhead: brand({ logo }) }))).toString('latin1')).toContain('/Subtype /Image');
+    expect((await docxParts(await exportDocx(statements, meta({ letterhead: brand({ logo }) })), 'header')).hasMedia).toBe(true);
+  });
   test('firm name, contact line, footer note and Powered by AuditOS; the logo is embedded', async () => {
     const buf = await exportPdf(statements, meta({ draft: false, letterhead: brand({ logo: { bytes: goodPng(), type: 'image/png' } }) }));
     const t = pdfText(buf);
