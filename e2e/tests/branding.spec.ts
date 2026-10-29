@@ -141,6 +141,9 @@ test.describe('branding page', () => {
       const saved = await page.getByLabel('Main colour code').inputValue();
       expect(saved).toMatch(/^#[0-9a-f]{6}$/);
       expect(saved).not.toBe('#fde047');
+      // The menu takes the saved colour straight away, with no reload.
+      await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--ledger').trim())).toBe(saved);
+      await expect.poll(() => page.locator('.rail').evaluate((el) => getComputedStyle(el).backgroundImage)).not.toContain('rgb(35, 86, 64)');
       // What is saved is what the menu now uses.
       await page.reload();
       await expect(page.getByLabel('Main colour code')).toHaveValue(saved);
@@ -177,6 +180,68 @@ test.describe('branding page', () => {
     await expect(error).toHaveCount(1);
     await expect(error).toHaveText('Logos can be at most 1 MB.');
     await expect(page.getByAltText('Your firm logo')).toHaveCount(0);
+  });
+
+  test('typed but unsaved details survive a logo upload, and nothing is saved until Save is pressed', async ({ page }) => {
+    await signIn(page, admin);
+    try {
+      await openBranding(page);
+      await page.getByLabel('Phone').fill('+254 711 000 111');
+      await page.getByLabel('Footer note').fill('Typed but not saved');
+      await page.getByLabel('Main colour code').fill('#1d4ed8');
+      await pickFile(page, 'logo.png', 'image/png', tinyPng());
+      await expect(page.getByAltText('Your firm logo')).toBeVisible();
+      await expect(page.getByLabel('Phone')).toHaveValue('+254 711 000 111');
+      await expect(page.getByLabel('Footer note')).toHaveValue('Typed but not saved');
+      await expect(page.getByLabel('Main colour code')).toHaveValue('#1d4ed8');
+      // Removing the logo and resetting colours keep the typed contact details too.
+      await page.getByRole('button', { name: 'Remove logo' }).click();
+      await expect(page.getByAltText('Your firm logo')).toHaveCount(0);
+      await page.getByRole('button', { name: 'Reset to AuditOS colours' }).click();
+      await expect(page.getByText('Back to the AuditOS colours.')).toBeVisible();
+      await expect(page.getByLabel('Main colour code')).toHaveValue(DEFAULTS.primary);
+      await expect(page.getByLabel('Phone')).toHaveValue('+254 711 000 111');
+      await expect(page.getByLabel('Footer note')).toHaveValue('Typed but not saved');
+      // Nothing typed was saved.
+      const saved = (await (await page.request.get('/api/branding')).json()) as { branding: { phone: string | null; footerNote: string | null } };
+      expect(saved.branding.phone ?? '').toBe('');
+      expect(saved.branding.footerNote ?? '').toBe('');
+    } finally {
+      const token = await csrf(page);
+      await page.request.delete('/api/branding/logo', { headers: { 'x-csrf-token': token } });
+      await page.request.put('/api/branding', { headers: { 'x-csrf-token': token }, data: { ...DEFAULTS, phone: '', email: '', website: '', footerNote: '' } });
+    }
+  });
+
+  test('a colour code that is not complete keeps Save off, says why in plain words and does not break the page', async ({ page }) => {
+    await signIn(page, admin);
+    await openBranding(page);
+    for (const bad of ['red', '#12']) {
+      const code = page.getByLabel('Main colour code');
+      await code.fill(bad);
+      await expect(page.getByText('Colour codes look like #1a2b3c.')).toBeVisible();
+      await expect(code).toHaveAttribute('aria-describedby', 'primary-hint');
+      await expect(page.locator('#primary-hint')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Save branding' })).toBeDisabled();
+      await expect(page.getByText('Fix the colour code above to save.')).toBeVisible();
+      await expect(page.getByText('Fix the colour code to see the preview.')).toBeVisible();
+      await expect(page.getByTestId('brand-preview')).toHaveCount(0);
+    }
+    await page.getByLabel('Main colour code').fill('#1d4ed8');
+    await expect(page.getByRole('button', { name: 'Save branding' })).toBeEnabled();
+    await expect(page.getByTestId('brand-preview')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Branding', level: 1 })).toBeVisible();
+  });
+
+  test('everyone in the firm can read branding, only the administrator can change it; firm details are blank for staff', async ({ page }) => {
+    for (const p of others) {
+      await signIn(page, p.email);
+      const res = await page.request.get('/api/branding');
+      expect(res.status(), p.who).toBe(200);
+      const body = (await res.json()) as { branding: { firm: Record<string, string | null> }; canEdit: boolean };
+      expect(body.canEdit, p.who).toBe(false);
+      if (p.who === 'staff') expect(Object.values(body.branding.firm), 'staff firm details').toEqual([null, null, null, null]);
+    }
   });
 
   for (const p of others) {

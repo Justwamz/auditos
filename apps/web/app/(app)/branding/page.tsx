@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_BRAND, type Adjustment } from '@auditos/brand';
@@ -36,9 +36,9 @@ function ColourField({ id, label, value, onChange }: { id: string; label: string
       <label htmlFor={`${id}-code`}>{label} code</label>
       <div className="colour-pick">
         <input type="color" aria-label={`${label} picker`} value={valid ? value.toLowerCase() : '#000000'} onChange={(e) => onChange(e.target.value)} />
-        <input id={`${id}-code`} type="text" value={value} maxLength={7} spellCheck={false} aria-invalid={!valid} onChange={(e) => onChange(e.target.value.trim())} />
+        <input id={`${id}-code`} type="text" value={value} maxLength={7} spellCheck={false} aria-invalid={!valid} aria-describedby={valid ? undefined : `${id}-hint`} onChange={(e) => onChange(e.target.value.trim())} />
       </div>
-      {!valid && <p className="small muted">Colour codes look like #1a2b3c.</p>}
+      {!valid && <p id={`${id}-hint`} className="small muted">Colour codes look like #1a2b3c.</p>}
     </div>
   );
 }
@@ -47,7 +47,7 @@ function ColourField({ id, label, value, onChange }: { id: string; label: string
 function ColourNote({ adjustments }: { adjustments: Adjustment[] }) {
   if (adjustments.length === 0) return null;
   return (
-    <div className="notice warn" data-testid="colour-note">
+    <div className="notice warn" role="status" data-testid="colour-note">
       <strong>We adjusted a colour so people can read the text.</strong>
       <ul>
         {adjustments.map((a) => (
@@ -78,9 +78,13 @@ export default function BrandingPage() {
   const [done, setDone] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // The form is filled from the server once. Later reloads (after an upload, a removal or a reset) refresh the saved
+  // copy and the logo only, so nothing typed and not yet saved is lost.
+  const seeded = useRef(false);
   useEffect(() => {
     const b = data.data?.branding;
-    if (!b) return;
+    if (!b || seeded.current) return;
+    seeded.current = true;
     setColours({ primary: b.primary, secondary: b.secondary });
     setContact({ phone: b.phone ?? '', email: b.email ?? '', website: b.website ?? '', footerNote: b.footerNote ?? '' });
   }, [data.data]);
@@ -212,6 +216,7 @@ export default function BrandingPage() {
 
           <div className="row">
             <button disabled={busy || !bothValid}>Save branding</button>
+            {!bothValid && <p className="small muted">Fix the colour code above to save.</p>}
           </div>
         </form>
       )}
