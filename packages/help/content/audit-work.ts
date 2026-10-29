@@ -27,7 +27,7 @@ The system adds the entries to the opening balance and compares the result with 
 Confirm a statement once you have looked at the preview. One that adds up is confirmed with a click. One that does not add up can still be confirmed, but you must give a reason, and the reason stays on the record. **Analysis only runs on a confirmed statement.** A confirmed statement cannot be changed or deleted; one you have not confirmed can be discarded and uploaded again.
 
 ## Who sees it
-Only the engagement team, and partners for reading. The entries are stored encrypted, only the last four digits of the account number are kept, and opening a statement is recorded in the audit trail.
+Only the engagement team, and partners for reading. The entries are stored encrypted, only the last four digits of the account number are kept, and opening a statement is recorded in the activity history.
 
 ## If a statement will not read
 Layouts differ between banks, and this reader has been tested on typical layouts. If yours is refused or reads wrongly, upload a CSV or Excel export instead and tell your administrator which bank it was, with a copy of the statement that has the names and account numbers blacked out.`,
@@ -87,7 +87,7 @@ Open the schedule and mark each item:
 - **Exception**: something was wrong. Enter the misstatement in KES and a note.
 - **Not tested**: you could not test it. Give the reason.
 
-Every result records who and when, and is in the audit trail. You can change a result while the engagement is open. A schedule with any result cannot be deleted. One with none can be discarded and drawn again.
+Every result records who and when, and is in the activity history. You can change a result while the engagement is open. A schedule with any result cannot be deleted. One with none can be discarded and drawn again.
 
 ## The summary
 It counts what was found and shows the exception rate. For random and monetary-unit samples it also shows a simple projection of what the exceptions might mean across the population. It is an indication to help your judgement, not a conclusion: you decide whether it matters against materiality.`,

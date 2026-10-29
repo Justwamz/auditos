@@ -156,6 +156,6 @@ Read the roadmap, papers, versions, review notes, checklists, evidence and draft
 Edit, sign off, raise notes, delete, move the stage, add people or upload. Ask the manager to add you to the team if you need to work on it.
 
 ## The record
-Everything you open is recorded in the audit trail, like anyone else's viewing.`,
+Everything you open is recorded in the activity history, like anyone else's viewing.`,
   },
 ];

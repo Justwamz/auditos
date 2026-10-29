@@ -27,7 +27,7 @@ A manager or partner presses **Won: make a client**, enters the legal form and y
 Managers and partners can hand a prospect to another person, with a reason. The previous owner no longer sees it.
 
 ## Who sees what
-You see the prospects you own. Partners and managers see the whole pipeline. Everything done to a prospect is in the audit trail.`,
+You see the prospects you own. Partners and managers see the whole pipeline. Everything done to a prospect is in the activity history.`,
   },
   {
     id: 'calendar-using',
@@ -54,7 +54,7 @@ Nobody else sees it, and the firm administrator sees only their own.
 Year ends, report dates and the deadline to lock the file (60 days after the report date) show for the engagements you can see, marked with a diamond.
 
 ## Changing and cancelling
-Only the person who made an event can change it. They, or a partner, can cancel it. A cancelled event leaves the calendar but stays in the audit trail.
+Only the person who made an event can change it. They, or a partner, can cancel it. A cancelled event leaves the calendar but stays in the activity history.
 
 ## For managers and partners
 Use **Show** to look at one person's week.`,
@@ -75,7 +75,7 @@ Open the client, find **Change the account manager**, choose another manager or 
 ## What happens
 - The new manager sees the client and its contacts.
 - The previous manager no longer sees the client, unless they are on one of its engagement teams.
-- The change, with both names and your reason, is written to the audit trail.
+- The change, with both names and your reason, is written to the activity history.
 
 ## Engagements
 Engagement teams are not changed. Add or remove team members from the engagement.`,
@@ -83,24 +83,24 @@ Engagement teams are not changed. Add or remove team members from the engagement
   {
     id: 'handover-leavers',
     title: 'When someone leaves: handing over their work',
-    summary: 'Why a person cannot be switched off while they hold clients or prospects, and how to hand them over.',
+    summary: 'Why a person cannot be paused while they hold clients or prospects, and how to hand them over.',
     category: 'Administration',
     audience: ['admin'],
-    tags: ['leaver', 'handover', 'switch off', 'deactivate', 'account manager', 'clients', 'prospects', 'resign'],
+    tags: ['leaver', 'handover', 'switch off', 'pause access', 'deactivate', 'account manager', 'clients', 'prospects', 'resign'],
     topics: ['admin.handover'],
-    body: `A person who manages clients or owns open prospects cannot be switched off, and cannot be moved to a role that cannot hold them, until their work has a new home.
+    body: `A person who manages clients or owns open prospects cannot have their access paused, and cannot be moved to a role that cannot hold them, until their work has a new home.
 
 ## How to hand over
-1. Open **People and access** and press **Hand over** on the person's row.
+1. Open **People** and choose **Hand over** from the **...** menu on the person's row.
 2. You see the clients they manage and the open prospects they own.
 3. Choose who takes everything over. For clients it must be an active manager or partner.
 4. Give a reason and press **Hand over**.
 
 ## What is recorded
-One entry in the audit trail for the handover, and one for each client and prospect that moved, each with the reason.
+One entry in the activity history for the handover, and one for each client and prospect that moved, each with the reason.
 
 ## Then
-Press **Switch off**. Their sessions end at once. Engagement team membership is separate: add and remove people on the engagements themselves.
+Open the **...** menu on their row and choose **Pause access**. They are signed out at once. Engagement team membership is separate: add and remove people on the engagements themselves.
 
 ## If the button says they still hold something
 Closed prospects (won or lost) do not count. Reopen the Hand over panel to see what is left.`,

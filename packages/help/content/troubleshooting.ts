@@ -82,7 +82,7 @@ The partner steps (approve, issue, lock) can only be taken by the engagement par
 After five wrong attempts the account is locked for 15 minutes and its sessions end. Wait, then try again.
 
 ## Still stuck
-Ask a person in your firm who holds the administrator permission. They can check your access under **People and access**.`,
+Ask a person in your firm who holds the administrator permission. They can check your access under **People**.`,
   },
   {
     id: 'export-asks-for-code',

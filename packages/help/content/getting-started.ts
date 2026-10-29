@@ -19,8 +19,8 @@ Today opens with a greeting and a list of what needs you, each with an **Open** 
 - **Engagements**: one per client per financial year. Open one to see its roadmap, papers, checklists, evidence and draft financial statements.
 - **Clients**: the clients you can see, with their contacts.
 - **Independence**: your independence declaration, which you need before joining a team.
-- **Audit trail**: who did what, in plain English. Partners, managers and people with the administrator permission see it.
-- **People and access**: for people who hold the administrator permission.
+- **Activity history**: who did what, in plain English. Partners, managers and people with the administrator permission see it.
+- **People**: for people who hold the administrator permission.
 - **Help**: this section.
 
 ## Where to begin on an engagement
@@ -208,7 +208,7 @@ In the **Evidence** tab, choose a file. PDF, PNG, JPG, XLSX, DOCX and CSV files 
 ## How it is protected
 - A fingerprint (SHA-256) of the file is recorded when it is uploaded and checked again on every download.
 - An evidence file can never be edited or replaced. To correct it, upload a new one.
-- Every download is recorded in the audit trail.
+- Every download is recorded in the activity history.
 
 ## Using it
 You can link evidence to a checklist answer, so the reviewer can go from the question to the document.

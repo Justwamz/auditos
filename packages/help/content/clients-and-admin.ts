@@ -42,25 +42,25 @@ Phone numbers, email addresses, ID numbers and KRA PINs show as masked values, f
 ## How to reveal one
 1. Open the client and find the contact.
 2. Press **Reveal** beside the detail.
-3. Write why you need it and press **Reveal and record**.
+3. Write why you need it and press **Show details (this is recorded)**.
 
 The value shows for 30 seconds and then hides again.
 
 ## What is recorded
-Each reveal is written to the audit trail with your name, the detail, whose it is and your reason. People with access to the audit trail can read it. Reveal only what you need.
+Each reveal is written to the activity history with your name, the detail, whose it is and your reason. People with access to the activity history can read it. Reveal only what you need.
 
 ## Who can reveal
 People who can see the client's file. The firm administrator role cannot, because it has no access to client content.`,
   },
   {
     id: 'audit-trail-reading',
-    title: 'Reading the audit trail',
+    title: 'Reading the activity history',
     summary: 'What is recorded, the filters, and who may open it.',
     category: 'Clients and privacy',
     audience: ['partner', 'manager', 'admin'],
     tags: ['audit trail', 'log', 'who viewed', 'activity', 'history', 'reveal', 'filter', 'accountability'],
     topics: ['audit-trail'],
-    body: `The audit trail records what people do on client files, as a sentence: for example "Brian Kiptoo viewed the working paper "Stock count" for Mwangaza Traders Ltd".
+    body: `The activity history records what people do on client files, as a sentence: for example "Brian Kiptoo viewed the working paper "Stock count" for Mwangaza Traders Ltd".
 
 ## What is recorded
 - Viewing a client, an engagement, a paper or the draft statements
@@ -83,26 +83,26 @@ Entries cannot be edited or deleted. Each is chained to the one before it, so an
   {
     id: 'people-and-access',
     title: 'Inviting people and giving access',
-    summary: 'Named people only, roles, the administrator permission and switching access off.',
+    summary: 'Named people only, roles, the administrator permission and pausing access.',
     category: 'Administration',
     audience: ['admin'],
-    tags: ['invite', 'user', 'role', 'access', 'administrator', 'permission', 'switch off', 'named'],
+    tags: ['invite', 'user', 'role', 'access', 'administrator', 'permission', 'switch off', 'pause access', 'named'],
     topics: ['admin.users'],
-    body: `Open **People and access** to manage who can sign in.
+    body: `Open **People** to manage who can sign in.
 
 ## Every account is one named person
 Enter the person's full name and personal email. Addresses that look shared, such as admin@, info@ or accounts@, are refused, because nobody can be held to account for a shared login.
 
 ## Inviting
-1. Enter the full name and email, and choose a role.
+1. Press **+ Invite someone**, enter the full name and email, and choose a role.
 2. Tick **Can manage people and access** only if they should administer.
 3. Press **Create invite** and send the one-time link to the person. It works once and expires in 72 hours.
 
 ## Roles
 Partner, manager, senior, staff, quality officer, engagement quality reviewer and firm administrator. A role decides what the person can do on engagements; the administrator permission is separate and can be given to a person in any role.
 
-## Changing and switching off
-Change a role in the list, give or take away the administrator permission, or switch access off. Switching off ends their sessions at once. You cannot switch yourself off, and the firm always keeps at least one administrator.
+## Changing roles and pausing access
+Change a role in the list, give or take away the administrator permission, or choose **Pause access** from the **...** menu on a row. A paused person is signed out at once, and **Restore access** brings them back. You cannot pause yourself, and the firm always keeps at least one administrator.
 
 ## What administrators cannot do
 The firm administrator role cannot open engagement files or reveal clients' personal details.`,
