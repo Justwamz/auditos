@@ -6,7 +6,7 @@ import { harness, login, makeTenant, makeUser, ownerQuery, type Harness, type Se
 
 let h: Harness;
 let T: TestTenant, T2: TestTenant;
-let A: TestUser, AP: TestUser, P: TestUser, M: TestUser, F: TestUser, B: TestUser;
+let A: TestUser, AP: TestUser, P: TestUser, M: TestUser, M2: TestUser, F: TestUser, B: TestUser;
 let sP: Session, sM: Session;
 let client: string;
 
@@ -28,8 +28,9 @@ const code = async (p: Promise<unknown>): Promise<string> => {
   return 'none';
 };
 const branding = (over: object = {}) => ({ primaryColor: '#1f5f4a', secondaryColor: '#e8c547', phone: '+254 700 000 000', email: 'info@firm.example.test', website: 'https://firm.example.test', footerNote: 'Thank you', ...over });
-const save = (u: TestUser, b: object = branding(), changed: string[] = ['primaryColor']) =>
-  asT(u, (tx) => tx.query('select branding_save($1::jsonb, $2::text[])', [JSON.stringify(b), changed]));
+const save = (u: TestUser, b: object = branding()) => asT(u, (tx) => tx.query('select branding_save($1::jsonb)', [JSON.stringify(b)]));
+const auditCount = async () => Number((await ownerQuery(h, T.id, "select count(*) as n from audit_events where action = 'branding.updated' and tenant_id = $1", [T.id])).rows[0].n);
+const lastAudit = async () => (await ownerQuery(h, T.id, "select * from audit_events where action = 'branding.updated' and tenant_id = $1 order by seq desc limit 1", [T.id])).rows[0];
 const addLogo = (u: TestUser, type = 'image/png', bytes: Buffer = PNG, w = 100, hh = 50) =>
   asT(u, async (tx) => (await tx.query('select branding_add_logo($1, $2, $3, $4) as id', [type, bytes, w, hh])).rows[0].id as string);
 
@@ -57,6 +58,7 @@ beforeAll(async () => {
   await ownerQuery(h, T.id, 'update memberships set is_admin = true where user_id = $1', [AP.id]);
   P = await makeUser(h, T.id, 'partner', 4);
   M = await makeUser(h, T.id, 'manager', 3);
+  M2 = await makeUser(h, T.id, 'manager', 3);
   F = await makeUser(h, T.id, 'staff', 1);
   B = { id: T2.adminId, email: '', secret: '' };
   sP = await login(h, P);
@@ -73,7 +75,7 @@ describe('who may change branding', () => {
     await save(A);
     const id = await addLogo(A);
     expect(id).toMatch(/^[0-9a-f-]{36}$/);
-    await save(AP, branding({ logoId: id, footerNote: '' }), ['logo', 'footerNote']);
+    await save(AP, branding({ logoId: id, footerNote: '' }));
     const row = (await asT(A, (tx) => tx.query('select * from firm_branding'))).rows[0];
     expect(row).toMatchObject({ primary_color: '#1f5f4a', logo_id: id, footer_note: null, phone: '+254 700 000 000' });
     await addLogo(AP, 'image/jpeg', JPG);
@@ -93,19 +95,44 @@ describe('who may change branding', () => {
   });
 
   test('every member of the firm reads branding and logos', async () => {
+    await save(A);
+    await addLogo(A);
     for (const u of [P, M, F]) {
       expect((await asT(u, (tx) => tx.query('select 1 from firm_branding'))).rowCount).toBe(1);
-      expect((await asT(u, (tx) => tx.query('select 1 from firm_logos'))).rowCount).toBe(2);
+      expect((await asT(u, (tx) => tx.query('select 1 from firm_logos'))).rowCount).toBeGreaterThanOrEqual(1);
     }
   });
+});
 
-  test('saving records one audit entry with the list of what changed', async () => {
-    await save(A, branding(), ['phone', 'website']);
-    const r = await ownerQuery(h, T.id, "select detail, action from audit_events where action = 'branding.updated' order by seq desc limit 1");
-    expect(r.rows[0].detail).toEqual({ changed: ['phone', 'website'] });
+describe('the audit entry of a save', () => {
+  test('a real save writes exactly one entry, with the actor, the entity and what changed worked out by the database', async () => {
+    await save(A, branding({ primaryColor: '#111111', secondaryColor: '#222222', phone: '+254 1' }));
+    const n = await auditCount();
+    await save(A, branding({ primaryColor: '#333333', secondaryColor: '#222222', phone: '+254 2' }));
+    expect(await auditCount()).toBe(n + 1);
+    const e = await lastAudit();
+    expect(e.actor_user_id).toBe(A.id);
+    expect(e.entity_type).toBe('branding');
+    expect(e.entity_id).toBe(T.id);
+    expect(e.detail).toEqual({ changed: ['primaryColor', 'phone'], primaryColor: { old: '#111111', new: '#333333' } });
   });
-
+  test('a save that changes nothing writes no entry', async () => {
+    await save(A, branding({ footerNote: 'same' }));
+    const n = await auditCount();
+    await save(A, branding({ footerNote: 'same' }));
+    expect(await auditCount()).toBe(n);
+  });
+  test('a logo change names the logo without its bytes; colours show old and new', async () => {
+    const logo = await addLogo(A);
+    await save(A, branding({ logoId: null, secondaryColor: '#444444' }));
+    await save(A, branding({ logoId: logo, secondaryColor: '#555555' }));
+    expect((await lastAudit()).detail).toEqual({ changed: ['logo', 'secondaryColor'], secondaryColor: { old: '#444444', new: '#555555' } });
+  });
+  test('the list the caller might want to send is not accepted, so it cannot be forged', async () => {
+    expect(await code(asT(A, (tx) => tx.query('select branding_save($1::jsonb, $2::text[])', [JSON.stringify(branding()), ['bogus']])))).toBe('42883');
+  });
   test('the audit trail shows the entry without failing', async () => {
+    await save(A, branding({ footerNote: 'trail ' + Date.now() }));
     const res = await call(sP, 'GET', '/audit-trail');
     expect(res.statusCode).toBe(200);
     const ev = res.json().events.find((e: { action: string }) => e.action === 'branding.updated');
@@ -115,23 +142,25 @@ describe('who may change branding', () => {
 
 describe('one firm cannot see another', () => {
   test('firm B sees none of firm A branding or logos, and cannot use a logo of A', async () => {
+    await save(A);
+    const logoOfA = await addLogo(A);
     expect((await as(T2, B, (tx) => tx.query('select 1 from firm_branding'))).rowCount).toBe(0);
     expect((await as(T2, B, (tx) => tx.query('select 1 from firm_logos'))).rowCount).toBe(0);
-    const logoOfA = (await ownerQuery(h, T.id, 'select id from firm_logos limit 1')).rows[0].id as string;
-    expect(await code(as(T2, B, (tx) => tx.query('select branding_save($1::jsonb, $2::text[])', [JSON.stringify(branding({ logoId: logoOfA })), ['logo']])))).toBe('23503');
+    expect(await code(as(T2, B, (tx) => tx.query('select branding_save($1::jsonb)', [JSON.stringify(branding({ logoId: logoOfA }))])))).toBe('23503');
   });
 });
 
 describe('logos are insert-only', () => {
   test('the app role cannot update or delete a logo', async () => {
-    expect(await code(asT(A, (tx) => tx.query('update firm_logos set width = 5')))).toBe('42501');
-    expect(await code(asT(A, (tx) => tx.query('delete from firm_logos')))).toBe('42501');
+    const id = await addLogo(A);
+    expect(await code(asT(A, (tx) => tx.query('update firm_logos set width = 5 where id = $1', [id])))).toBe('42501');
+    expect(await code(asT(A, (tx) => tx.query('delete from firm_logos where id = $1', [id])))).toBe('42501');
   });
   test('not even the owner role can change a stored logo through row security', async () => {
-    const r = await ownerQuery(h, T.id, 'update firm_logos set width = 5');
-    expect(r.rowCount).toBe(0);
-    const d = await ownerQuery(h, T.id, 'delete from firm_logos');
-    expect(d.rowCount).toBe(0);
+    const id = await addLogo(A);
+    expect((await ownerQuery(h, T.id, 'update firm_logos set width = 5 where id = $1', [id])).rowCount).toBe(0);
+    expect((await ownerQuery(h, T.id, 'delete from firm_logos where id = $1', [id])).rowCount).toBe(0);
+    expect((await ownerQuery(h, T.id, 'select width from firm_logos where id = $1', [id])).rows[0].width).toBe(100);
   });
 });
 
@@ -204,7 +233,8 @@ describe('the letterhead of a sent quotation is written once', () => {
   test('the creator sets it once after sending; a second write fails', async () => {
     const id = await draftQuote();
     expect((await call(sM, 'POST', `/quotes/${id}/send`, {})).statusCode).toBe(200);
-    expect(['AO403', 'AO404']).toContain(await code(setQuote(F, id)));
+    expect(await code(setQuote(F, id)), 'staff cannot even see it').toBe('AO404');
+    expect(await code(setQuote(M2, id)), 'another manager is not the creator').toBe('AO403');
     await setQuote(M, id);
     expect(await quoteLetterhead(id)).toEqual(LH);
     expect(await code(setQuote(M, id, { name: 'Changed' }))).toBe('AO409');
@@ -218,5 +248,67 @@ describe('the letterhead of a sent quotation is written once', () => {
     await call(sM, 'POST', `/quotes/${id}/send`, {});
     await setQuote(P, id);
     expect(await quoteLetterhead(id)).toEqual(LH);
+  });
+  test('authorisation is checked before the shape of the letterhead', async () => {
+    const id = await draftQuote();
+    await call(sM, 'POST', `/quotes/${id}/send`, {});
+    expect(await code(setQuote(M2, id, [1] as unknown as object))).toBe('AO403');
+    expect(await code(setQuote(M, id, [1] as unknown as object))).toBe('AO422');
+  });
+  test('an accepted quotation that never got one cannot get one later', async () => {
+    const id = await draftQuote();
+    await call(sM, 'POST', `/quotes/${id}/send`, {});
+    expect((await call(sM, 'POST', `/quotes/${id}/accept`, {})).statusCode).toBeLessThan(300);
+    expect(await code(setQuote(M, id))).toBe('AO409');
+    expect(await quoteLetterhead(id)).toBeNull();
+  });
+});
+
+describe('the letterhead cannot be forced in a raw session', () => {
+  // The two session flags are what the functions switch on; setting them by hand must not be enough.
+  const raw = (u: TestUser, sql: string, params: unknown[]) =>
+    asT(u, async (tx) => {
+      await tx.query("select set_config('app.invoicing', 'on', true), set_config('app.letterhead', 'on', true)");
+      return tx.query(sql, params);
+    });
+  test('a letterhead that is set cannot be rewritten or cleared', async () => {
+    const id = await issued();
+    await setInv(P, id);
+    expect(await code(raw(P, "update invoices set letterhead = '{\"a\":1}'::jsonb where id = $1", [id]))).toBe('AO409');
+    expect(await code(raw(P, 'update invoices set letterhead = null where id = $1', [id]))).toBe('AO409');
+    const q = await draftQuote();
+    await call(sM, 'POST', `/quotes/${q}/send`, {});
+    await setQuote(M, q);
+    expect(await code(raw(M, "update quotes set letterhead = '{\"a\":1}'::jsonb where id = $1", [q]))).toBe('AO409');
+    expect(await invLetterhead(id)).toEqual(LH);
+    expect(await quoteLetterhead(q)).toEqual(LH);
+  });
+  test('a draft cannot get one', async () => {
+    const id = await draftInvoice();
+    expect(await code(raw(P, "update invoices set letterhead = '{\"a\":1}'::jsonb where id = $1", [id]))).toBe('AO409');
+    const q = await draftQuote();
+    expect(await code(raw(M, "update quotes set letterhead = '{\"a\":1}'::jsonb where id = $1", [q]))).toBe('AO409');
+  });
+  test('a paid or void invoice and an accepted quotation cannot get one', async () => {
+    const inv = await issued();
+    await call(sP, 'POST', `/invoices/${inv}/void`, { reason: 'Issued in error' });
+    expect(await code(setInv(P, inv))).toBe('AO409');
+    expect(await code(raw(P, "update invoices set letterhead = '{\"a\":1}'::jsonb where id = $1", [inv]))).toBe('AO409');
+    expect(await invLetterhead(inv)).toBeNull();
+  });
+  test('someone without billing rights cannot set a first one, on an invoice or a quotation', async () => {
+    // a manager who created an invoice sees it but may not issue it
+    const inv = (await call(sM, 'POST', '/invoices', { clientId: client, taxMode: 'exclusive', taxIds: [], lines: [{ description: 'Fee', quantity: '1', unitPrice: '5000.00' }] })).json().id as string;
+    expect((await call(sP, 'POST', `/invoices/${inv}/issue`)).statusCode).toBe(200);
+    expect(await code(raw(M, "update invoices set letterhead = '{\"a\":1}'::jsonb where id = $1", [inv]))).toBe('AO403');
+    const q = await draftQuote();
+    await call(sM, 'POST', `/quotes/${q}/send`, {});
+    expect(await code(raw(M2, "update quotes set letterhead = '{\"a\":1}'::jsonb where id = $1", [q]))).toBe('AO403');
+    expect(await invLetterhead(inv)).toBeNull();
+    expect(await quoteLetterhead(q)).toBeNull();
+  });
+  test('authorisation is checked before the shape of the letterhead for invoices', async () => {
+    const id = await issued();
+    expect(await code(setInv(M, id, [1] as unknown as object))).toBe('AO403');
   });
 });

@@ -55,7 +55,9 @@ alter table invoices add column letterhead jsonb check (letterhead is null or js
 alter table quotes add column letterhead jsonb check (letterhead is null or jsonb_typeof(letterhead) = 'object');
 
 -- The letterhead is null on a draft, written once when the document is issued or sent, and never changed afterwards.
--- Only invoice_set_letterhead and quote_set_letterhead (which switch app.letterhead on) may write it.
+-- Only invoice_set_letterhead and quote_set_letterhead (which switch app.letterhead on) may write it, and even then only
+-- for someone who may issue the invoice (or send the quotation) and only while the document is in the state it has right
+-- after issuing or sending. Setting the flag in a raw session is therefore not enough.
 create function letterhead_guard() returns trigger language plpgsql set search_path = public, pg_temp as
 $$
 begin
@@ -65,8 +67,13 @@ begin
   end if;
   if new.letterhead is not distinct from old.letterhead then return new; end if;
   if old.letterhead is not null then raise exception 'letterhead_frozen' using errcode = 'AO409'; end if;
-  if coalesce(current_setting('app.letterhead', true), '') <> 'on' or old.status = 'draft' then
+  if coalesce(current_setting('app.letterhead', true), '') <> 'on' or old.status <> 'sent' then
     raise exception 'letterhead_forbidden' using errcode = 'AO409';
+  end if;
+  if tg_table_name = 'quotes' then
+    if old.created_by <> app_user() and not can_manage_billing() then raise exception 'forbidden' using errcode = 'AO403'; end if;
+  elsif not can_manage_billing() then
+    raise exception 'forbidden' using errcode = 'AO403';
   end if;
   return new;
 end
@@ -74,28 +81,49 @@ $$;
 create trigger invoices_letterhead_guard before insert or update on invoices for each row execute function letterhead_guard();
 create trigger quotes_letterhead_guard before insert or update on quotes for each row execute function letterhead_guard();
 
--- Saves the firm's branding as a whole (blank values are stored as nothing) and records which settings changed.
+-- Saves the firm branding as a whole (blank values are stored as nothing). The list of what changed is worked out here by
+-- comparing with the saved row, never taken from the caller; nothing is recorded when nothing changed. The audit entry
+-- carries the list, and the old and new colour codes when a colour changed (a logo is only named as changed).
 -- p_branding keys: primaryColor, secondaryColor, logoId, phone, email, website, footerNote.
-create function branding_save(p_branding jsonb, p_changed text[]) returns void
+create function branding_save(p_branding jsonb) returns void
 language plpgsql security definer set search_path = public, pg_temp as
 $$
 declare
-  v_logo uuid;
-  v_changed jsonb := to_jsonb(coalesce(p_changed, '{}'::text[]));
+  o firm_branding%rowtype;
+  v_logo uuid; v_pc text; v_sc text; v_phone text; v_email text; v_web text; v_note text;
+  v_changed text[] := '{}';
+  v_detail jsonb;
 begin
   if not can_edit_branding() then raise exception 'forbidden' using errcode = 'AO403'; end if;
   if p_branding is null or jsonb_typeof(p_branding) <> 'object' then raise exception 'invalid_branding' using errcode = 'AO422'; end if;
   v_logo := nullif(trim(p_branding ->> 'logoId'), '')::uuid;
+  v_pc := lower(nullif(trim(p_branding ->> 'primaryColor'), ''));
+  v_sc := lower(nullif(trim(p_branding ->> 'secondaryColor'), ''));
+  v_phone := nullif(trim(p_branding ->> 'phone'), '');
+  v_email := nullif(trim(p_branding ->> 'email'), '');
+  v_web := nullif(trim(p_branding ->> 'website'), '');
+  v_note := nullif(trim(p_branding ->> 'footerNote'), '');
+  select * into o from firm_branding where tenant_id = app_tenant() for update;
+
   insert into firm_branding (tenant_id, primary_color, secondary_color, logo_id, phone, email, website, footer_note, updated_at)
-  values (app_tenant(),
-    nullif(trim(p_branding ->> 'primaryColor'), ''), nullif(trim(p_branding ->> 'secondaryColor'), ''), v_logo,
-    nullif(trim(p_branding ->> 'phone'), ''), nullif(trim(p_branding ->> 'email'), ''), nullif(trim(p_branding ->> 'website'), ''),
-    nullif(trim(p_branding ->> 'footerNote'), ''), now())
+  values (app_tenant(), v_pc, v_sc, v_logo, v_phone, v_email, v_web, v_note, now())
   on conflict (tenant_id) do update set
     primary_color = excluded.primary_color, secondary_color = excluded.secondary_color, logo_id = excluded.logo_id,
     phone = excluded.phone, email = excluded.email, website = excluded.website, footer_note = excluded.footer_note, updated_at = now();
-  perform audit_append_internal(app_tenant(), app_user(), 'branding.updated', 'branding', app_tenant()::text,
-    jsonb_build_object('changed', v_changed));
+
+  if v_logo is distinct from o.logo_id then v_changed := array_append(v_changed, 'logo'); end if;
+  if v_pc is distinct from o.primary_color then v_changed := array_append(v_changed, 'primaryColor'); end if;
+  if v_sc is distinct from o.secondary_color then v_changed := array_append(v_changed, 'secondaryColor'); end if;
+  if v_phone is distinct from o.phone then v_changed := array_append(v_changed, 'phone'); end if;
+  if v_email is distinct from o.email then v_changed := array_append(v_changed, 'email'); end if;
+  if v_web is distinct from o.website then v_changed := array_append(v_changed, 'website'); end if;
+  if v_note is distinct from o.footer_note then v_changed := array_append(v_changed, 'footerNote'); end if;
+  if cardinality(v_changed) = 0 then return; end if;
+
+  v_detail := jsonb_build_object('changed', to_jsonb(v_changed));
+  if 'primaryColor' = any (v_changed) then v_detail := v_detail || jsonb_build_object('primaryColor', jsonb_build_object('old', o.primary_color, 'new', v_pc)); end if;
+  if 'secondaryColor' = any (v_changed) then v_detail := v_detail || jsonb_build_object('secondaryColor', jsonb_build_object('old', o.secondary_color, 'new', v_sc)); end if;
+  perform audit_append_internal(app_tenant(), app_user(), 'branding.updated', 'branding', app_tenant()::text, v_detail);
 end
 $$;
 
@@ -110,17 +138,19 @@ begin
 end
 $$;
 
--- Writes the letterhead of an issued invoice once. A draft has none, and an issued one never changes.
+-- Write the letterhead of a document that has just been issued (or sent). The API calls these in the same transaction as
+-- invoice_issue / quote_send; they accept only status 'sent', so a letterhead can never be attached later to a paid, void,
+-- accepted or declined document. A draft has none and a set letterhead never changes.
 create function invoice_set_letterhead(p_id uuid, p_letterhead jsonb) returns void
 language plpgsql security definer set search_path = public, pg_temp as
 $$
 declare inv invoices%rowtype;
 begin
   if not can_manage_billing() then raise exception 'forbidden' using errcode = 'AO403'; end if;
-  if p_letterhead is null or jsonb_typeof(p_letterhead) <> 'object' then raise exception 'invalid_letterhead' using errcode = 'AO422'; end if;
   select * into inv from invoices where id = p_id for update;
   if not found then raise exception 'not_found' using errcode = 'AO404'; end if;
-  if inv.status = 'draft' then raise exception 'invoice_draft' using errcode = 'AO409'; end if;
+  if p_letterhead is null or jsonb_typeof(p_letterhead) <> 'object' then raise exception 'invalid_letterhead' using errcode = 'AO422'; end if;
+  if inv.status <> 'sent' then raise exception 'invoice_not_just_issued' using errcode = 'AO409'; end if;
   if inv.letterhead is not null then raise exception 'letterhead_frozen' using errcode = 'AO409'; end if;
   perform set_config('app.invoicing', 'on', true);
   perform set_config('app.letterhead', 'on', true);
@@ -135,11 +165,11 @@ language plpgsql security definer set search_path = public, pg_temp as
 $$
 declare q quotes%rowtype;
 begin
-  if p_letterhead is null or jsonb_typeof(p_letterhead) <> 'object' then raise exception 'invalid_letterhead' using errcode = 'AO422'; end if;
   select * into q from quotes where id = p_id for update;
   if not found then raise exception 'not_found' using errcode = 'AO404'; end if;
   if q.created_by <> app_user() and not can_manage_billing() then raise exception 'forbidden' using errcode = 'AO403'; end if;
-  if q.status = 'draft' then raise exception 'quote_draft' using errcode = 'AO409'; end if;
+  if p_letterhead is null or jsonb_typeof(p_letterhead) <> 'object' then raise exception 'invalid_letterhead' using errcode = 'AO422'; end if;
+  if q.status <> 'sent' then raise exception 'quote_not_just_sent' using errcode = 'AO409'; end if;
   if q.letterhead is not null then raise exception 'letterhead_frozen' using errcode = 'AO409'; end if;
   perform set_config('app.invoicing', 'on', true);
   perform set_config('app.letterhead', 'on', true);
@@ -150,7 +180,7 @@ end
 $$;
 
 revoke all on function letterhead_guard() from public;
-revoke all on function branding_save(jsonb, text[]), branding_add_logo(text, bytea, integer, integer),
+revoke all on function branding_save(jsonb), branding_add_logo(text, bytea, integer, integer),
   invoice_set_letterhead(uuid, jsonb), quote_set_letterhead(uuid, jsonb) from public;
-grant execute on function branding_save(jsonb, text[]), branding_add_logo(text, bytea, integer, integer),
+grant execute on function branding_save(jsonb), branding_add_logo(text, bytea, integer, integer),
   invoice_set_letterhead(uuid, jsonb), quote_set_letterhead(uuid, jsonb) to auditos_app;
