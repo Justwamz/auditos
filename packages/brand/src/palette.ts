@@ -12,7 +12,7 @@ export type Adjustment = { field: 'primary' | 'secondary'; from: string; to: str
 
 export type PaletteVar =
   | '--ledger' | '--ledger-deep' | '--ledger-wash' | '--rule' | '--rule-strong' | '--paper' | '--sheet'
-  | '--rail-bg' | '--rail-fg' | '--rail-muted' | '--rail-active' | '--rail-line' | '--shadow-tint'
+  | '--rail-bg' | '--rail-fg' | '--rail-muted' | '--rail-heading' | '--rail-hover-border' | '--rail-active' | '--rail-line' | '--shadow-tint'
   | '--accent' | '--accent-wash';
 export type Palette = Record<PaletteVar | 'primary' | 'secondary', string>;
 
@@ -90,6 +90,8 @@ const REF = {
   railBg: '#235640',
   railFg: '#e9f1ea',
   railMuted: '#b7ccbc',
+  railHeading: '#a9c4b1',
+  railHover: '#cfe0d4',
   railLine: '#7fa38c',
   shadow: '30, 74, 52',
 } as const;
@@ -116,32 +118,43 @@ function fixPrimary(primary: string): string {
   return fromHsl(c);
 }
 
-function fixSecondary(secondary: string, primary: string, paper: string, sheet: string): string {
+type SecondaryIssue = 'unreadable' | 'page' | 'main';
+
+function fixSecondary(
+  secondary: string,
+  primary: string,
+  paper: string,
+  sheet: string,
+): { to: string; issue: SecondaryIssue | null } {
   const base = toHsl(secondary);
   const p = toHsl(primary);
-  const ok = (hex: string): boolean => {
+  const issueOf = (hex: string): SecondaryIssue | null => {
     const c = toHsl(hex);
+    if (contrastRatio(INK, hex) < 4.5) return 'unreadable';
+    if (distance(hex, sheet) < 20 || distance(hex, paper) < 12) return 'page';
     const apart = Math.abs(c.l - p.l) >= 15 || (hueGap(c.h, p.h) >= 30 && c.s >= 15 && p.s >= 15);
-    return (
-      apart &&
-      contrastRatio(INK, hex) >= 4.5 &&
-      distance(hex, sheet) >= 20 &&
-      distance(hex, paper) >= 12 &&
-      distance(hex, primary) >= 40
-    );
+    if (!apart || distance(hex, primary) < 40) return 'main';
+    return null;
   };
-  if (ok(secondary)) return secondary;
+  const first = issueOf(secondary);
+  if (!first) return { to: secondary, issue: null };
   // Try the nearest lightness first, in both directions, 2% at a time.
   for (let step = 2; step <= 100; step += 2) {
     for (const dir of [-1, 1]) {
       const l = base.l + dir * step;
       if (l < 0 || l > 100) continue;
       const cand = fromHsl({ ...base, l });
-      if (ok(cand)) return cand;
+      if (!issueOf(cand)) return { to: cand, issue: first };
     }
   }
-  return secondary;
+  return { to: secondary, issue: null };
 }
+
+const SECONDARY_WHY: Record<SecondaryIssue, string> = {
+  unreadable: 'it was too dark or too bright for text to stay easy to read on it',
+  page: 'it was too close to the page colour and would disappear',
+  main: 'it was too close to your main colour to tell them apart',
+};
 
 export function derivePalette(input: { primary: string; secondary: string }): { palette: Palette; adjustments: Adjustment[] } {
   if (!isHex(input.primary) || !isHex(input.secondary)) throw new Error(BAD);
@@ -176,7 +189,21 @@ export function derivePalette(input: { primary: string; secondary: string }): { 
     c = { ...c, l: Math.max(0, c.l - 2) };
     deep = fromHsl(c);
   }
-  const railBg = at(REF.railBg, true);
+  let railBg = at(REF.railBg, true);
+
+  // Active menu item: white text over a translucent white wash. Lower the wash, then darken the
+  // rail, until white text stays at 4.5:1 on the blended colour at both ends of the gradient.
+  const blend = (bg: string, a: number): string => toHex(toRgb(bg).map((v) => v * (1 - a) + 255 * a) as Rgb);
+  const whiteOk = (a: number): boolean =>
+    contrastRatio('#ffffff', blend(railBg, a)) >= 4.5 && contrastRatio('#ffffff', blend(deep, a)) >= 4.5;
+  for (let g = 0; g < 60 && !whiteOk(0.08); g++) {
+    const r = toHsl(railBg);
+    const d = toHsl(deep);
+    railBg = fromHsl({ ...r, l: Math.max(0, r.l - 2) });
+    deep = fromHsl({ ...d, l: Math.max(0, d.l - 2) });
+  }
+  let alpha = 0.16;
+  while (alpha > 0.08 && !whiteOk(alpha)) alpha = Math.round((alpha - 0.02) * 100) / 100;
 
   // Rail text: lighten until it clears 4.5:1 on both ends of the rail gradient.
   const onRail = (hex: string): string => {
@@ -188,17 +215,25 @@ export function derivePalette(input: { primary: string; secondary: string }): { 
     return c.l === start.l ? hex : fromHsl(c);
   };
 
-  const secondary = fixSecondary(sIn, primary, paper, sheet);
-  if (secondary !== sIn) {
+  const fixed = fixSecondary(sIn, primary, paper, sheet);
+  const secondary = fixed.to;
+  if (secondary !== sIn && fixed.issue) {
     adjustments.push({
       field: 'secondary',
       from: sIn,
       to: secondary,
-      reason: 'We shifted your second colour a little so it stands out from the page and from your main colour, and dark text stays easy to read on it.',
+      reason: `We shifted your ${nameOf(sIn)} second colour because ${SECONDARY_WHY[fixed.issue]}.`,
     });
   }
   const sh = toHsl(secondary);
   const accentWash = sh.l < 88 ? fromHsl({ h: sh.h, s: Math.min(sh.s, 45), l: 92 }) : secondary;
+
+  // Rail outline: at least 3:1 against both ends of the rail.
+  let line = at(REF.railLine);
+  for (let c = toHsl(line); (contrastRatio(line, railBg) < 3 || contrastRatio(line, deep) < 3) && c.l < 100; ) {
+    c = { ...c, l: Math.min(100, c.l + 2) };
+    line = fromHsl(c);
+  }
 
   const identity = shift.dh === 0 && shift.sr === 1 && shift.lr === 1;
   const palette: Palette = {
@@ -212,8 +247,10 @@ export function derivePalette(input: { primary: string; secondary: string }): { 
     '--rail-bg': railBg,
     '--rail-fg': onRail(at(REF.railFg)),
     '--rail-muted': onRail(at(REF.railMuted)),
-    '--rail-active': 'rgba(255, 255, 255, 0.16)',
-    '--rail-line': at(REF.railLine),
+    '--rail-heading': onRail(at(REF.railHeading)),
+    '--rail-hover-border': at(REF.railHover),
+    '--rail-active': `rgba(255, 255, 255, ${alpha})`,
+    '--rail-line': line,
     '--shadow-tint': identity ? REF.shadow : toRgb(deep).join(', '),
     '--accent': secondary,
     '--accent-wash': accentWash,
