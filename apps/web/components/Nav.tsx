@@ -13,7 +13,7 @@ function avatarLetters(name: string): string {
   return letters.toUpperCase();
 }
 
-export function Nav({ name, role, isAdmin, firm, multiFirm }: { name: string; role: string; isAdmin: boolean; firm: string; multiFirm: boolean }) {
+export function Nav({ name, role, isAdmin, firm, multiFirm, brandName, logoId }: { name: string; role: string; isAdmin: boolean; firm: string; multiFirm: boolean; brandName: string | null; logoId: string | null }) {
   const path = usePathname();
   const router = useRouter();
   const groups = navFor(role, isAdmin);
@@ -30,10 +30,24 @@ export function Nav({ name, role, isAdmin, firm, multiFirm }: { name: string; ro
   return (
     <aside className="rail">
       <a className="skip-link" href="#content">Skip to content</a>
-      <div>
-        <div className="brand">AuditOS</div>
-        <div className="firm">{firm}</div>
-      </div>
+      {brandName ? (
+        <div>
+          {logoId ? (
+            <>
+              <div className="brand-logo"><img src={`/api/branding/logo/${logoId}`} alt={brandName} /></div>
+              <div className="firm">{brandName}</div>
+            </>
+          ) : (
+            <div className="brand" style={{ color: '#fff' }}>{brandName}</div>
+          )}
+          <div className="powered">Powered by AuditOS</div>
+        </div>
+      ) : (
+        <div>
+          <div className="brand">AuditOS</div>
+          <div className="firm">{firm}</div>
+        </div>
+      )}
       <nav aria-label="Main">
         {groups.map((g, n) => (
           <div className="nav-group" key={g.heading ?? `plain-${n}`} role="group" aria-label={g.heading ?? undefined}>
@@ -56,7 +70,7 @@ export function Nav({ name, role, isAdmin, firm, multiFirm }: { name: string; ro
         </div>
         <div className="row">
           <button className="secondary" onClick={signOut}>Sign out</button>
-          {multiFirm && <Link href="/login?select=1" style={{ color: '#e9f1ea' }} className="small">Switch firm</Link>}
+          {multiFirm && <Link href="/login?select=1" style={{ color: 'var(--rail-fg, #e9f1ea)' }} className="small">Switch firm</Link>}
         </div>
       </div>
     </aside>

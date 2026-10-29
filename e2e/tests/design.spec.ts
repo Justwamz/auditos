@@ -104,3 +104,63 @@ test.describe('sign-in', () => {
     await expect(page.locator('main')).not.toContainText(/authenticator/i);
   });
 });
+
+test.describe('firm branding', () => {
+  // The red brand is saved on the second firm only, so the main firm other specs use never has any branding.
+  const adminEmail = 'peter.maina@waweru.example.test';
+  const partnerEmail = 'joseph.waweru@waweru.example.test';
+  const defaultPartner = 'grace.kangethe@kangethe.example.test';
+  const tokens = (page: Page) =>
+    page.evaluate(() => {
+      const css = getComputedStyle(document.documentElement);
+      return { ledger: css.getPropertyValue('--ledger').trim(), railBg: css.getPropertyValue('--rail-bg').trim(), redPen: css.getPropertyValue('--red-pen').trim(), amber: css.getPropertyValue('--amber').trim() };
+    });
+
+  async function saveBrand(page: Page, primary: string, secondary: string): Promise<{ primary: string }> {
+    const csrf = (await (await page.request.get('/api/auth/csrf')).json()) as { token: string };
+    const res = await page.request.put('/api/branding', { headers: { 'x-csrf-token': csrf.token }, data: { primary, secondary } });
+    expect(res.ok()).toBe(true);
+    return ((await res.json()) as { branding: { primary: string } }).branding;
+  }
+
+  test('a firm with no saved branding keeps today\'s look and menu', async ({ page }) => {
+    await signIn(page, defaultPartner);
+    const t = await tokens(page);
+    expect(t).toMatchObject({ ledger: '#2e6b4c', redPen: '#b42318', amber: '#8a5a00' });
+    const rail = page.locator('.rail');
+    await expect(rail.getByText('AuditOS', { exact: true })).toBeVisible();
+    await expect(rail.getByText('Powered by AuditOS')).toHaveCount(0);
+  });
+
+  test('a saved red brand recolours Today, Clients and Calendar but not status or calendar colours', async ({ page, browser }) => {
+    const admin = await browser.newContext();
+    const adminPage = await admin.newPage();
+    try {
+      await signIn(adminPage, adminEmail);
+      const saved = await saveBrand(adminPage, '#b42318', '#fbe9e6');
+      expect(saved.primary).toMatch(/^#[0-9a-f]{6}$/);
+
+      await signIn(page, partnerEmail);
+      const firmName = 'Waweru & Associates';
+      for (const path of ['/', '/clients', '/calendar']) {
+        await page.goto(path);
+        const t = await tokens(page);
+        expect(t.ledger, path).toBe(saved.primary);
+        expect(t.railBg, path).not.toBe('#235640');
+        expect(t.redPen, path).toBe('#b42318');
+        expect(t.amber, path).toBe('#8a5a00');
+        const rail = page.locator('.rail');
+        await expect(rail.getByText(firmName, { exact: true })).toBeVisible();
+        await expect(rail.getByText('Powered by AuditOS')).toBeVisible();
+        const size = await rail.getByText('Powered by AuditOS').evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+        expect(size).toBeGreaterThanOrEqual(13);
+      }
+      // The meeting colour on the calendar is fixed, whatever the brand.
+      expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--kind-meeting').trim())).toBe('#2e6b4c');
+    } finally {
+      // Put the firm back to the default colours.
+      await saveBrand(adminPage, '#2e6b4c', '#e3eee4');
+      await admin.close();
+    }
+  });
+});
