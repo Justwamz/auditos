@@ -1,8 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
-import { signIn } from '../helpers';
+import { BANNED, signIn } from '../helpers';
 
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Main' });
-const BANNED = [/authenticator/i, /outbox/i, /simulat\w*/i, /session/i, /csrf/i, /malware/i, /quarantin\w*/i, /fingerprint/i, /sha-?256/i, /tenant/i, /token/i, /payload/i, /\bapi\b/i, /\bmfa\b/i, /\btotp\b/i];
 // A main button is a filled one: not secondary, quiet or danger, not a chip, not an accordion header.
 const MAIN = 'main button:visible:not(.secondary):not(.quiet):not(.danger):not(.chip):not(.disclosure-btn):not(.row-menu-btn)';
 const PRACTICE = 'PRACTICE ONLY: this invoice has not been sent to KRA and is not a valid tax invoice';

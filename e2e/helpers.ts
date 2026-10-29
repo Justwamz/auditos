@@ -78,3 +78,22 @@ export async function openDemoPaper(page: Page, title: string): Promise<void> {
   await row.getByRole('button', { name: /^Open$/ }).click();
   await expect(page.getByRole('heading', { name: title, level: 3 })).toBeVisible();
 }
+
+/** Words that sound like software; nothing a person reads may contain them. Mirrors apps/web/lib/plain.ts. */
+export const BANNED: RegExp[] = [
+  /authenticator/i,
+  /outbox/i,
+  /simulat\w*/i,
+  /session/i,
+  /csrf/i,
+  /malware/i,
+  /quarantin\w*/i,
+  /fingerprint/i,
+  /sha-?256/i,
+  /tenant/i,
+  /token/i,
+  /payload/i,
+  /\bapi\b/i,
+  /\bmfa\b/i,
+  /\btotp\b/i,
+];

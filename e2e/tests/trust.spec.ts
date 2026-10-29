@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openDemoPaper, signIn } from '../helpers';
+import { BANNED, openDemoPaper, signIn } from '../helpers';
 
-const BANNED = [/authenticator/i, /outbox/i, /simulatw*/i, /session/i, /csrf/i, /malware/i, /quarantinw*/i, /fingerprint/i, /sha-?256/i, /tenant/i, /token/i, /payload/i, /api/i, /mfa/i, /totp/i];
 // A main button is a filled one: not secondary, quiet or danger, not a chip, not an accordion header.
 const MAIN = 'main button:visible:not(.secondary):not(.quiet):not(.danger):not(.chip):not(.disclosure-btn):not(.row-menu-btn)';
 const plain = async (page: Page, label: string) => {

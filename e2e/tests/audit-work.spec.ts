@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { signIn } from '../helpers';
+import { BANNED, signIn } from '../helpers';
 
 const SLOW = { timeout: 90_000 };
 
@@ -126,7 +126,6 @@ test('a population with an unreadable amount is refused, with the row', async ({
   await expect(page.getByText(/Row 3: The amount "not money" could not be read/)).toBeVisible(SLOW);
 });
 
-const BANNED = [/authenticator/i, /outbox/i, /simulatw*/i, /sessions?/i, /csrf/i, /malware/i, /quarantinw*/i, /fingerprint/i, /sha-?256/i, /tenant/i, /tokens?/i, /payload/i, /api/i, /mfa/i, /totp/i];
 // A main button is a filled one: not secondary, quiet or danger, and not a tab.
 const MAIN = 'main button:visible:not(.secondary):not(.quiet):not(.danger):not([role="tab"])';
 
