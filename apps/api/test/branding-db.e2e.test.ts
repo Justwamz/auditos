@@ -36,9 +36,39 @@ const addLogo = (u: TestUser, type = 'image/png', bytes: Buffer = PNG, w = 100, 
 
 const draftInvoice = async (): Promise<string> =>
   (await call(sP, 'POST', '/invoices', { clientId: client, taxMode: 'exclusive', taxIds: [], lines: [{ description: 'Audit fee', quantity: '1', unitPrice: '100000.00' }] })).json().id;
+/** The API now writes the letterhead itself when it issues or sends. These tests are about the database functions on a document that has none yet, so the copy is removed again (as it would be on a document issued before letterheads existed). */
+const blank = async (table: 'invoices' | 'quotes', id: string): Promise<void> => {
+  const trigger = table === 'invoices' ? 'invoices_letterhead_guard' : 'quotes_letterhead_guard';
+  const c = await h.owner.connect();
+  try {
+    await c.query('BEGIN');
+    await c.query("select set_config('app.tenant_id', $1, true)", [T.id]);
+    await c.query("select set_config('app.user_id', $1, true)", [P.id]);
+    await c.query("select set_config('app.invoicing', 'on', true)");
+    await c.query(`alter table ${table} disable trigger ${trigger}`);
+    await c.query(`update ${table} set letterhead = null where id = $1`, [id]);
+    await c.query(`alter table ${table} enable trigger ${trigger}`);
+    await c.query('COMMIT');
+  } catch (e) {
+    await c.query('ROLLBACK');
+    throw e;
+  } finally {
+    c.release();
+  }
+};
+const issueInv = async (id: string) => {
+  const r = await call(sP, 'POST', `/invoices/${id}/issue`);
+  if (r.statusCode === 200) await blank('invoices', id);
+  return r;
+};
+const sendQuote = async (id: string) => {
+  const r = await call(sM, 'POST', `/quotes/${id}/send`, {});
+  if (r.statusCode === 200) await blank('quotes', id);
+  return r;
+};
 const issued = async (): Promise<string> => {
   const id = await draftInvoice();
-  expect((await call(sP, 'POST', `/invoices/${id}/issue`)).statusCode).toBe(200);
+  expect((await issueInv(id)).statusCode).toBe(200);
   return id;
 };
 const draftQuote = async (s: Session = sM): Promise<string> =>
@@ -242,7 +272,7 @@ describe('the letterhead of a sent quotation is written once', () => {
   });
   test('the creator sets it once after sending; a second write fails', async () => {
     const id = await draftQuote();
-    expect((await call(sM, 'POST', `/quotes/${id}/send`, {})).statusCode).toBe(200);
+    expect((await sendQuote(id)).statusCode).toBe(200);
     expect(await code(setQuote(F, id)), 'staff cannot even see it').toBe('AO404');
     expect(await code(setQuote(M2, id)), 'another manager is not the creator').toBe('AO403');
     await setQuote(M, id);
@@ -255,19 +285,19 @@ describe('the letterhead of a sent quotation is written once', () => {
   });
   test('a partner can set it for a manager quotation', async () => {
     const id = await draftQuote();
-    await call(sM, 'POST', `/quotes/${id}/send`, {});
+    await sendQuote(id);
     await setQuote(P, id);
     expect(await quoteLetterhead(id)).toEqual(LH);
   });
   test('authorisation is checked before the shape of the letterhead', async () => {
     const id = await draftQuote();
-    await call(sM, 'POST', `/quotes/${id}/send`, {});
+    await sendQuote(id);
     expect(await code(setQuote(M2, id, [1] as unknown as object))).toBe('AO403');
     expect(await code(setQuote(M, id, [1] as unknown as object))).toBe('AO422');
   });
   test('an accepted quotation that never got one cannot get one later', async () => {
     const id = await draftQuote();
-    await call(sM, 'POST', `/quotes/${id}/send`, {});
+    await sendQuote(id);
     expect((await call(sM, 'POST', `/quotes/${id}/accept`, {})).statusCode).toBeLessThan(300);
     expect(await code(setQuote(M, id))).toBe('AO409');
     expect(await quoteLetterhead(id)).toBeNull();
@@ -287,7 +317,7 @@ describe('the letterhead cannot be forced in a raw session', () => {
     expect(await code(raw(P, "update invoices set letterhead = '{\"a\":1}'::jsonb where id = $1", [id]))).toBe('AO409');
     expect(await code(raw(P, 'update invoices set letterhead = null where id = $1', [id]))).toBe('AO409');
     const q = await draftQuote();
-    await call(sM, 'POST', `/quotes/${q}/send`, {});
+    await sendQuote(q);
     await setQuote(M, q);
     expect(await code(raw(M, "update quotes set letterhead = '{\"a\":1}'::jsonb where id = $1", [q]))).toBe('AO409');
     expect(await invLetterhead(id)).toEqual(LH);
@@ -309,10 +339,10 @@ describe('the letterhead cannot be forced in a raw session', () => {
   test('someone without billing rights cannot set a first one, on an invoice or a quotation', async () => {
     // a manager who created an invoice sees it but may not issue it
     const inv = (await call(sM, 'POST', '/invoices', { clientId: client, taxMode: 'exclusive', taxIds: [], lines: [{ description: 'Fee', quantity: '1', unitPrice: '5000.00' }] })).json().id as string;
-    expect((await call(sP, 'POST', `/invoices/${inv}/issue`)).statusCode).toBe(200);
+    expect((await issueInv(inv)).statusCode).toBe(200);
     expect(await code(raw(M, "update invoices set letterhead = '{\"a\":1}'::jsonb where id = $1", [inv]))).toBe('AO403');
     const q = await draftQuote();
-    await call(sM, 'POST', `/quotes/${q}/send`, {});
+    await sendQuote(q);
     expect(await code(raw(M2, "update quotes set letterhead = '{\"a\":1}'::jsonb where id = $1", [q]))).toBe('AO403');
     expect(await invLetterhead(inv)).toBeNull();
     expect(await quoteLetterhead(q)).toBeNull();

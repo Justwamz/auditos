@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { exportBillingPdf } from '@auditos/exports';
 import { withTenant } from '@auditos/db';
 import { actorOf, httpError, tenantCtx } from '../authz';
+import { emailWithLetterhead, letterheadFor, loadLetterhead, loadLogo } from '../branding/letterhead';
 import { loadEngagement } from '../engagements/service';
 import { loadTaxes, manualDraftLine, manualLine, money, presentTaxes, taxesJson, taxMode, totalsOf, uuid } from './documents';
 import { createEmailProvider } from './providers';
@@ -31,12 +32,12 @@ type QuoteBody = z.infer<typeof quoteBody>;
 interface QuoteRow {
   id: string; number: string | null; status: string; client_id: string | null; prospect_id: string | null; subject_name: string | null; title: string;
   valid_until: string | null; notes: string | null; tax_mode: string; taxes: unknown; subtotal_cents: string; tax_cents: string; total_cents: string;
-  created_by_name: string; sent_at: string | null;
+  created_by_name: string; sent_at: string | null; letterhead: unknown;
 }
 
 const QUOTE_SQL = `select q.id, q.number, q.status, q.client_id, q.prospect_id, coalesce(c.name, p.name) as subject_name, q.title,
        to_char(q.valid_until, 'YYYY-MM-DD') as valid_until, q.notes, q.tax_mode, q.taxes, q.subtotal_cents::text, q.tax_cents::text, q.total_cents::text,
-       coalesce(u.full_name, u.email) as created_by_name, q.sent_at
+       coalesce(u.full_name, u.email) as created_by_name, q.sent_at, q.letterhead
   from quotes q left join clients c on c.id = q.client_id left join prospects p on p.id = q.prospect_id join users u on u.id = q.created_by`;
 
 const presentQuote = (r: QuoteRow) => ({
@@ -100,7 +101,8 @@ export async function quoteRoutes(app: FastifyInstance): Promise<void> {
       const r = (await tx.query(`${QUOTE_SQL} where q.id = $1`, [id.data])).rows[0] as QuoteRow | undefined;
       if (!r) throw httpError(404, 'not_found');
       const lines = (await tx.query('select description, quantity::text as quantity, unit_cents::text as unit, amount_cents::text as amount from quote_lines where quote_id = $1 order by position', [id.data])).rows;
-      return { ...presentQuote(r), lines: lines.map((l) => ({ description: l.description as string, quantity: l.quantity as string, unitPrice: money(l.unit), amount: money(l.amount) })) };
+      const lh = await letterheadFor(tx, r.letterhead, r.status);
+      return { ...presentQuote(r), letterhead: lh.letterhead, letterheadIsLive: lh.live, lines: lines.map((l) => ({ description: l.description as string, quantity: l.quantity as string, unitPrice: money(l.unit), amount: money(l.amount) })) };
     });
   });
 
@@ -135,13 +137,17 @@ export async function quoteRoutes(app: FastifyInstance): Promise<void> {
     const b = z.object({ to: z.string().trim().email().max(254).optional(), message: z.string().trim().max(2000).optional() }).parse(req.body ?? {});
     const ctx = tenantCtx(req);
     return withTenant(pool, ctx, async (tx) => {
-      const s = (await tx.query('select quote_prefix, legal_name from billing_settings')).rows[0] as { quote_prefix: string; legal_name: string | null } | undefined;
+      const s = (await tx.query('select quote_prefix from billing_settings')).rows[0] as { quote_prefix: string } | undefined;
       const number = (await tx.query('select quote_send($1, $2) as n', [id.data, s?.quote_prefix ?? 'QUO'])).rows[0].n as string;
+      // The letterhead is copied onto the quotation in the same transaction as the send, so no sent quotation is left without one.
+      const letterhead = await loadLetterhead(tx);
+      await tx.query('select quote_set_letterhead($1, $2::jsonb)', [id.data, JSON.stringify(letterhead)]);
       let outboxId: string | null = null;
       if (b.to) {
         const q = (await tx.query(`${QUOTE_SQL} where q.id = $1`, [id.data])).rows[0] as QuoteRow;
-        const subject = `Quotation ${number} from ${s?.legal_name ?? 'Your auditors'}`;
-        const body = [b.message ?? `Please find our quotation ${number}: ${q.title}.`, '', `Total: KES ${money(q.total_cents)}`, q.valid_until ? `Valid until: ${q.valid_until}` : '', '', 'Practice mode: this message was kept in Sent emails and not actually sent.'].join('\n');
+        const subject = `Quotation ${number} from ${letterhead.name === 'Audit firm' ? 'Your auditors' : letterhead.name}`;
+        const message = [b.message ?? `Please find our quotation ${number}: ${q.title}.`, '', `Total: KES ${money(q.total_cents)}`, q.valid_until ? `Valid until: ${q.valid_until}` : '', '', 'Practice mode: this message was kept in Sent emails and not actually sent.'].join('\n');
+        const body = emailWithLetterhead(letterhead, message);
         const sent = await emailProvider.send({ to: b.to, subject, body });
         outboxId = (
           await tx.query('insert into outbox (tenant_id, kind, ref_id, to_address, subject, body, provider, created_by) values ($1, $2, $3, $4, $5, $6, $7, $8) returning id', [ctx.tenantId, 'quote', id.data, b.to, subject, body, sent.provider, ctx.userId])
@@ -189,19 +195,22 @@ export async function quoteRoutes(app: FastifyInstance): Promise<void> {
     requireSee(req);
     const id = uuid.safeParse(req.params.id);
     if (!id.success) throw httpError(404, 'not_found');
-    const { r, lines, settings } = await withTenant(pool, tenantCtx(req), async (tx) => {
+    const { r, lines, letterhead } = await withTenant(pool, tenantCtx(req), async (tx) => {
       const row = (await tx.query(`${QUOTE_SQL} where q.id = $1`, [id.data])).rows[0] as QuoteRow | undefined;
       if (!row) throw httpError(404, 'not_found');
       return {
         r: row,
         lines: (await tx.query('select description, quantity::text as quantity, unit_cents::text as unit, amount_cents::text as amount from quote_lines where quote_id = $1 order by position', [id.data])).rows,
-        settings: (await tx.query('select legal_name, address, kra_pin, bank_details from billing_settings')).rows[0] as { legal_name: string | null; address: string | null; kra_pin: string | null; bank_details: string | null } | undefined,
+        letterhead: await (async () => {
+          const lh = (await letterheadFor(tx, row.letterhead, row.status)).letterhead;
+          return { ...lh, logo: await loadLogo(tx, lh.logoId) };
+        })(),
       };
     });
     const p = presentQuote(r);
     const pdf = await exportBillingPdf({
       kind: 'quote', number: r.number, status: r.status,
-      issuer: { legalName: settings?.legal_name ?? null, address: settings?.address ?? null, kraPin: settings?.kra_pin ?? null, bankDetails: null },
+      letterhead,
       clientName: p.subjectName, date: r.sent_at ? new Date(r.sent_at).toISOString().slice(0, 10) : null, dueOrValidUntil: r.valid_until,
       lines: lines.map((l) => ({ description: l.description as string, quantity: Number(l.quantity).toFixed(2), unit: money(l.unit), amount: money(l.amount) })),
       subtotal: p.subtotal, taxMode: r.tax_mode as 'exclusive' | 'inclusive', taxes: p.taxes.map((t) => ({ name: t.name, rate: t.rate, amount: t.amount })), total: p.total, notes: r.notes,

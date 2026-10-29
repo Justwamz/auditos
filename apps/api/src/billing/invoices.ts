@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { exportBillingPdf } from '@auditos/exports';
 import { withTenant } from '@auditos/db';
 import { httpError, tenantCtx } from '../authz';
+import { emailWithLetterhead, letterheadFor, loadLetterhead, loadLogo } from '../branding/letterhead';
 import { loadEngagement } from '../engagements/service';
 import {
   loadTaxes, manualDraftLine, manualLine, money, moneyField, presentTaxes, taxesJson, taxMode, totalsOf, uuid, type DraftLine,
@@ -135,14 +136,14 @@ async function saveDraft(tx: PoolClient, ctx: { tenantId: string; userId: string
 interface InvoiceRow {
   id: string; number: string | null; status: string; overdue: boolean; client_id: string; client_name: string; engagement_id: string | null; issue_date: string | null;
   due_date: string | null; notes: string | null; tax_mode: string; taxes: unknown; subtotal_cents: string; tax_cents: string; total_cents: string; paid_cents: string;
-  etims: TaxSubmission | null; created_by_name: string; void_reason: string | null;
+  etims: TaxSubmission | null; created_by_name: string; void_reason: string | null; letterhead: unknown;
 }
 
 const INVOICE_SQL = `select i.id, i.number, i.status,
        (i.status in ('sent', 'part_paid') and i.due_date < (now() at time zone 'Africa/Nairobi')::date) as overdue,
        i.client_id, c.name as client_name, i.engagement_id, to_char(i.issue_date, 'YYYY-MM-DD') as issue_date, to_char(i.due_date, 'YYYY-MM-DD') as due_date,
        i.notes, i.tax_mode, i.taxes, i.subtotal_cents::text, i.tax_cents::text, i.total_cents::text, i.paid_cents::text, i.etims,
-       coalesce(u.full_name, u.email) as created_by_name, i.void_reason
+       coalesce(u.full_name, u.email) as created_by_name, i.void_reason, i.letterhead
   from invoices i join clients c on c.id = i.client_id join users u on u.id = i.created_by`;
 
 const presentInvoice = (r: InvoiceRow) => ({
@@ -240,8 +241,10 @@ export async function invoiceRoutes(app: FastifyInstance): Promise<void> {
       if (!r) throw httpError(404, 'not_found');
       const lines = (await tx.query('select description, quantity::text as quantity, unit_cents::text as unit, amount_cents::text as amount, source from invoice_lines where invoice_id = $1 order by position', [id.data])).rows;
       const payments = (await tx.query("select amount_cents::text as amount, to_char(paid_on, 'YYYY-MM-DD') as paid_on, method, reference from invoice_payments where invoice_id = $1 order by paid_on, created_at", [id.data])).rows;
+      const lh = await letterheadFor(tx, r.letterhead, r.status);
       return {
         ...presentInvoice(r),
+        letterhead: lh.letterhead, letterheadIsLive: lh.live,
         lines: lines.map((l) => ({ description: l.description as string, quantity: l.quantity as string, unitPrice: money(l.unit), amount: money(l.amount), source: l.source as string })),
         payments: payments.map((p) => ({ amount: money(p.amount), paidOn: p.paid_on as string, method: p.method as string, reference: p.reference as string | null })),
       };
@@ -294,6 +297,8 @@ export async function invoiceRoutes(app: FastifyInstance): Promise<void> {
     const issued = await withTenant(pool, ctx, async (tx) => {
       const s = (await tx.query('select invoice_prefix, payment_terms_days from billing_settings')).rows[0] as { invoice_prefix: string; payment_terms_days: number } | undefined;
       const r = (await tx.query('select number, to_char(issue_date, \'YYYY-MM-DD\') as issue_date, to_char(due_date, \'YYYY-MM-DD\') as due_date from invoice_issue($1, $2, $3)', [id.data, s?.invoice_prefix ?? 'INV', s?.payment_terms_days ?? 30])).rows[0];
+      // The letterhead is copied onto the invoice in the same transaction as the issue, so no issued invoice is left without one.
+      await tx.query('select invoice_set_letterhead($1, $2::jsonb)', [id.data, JSON.stringify(await loadLetterhead(tx))]);
       return r as { number: string; issue_date: string; due_date: string };
     });
     const tax = await submitTax(ctx, id.data);
@@ -340,9 +345,11 @@ export async function invoiceRoutes(app: FastifyInstance): Promise<void> {
       const r = (await tx.query(`${INVOICE_SQL} where i.id = $1`, [id.data])).rows[0] as InvoiceRow | undefined;
       if (!r) throw httpError(404, 'not_found');
       if (r.status === 'draft' || r.status === 'void' || !r.number) throw httpError(409, 'invoice_not_issued');
-      const firm = ((await tx.query('select legal_name from billing_settings')).rows[0]?.legal_name as string | null) ?? 'Your auditors';
+      const { letterhead } = await letterheadFor(tx, r.letterhead, r.status);
+      const firm = letterhead.name === 'Audit firm' ? 'Your auditors' : letterhead.name;
       const subject = `Invoice ${r.number} from ${firm}`;
-      const body = [b.message ?? `Please find invoice ${r.number} for ${r.client_name}.`, '', `Amount due: KES ${money(BigInt(r.total_cents) - BigInt(r.paid_cents))}`, `Due date: ${r.due_date ?? ''}`, '', 'Practice mode: this message was kept in Sent emails and not actually sent.'].join('\n');
+      const message = [b.message ?? `Please find invoice ${r.number} for ${r.client_name}.`, '', `Amount due: KES ${money(BigInt(r.total_cents) - BigInt(r.paid_cents))}`, `Due date: ${r.due_date ?? ''}`, '', 'Practice mode: this message was kept in Sent emails and not actually sent.'].join('\n');
+      const body = emailWithLetterhead(letterhead, message);
       const sent = await emailProvider.send({ to: b.to, subject, body });
       const outboxId = (
         await tx.query('insert into outbox (tenant_id, kind, ref_id, to_address, subject, body, provider, created_by) values ($1, $2, $3, $4, $5, $6, $7, $8) returning id', [ctx.tenantId, 'invoice', id.data, b.to, subject, body, sent.provider, ctx.userId])
@@ -356,19 +363,22 @@ export async function invoiceRoutes(app: FastifyInstance): Promise<void> {
     requireSee(req);
     const id = uuid.safeParse(req.params.id);
     if (!id.success) throw httpError(404, 'not_found');
-    const { inv, lines, settings } = await withTenant(pool, tenantCtx(req), async (tx) => {
+    const { inv, lines, letterhead } = await withTenant(pool, tenantCtx(req), async (tx) => {
       const r = (await tx.query(`${INVOICE_SQL} where i.id = $1`, [id.data])).rows[0] as InvoiceRow | undefined;
       if (!r) throw httpError(404, 'not_found');
       return {
         inv: r,
         lines: (await tx.query('select description, quantity::text as quantity, unit_cents::text as unit, amount_cents::text as amount from invoice_lines where invoice_id = $1 order by position', [id.data])).rows,
-        settings: (await tx.query('select legal_name, address, kra_pin, bank_details from billing_settings')).rows[0] as { legal_name: string | null; address: string | null; kra_pin: string | null; bank_details: string | null } | undefined,
+        letterhead: await (async () => {
+          const lh = (await letterheadFor(tx, r.letterhead, r.status)).letterhead;
+          return { ...lh, logo: await loadLogo(tx, lh.logoId) };
+        })(),
       };
     });
     const p = presentInvoice(inv);
     const pdf = await exportBillingPdf({
       kind: 'invoice', number: inv.number, status: inv.status,
-      issuer: { legalName: settings?.legal_name ?? null, address: settings?.address ?? null, kraPin: settings?.kra_pin ?? null, bankDetails: settings?.bank_details ?? null },
+      letterhead,
       clientName: inv.client_name, date: inv.issue_date, dueOrValidUntil: inv.due_date,
       lines: lines.map((l) => ({ description: l.description as string, quantity: Number(l.quantity).toFixed(2), unit: money(l.unit), amount: money(l.amount) })),
       subtotal: p.subtotal, taxMode: inv.tax_mode as 'exclusive' | 'inclusive', taxes: p.taxes.map((t) => ({ name: t.name, rate: t.rate, amount: t.amount })), total: p.total,
