@@ -6,6 +6,7 @@ import { DEFAULT_BRAND, type Adjustment } from '@auditos/brand';
 import { api } from '@/lib/api';
 import { explain } from '@/lib/text';
 import { useApi } from '@/lib/hooks';
+import { accentView } from '@/lib/branding';
 import { canOpenBranding } from '@/lib/nav';
 import { Notice } from '@/components/bits';
 import { BrandPreview, previewPalette } from '@/components/BrandPreview';
@@ -29,7 +30,7 @@ interface MeView { activeTenantId: string | null; memberships: { tenantId: strin
 const CODE = /^#[0-9a-fA-F]{6}$/;
 const FIELD_NAME = { primary: 'main colour', secondary: 'accent colour' } as const;
 
-function ColourField({ id, label, value, onChange }: { id: string; label: string; value: string; onChange: (v: string) => void }) {
+function ColourField({ id, label, value, onChange, note }: { id: string; label: string; value: string; onChange: (v: string) => void; note?: string | null }) {
   const valid = CODE.test(value);
   return (
     <div className="field">
@@ -39,6 +40,7 @@ function ColourField({ id, label, value, onChange }: { id: string; label: string
         <input id={`${id}-code`} type="text" value={value} maxLength={7} spellCheck={false} aria-invalid={!valid} aria-describedby={valid ? undefined : `${id}-hint`} onChange={(e) => onChange(e.target.value.trim())} />
       </div>
       {!valid && <p id={`${id}-hint`} className="small muted">Colour codes look like #1a2b3c.</p>}
+      {valid && note && <p className="small muted" data-testid={`${id}-note`}>{note}</p>}
     </div>
   );
 }
@@ -94,6 +96,7 @@ export default function BrandingPage() {
   const b = data.data?.branding;
   const firmName = b?.firm.legalName ?? me.data?.memberships.find((m) => m.tenantId === me.data?.activeTenantId)?.tenantName ?? 'Your firm';
   const derived = previewPalette(colours.primary, colours.secondary);
+  const accent = accentView(colours.primary, colours.secondary);
   const liveNote = derived?.adjustments ?? [];
   const note = liveNote.length > 0 ? liveNote : savedNote;
   const bothValid = CODE.test(colours.primary) && CODE.test(colours.secondary);
@@ -203,7 +206,7 @@ export default function BrandingPage() {
             <SectionHead title="Colours" sentence="Pick a main colour and an accent colour. If a colour makes text hard to read we darken it a little and tell you." />
             <div className="form-grid">
               <ColourField id="primary" label="Main colour" value={colours.primary} onChange={pick('primary')} />
-              <ColourField id="secondary" label="Accent colour" value={colours.secondary} onChange={pick('secondary')} />
+              <ColourField id="secondary" label="Accent colour" value={accent.shown} note={accent.note} onChange={pick('secondary')} />
             </div>
             <ColourNote adjustments={note} />
             <div><button type="button" className="quiet" disabled={busy} onClick={reset}>Reset to AuditOS colours</button></div>

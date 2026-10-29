@@ -6,6 +6,7 @@ import { useApi } from '@/lib/hooks';
 import { ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
 import { Disclosure } from '@/components/ui/Disclosure';
+import { BRANDING_POINTER } from '@/lib/branding';
 import { PageHead } from '@/components/ui/PageHead';
 import { ROLE_LABELS } from '@/lib/text';
 
@@ -79,6 +80,7 @@ export default function BillingSettingsPage() {
         help={<HelpLink topic="billing.settings" />}
       />
       <BillingTabs />
+      <p className="muted">{BRANDING_POINTER}</p>
       <ErrorNote error={error ?? data.error} />
       {done && <Notice>{done}</Notice>}
 

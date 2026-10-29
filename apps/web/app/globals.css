@@ -54,7 +54,7 @@ h2 { font-size: 18px; font-weight: 600; }
 h3 { font-size: 1.05rem; }
 p { margin: 0 0 0.75rem; max-width: 70ch; }
 a { color: var(--ledger-deep); text-underline-offset: 2px; }
-a:hover { color: var(--ledger); }
+a:hover { color: var(--ledger-deep); text-decoration-thickness: 2px; }
 :focus-visible { outline: 3px solid #2b7bd6; outline-offset: 2px; }
 .muted { color: var(--pencil); }
 .small { font-size: 13px; }

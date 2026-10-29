@@ -37,7 +37,7 @@ const FIELD_LABELS: Record<string, string> = { phone: 'phone number', email: 'em
 const BRANDING_LABELS: Record<string, string> = {
   logo: 'logo',
   primaryColor: 'main colour',
-  secondaryColor: 'second colour',
+  secondaryColor: 'accent colour',
   phone: 'phone number',
   email: 'email address',
   website: 'website',

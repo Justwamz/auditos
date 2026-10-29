@@ -137,10 +137,75 @@ describe('sweep of deterministic inputs', () => {
 
   test('secondary messages name the colour and the rule', () => {
     const page = derivePalette({ primary: '#2e6b4c', secondary: '#ffffff' }).adjustments[0]!;
-    expect(page.reason).toMatch(/grey second colour .*too close to the page colour/);
+    expect(page.reason).toMatch(/grey accent colour .*too close to the page colour/);
     const main = derivePalette({ primary: '#2e6b4c', secondary: '#2e6b4c' }).adjustments[0]!;
-    expect(main.reason).toMatch(/green second colour .*too dark or too bright/);
+    expect(main.reason).toMatch(/green accent colour .*too dark or too bright/);
     const dark = derivePalette({ primary: '#2e6b4c', secondary: '#101010' }).adjustments[0]!;
     expect(dark.reason).toMatch(/too dark or too bright/);
+  });
+});
+
+describe('accent colour follows the main colour until one is picked', () => {
+  const hueOf = (hex: string): number => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number];
+    const d = Math.max(r, g, b) - Math.min(r, g, b);
+    const m = Math.max(r, g, b);
+    const h = m === r ? ((g - b) / d) % 6 : m === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return (h * 60 + 360) % 360;
+  };
+  const gap = (a: number, b: number): number => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
+
+  test('a red main colour with the default accent gives a red accent, not the green wash', () => {
+    const { palette: p, adjustments } = derivePalette({ primary: '#cc0000', secondary: DEFAULT_BRAND.secondary });
+    expect(p['--accent-wash']).not.toBe('#e3eee4');
+    expect(p['--accent']).toBe(p['--ledger-wash']);
+    expect(p['--accent-wash']).toBe(p['--ledger-wash']);
+    expect(gap(hueOf(p['--accent-wash']), 0)).toBeLessThan(25);
+    expect(adjustments.filter((a) => a.field === 'secondary')).toEqual([]);
+  });
+
+  test('a blue main colour with the default accent gives a blue accent', () => {
+    const { palette: p } = derivePalette({ primary: '#1d4ed8', secondary: DEFAULT_BRAND.secondary });
+    expect(gap(hueOf(p['--accent-wash']), hueOf('#1d4ed8'))).toBeLessThan(25);
+    expect(contrastRatio('#1d2733', p['--accent-wash'])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test('the default pair is unchanged', () => {
+    const { palette: p } = derivePalette(DEFAULT_BRAND);
+    expect(p['--accent']).toBe('#e3eee4');
+    expect(p['--accent-wash']).toBe('#e3eee4');
+  });
+
+  test('an explicit accent is respected, whatever the main colour', () => {
+    const { palette: p } = derivePalette({ primary: '#cc0000', secondary: '#e0e7ff' });
+    expect(p['--accent']).toBe('#e0e7ff');
+    const q = derivePalette({ primary: DEFAULT_BRAND.primary, secondary: '#e0e7ff' }).palette;
+    expect(q['--accent']).toBe('#e0e7ff');
+  });
+
+  test('contrast is still guaranteed with the default accent over a sweep of main colours', () => {
+    for (let h = 0; h < 360; h += 5) for (const [s, l] of [[90, 50], [70, 30], [100, 85], [20, 50], [100, 10]] as const) {
+      const hsl = `hsl(${h} ${s}% ${l}%)`;
+      const c = (n: number) => {
+        const a = (s / 100) * Math.min(l / 100, 1 - l / 100);
+        const f = (k: number) => l / 100 - a * Math.max(-1, Math.min((k + h / 30) % 12 - 3, 9 - ((k + h / 30) % 12), 1));
+        return Math.round(f(n) * 255).toString(16).padStart(2, '0');
+      };
+      const primary = `#${c(0)}${c(8)}${c(4)}`;
+      const { palette: p } = derivePalette({ primary, secondary: DEFAULT_BRAND.secondary });
+      expect(contrastRatio('#1d2733', p['--accent-wash']), hsl + primary).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio('#1d2733', p['--accent']), hsl + primary).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
+describe('link colours stay readable', () => {
+  test('--ledger-deep (used for links and their hover) reads on the page and the sheet for many main colours', () => {
+    for (let n = 0; n < 400; n++) {
+      const primary = '#' + ((n * 2654435761) >>> 0).toString(16).padStart(8, '0').slice(0, 6);
+      const { palette: p } = derivePalette({ primary, secondary: DEFAULT_BRAND.secondary });
+      expect(contrastRatio(p['--ledger-deep'], p['--paper']), primary).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(p['--ledger-deep'], p['--sheet']), primary).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

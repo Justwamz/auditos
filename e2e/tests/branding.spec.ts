@@ -162,6 +162,36 @@ test.describe('branding page', () => {
     }
   });
 
+  test('a red main colour alone leaves no green wash: the accent follows it, until an accent is picked', async ({ page }) => {
+    await signIn(page, admin);
+    const wash = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent-wash').trim());
+    try {
+      await openBranding(page);
+      await page.getByLabel('Main colour code').fill('#cc0000');
+      await expect(page.getByTestId('secondary-note')).toHaveText('Using a light shade of your main colour until you pick your own.');
+      await expect(page.getByLabel('Accent colour code')).not.toHaveValue(DEFAULTS.secondary);
+      await expect(page.getByTestId('brand-preview')).not.toHaveCSS('--accent-wash', DEFAULTS.secondary);
+      await page.getByRole('button', { name: 'Save branding' }).click();
+      await expect(page.getByText('Branding saved.')).toBeVisible();
+      await page.reload();
+      await expect(page.getByLabel('Main colour code')).toHaveValue('#cc0000');
+      await expect(page.getByTestId('secondary-note')).toBeVisible();
+      const w = await wash();
+      expect(w).toMatch(/^#[0-9a-f]{6}$/);
+      expect(w).not.toBe(DEFAULTS.secondary);
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(w.slice(i, i + 2), 16)) as [number, number, number];
+      expect(r).toBeGreaterThan(g); // a pale red, not a pale green
+      expect(r).toBeGreaterThan(b);
+      // Picking an accent turns the note off and is kept.
+      await page.getByLabel('Accent colour code').fill('#e0e7ff');
+      await expect(page.getByTestId('secondary-note')).toHaveCount(0);
+    } finally {
+      const token = await csrf(page);
+      const res = await page.request.put('/api/branding', { headers: { 'x-csrf-token': token }, data: { ...DEFAULTS, phone: '', email: '', website: '', footerNote: '' } });
+      expect(res.ok()).toBe(true);
+    }
+  });
+
   test('rejected logos get a plain message, shown once', async ({ page }) => {
     await signIn(page, admin);
     await openBranding(page);

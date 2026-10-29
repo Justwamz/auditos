@@ -58,6 +58,7 @@ describe('describeEvent', () => {
     const detail = { changed: ['logo', 'primaryColor'], primaryColor: { old: '#2e6b4c', new: '#1f5f4a' } };
     expect(describeEvent(row({ action: 'branding.updated', entityType: 'branding', clientName: null, detail }))).toBe("Grace Kangethe changed the firm's branding (logo, main colour)");
     expect(describeEvent(row({ action: 'branding.updated', entityType: 'branding', clientName: null, detail: { changed: ['phone', 'email'] } }))).toBe("Grace Kangethe changed the firm's branding (phone number, email address)");
+    expect(describeEvent(row({ action: 'branding.updated', entityType: 'branding', clientName: null, detail: { changed: ['secondaryColor'] } }))).toBe("Grace Kangethe changed the firm's branding (accent colour)");
     expect(describeEvent(row({ action: 'branding.updated', entityType: 'branding', clientName: null, detail: {} }))).toBe("Grace Kangethe changed the firm's branding");
   });
   test('an event the renderer does not know is still readable', () => {

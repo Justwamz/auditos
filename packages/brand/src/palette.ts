@@ -156,6 +156,10 @@ const SECONDARY_WHY: Record<SecondaryIssue, string> = {
   main: 'it was too close to your main colour to tell them apart',
 };
 
+/** True while the accent is still the standard one but the main colour is not: the accent then follows the main colour. */
+export const accentIsDerived = (primary: string, secondary: string): boolean =>
+  isHex(primary) && isHex(secondary) && secondary.toLowerCase() === DEFAULT_BRAND.secondary && primary.toLowerCase() !== DEFAULT_BRAND.primary;
+
 export function derivePalette(input: { primary: string; secondary: string }): { palette: Palette; adjustments: Adjustment[] } {
   if (!isHex(input.primary) || !isHex(input.secondary)) throw new Error(BAD);
   const adjustments: Adjustment[] = [];
@@ -215,14 +219,16 @@ export function derivePalette(input: { primary: string; secondary: string }): { 
     return c.l === start.l ? hex : fromHsl(c);
   };
 
-  const fixed = fixSecondary(sIn, primary, paper, sheet);
+  // Only the main colour changed: the accent is a light shade of it, so no green wash is left beside a red menu.
+  const derivedAccent = accentIsDerived(pIn, sIn);
+  const fixed = derivedAccent ? { to: at(REF.wash), issue: null } : fixSecondary(sIn, primary, paper, sheet);
   const secondary = fixed.to;
   if (secondary !== sIn && fixed.issue) {
     adjustments.push({
       field: 'secondary',
       from: sIn,
       to: secondary,
-      reason: `We shifted your ${nameOf(sIn)} second colour because ${SECONDARY_WHY[fixed.issue]}.`,
+      reason: `We shifted your ${nameOf(sIn)} accent colour because ${SECONDARY_WHY[fixed.issue]}.`,
     });
   }
   const sh = toHsl(secondary);
@@ -255,7 +261,8 @@ export function derivePalette(input: { primary: string; secondary: string }): { 
     '--accent': secondary,
     '--accent-wash': accentWash,
     primary,
-    secondary,
+    // What was picked stays as picked, so a firm that never chose an accent keeps following its main colour.
+    secondary: derivedAccent ? sIn : secondary,
   };
   return { palette, adjustments };
 }
