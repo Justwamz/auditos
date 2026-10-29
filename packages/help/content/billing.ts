@@ -129,7 +129,7 @@ Set a rate in KES for each role. A rate applies to time logged from then on; tim
 The list holds the taxes that can be put on an invoice or quotation, for example VAT at 16%. Mark a tax as **charged on top of the tax before it** for cases such as VAT on excise duty. A tax can be switched off but never deleted, so old invoices stay readable. Nothing from the list is applied unless someone chooses it on a document.
 
 ## Invoice details
-The firm's name, address, KRA PIN and bank details print on invoices. The number prefixes (for example KA gives KA-2026-0001) and the days allowed for payment are set here.
+The firm's name, address, KRA PIN and bank details print on invoices. The number prefixes (for example KA gives KA-2026-0001) and the days allowed for payment are set here. The logo, phone, email, website, footer note and colours are set by the firm administrator on the **Branding** page (see **Set your firm's logo and colours**).
 
 ## Changes are recorded
 Every change to rates, taxes and details is in the activity history.`,

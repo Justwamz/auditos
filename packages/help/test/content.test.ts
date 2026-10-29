@@ -87,6 +87,7 @@ describe('help content', () => {
       { topic: 'invoices', roles: ['partner', 'manager', 'firm_admin'] },
       { topic: 'quotes', roles: ['partner', 'manager', 'firm_admin'] },
       { topic: 'billing.settings', roles: ['partner', 'manager', 'firm_admin'] },
+      { topic: 'branding', roles: ['firm_admin'] },
       { topic: 'billing.fee', roles: ['partner', 'manager'] },
       { topic: 'invoices.tax', roles: ['partner', 'manager', 'firm_admin'] },
       { topic: 'engagement.bank-statements', roles: ['partner', 'manager', 'senior', 'staff'] },

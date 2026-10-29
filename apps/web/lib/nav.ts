@@ -67,6 +67,21 @@ export function billingTabs(role: string, isAdmin: boolean): TabDef[] {
   ];
 }
 
+/**
+ * Tabs shared by the two pages the firm administrator looks after: People and Branding. Branding is a tab here
+ * rather than an eleventh menu link, because a partner who is also an administrator already sees ten links.
+ */
+export function firmTabs(role: string, isAdmin: boolean): TabDef[] {
+  const f = flags(role, isAdmin);
+  return [
+    { href: '/admin/users', label: 'People', show: f.holdsAdmin },
+    { href: '/branding', label: 'Branding', show: f.holdsAdmin },
+  ];
+}
+
+/** Whether the person is the firm administrator who may open the Branding page. */
+export const canOpenBranding = (role: string, isAdmin: boolean): boolean => flags(role, isAdmin).holdsAdmin;
+
 /** Tabs shared by the independence and activity history pages. */
 export function qualityTabs(role: string, isAdmin: boolean): TabDef[] {
   const f = flags(role, isAdmin);
@@ -96,6 +111,7 @@ export function isCurrent(href: string, path: string): boolean {
   if (href === '/') return path === '/';
   const under = (h: string) => path === h || path.startsWith(`${h}/`);
   if (href === '/billing') return under('/billing') || under('/invoices') || under('/quotes');
+  if (href === '/admin/users') return under('/admin/users') || under('/branding');
   if (href === '/independence' || href === '/audit-trail') return under('/independence') || under('/audit-trail');
   return under(href);
 }

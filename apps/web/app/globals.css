@@ -563,3 +563,29 @@ button.cal-day-head:hover:not(:disabled) { background: var(--ledger-wash); color
 .nowrap { white-space: nowrap; }
 .date-range { align-items: center; gap: var(--space-3); }
 .date-range input { width: auto; }
+
+/* Branding page preview: colours come from the box's own style, so only the box changes */
+.brand-preview { display: grid; grid-template-columns: 11rem 1fr; border: 1px solid var(--rule); border-radius: var(--radius-sm); overflow: hidden; background: var(--paper); }
+.bp-menu { background: linear-gradient(180deg, var(--rail-bg) 0%, var(--ledger-deep) 100%); color: var(--rail-fg); padding: 0.9rem 0.75rem; display: flex; flex-direction: column; gap: 0.25rem; font-size: 14px; }
+.bp-menu-name { font-weight: 600; margin-bottom: 0.5rem; overflow-wrap: anywhere; }
+.bp-menu-item { padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); color: var(--rail-fg); }
+.bp-menu-active { background: var(--rail-active); }
+.bp-menu-powered { margin-top: auto; padding-top: 0.75rem; font-size: 13px; color: var(--rail-muted); }
+.bp-body { padding: 1rem; display: grid; gap: 1rem; align-content: start; min-width: 0; }
+.bp-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.bp-button { display: inline-block; padding: 0.45rem 1rem; border-radius: var(--radius-sm); background: var(--ledger); color: #fff; font-weight: 600; font-size: 14px; }
+.bp-link { color: var(--ledger-deep); text-decoration: underline; font-size: 14px; }
+.bp-table { width: 100%; border-collapse: collapse; background: var(--sheet); }
+.bp-table td { padding: 0.5rem 0.75rem; border: 1px solid var(--rule); background: var(--ledger-wash); color: var(--ink); font-size: 14px; }
+.bp-invoice { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; padding-bottom: 0.6rem; border-bottom: 3px solid var(--ledger); background: var(--sheet); padding: 0.75rem; }
+.bp-invoice img { max-width: 8rem; object-fit: contain; }
+.bp-invoice-name { font-weight: 600; flex: 1 1 8rem; overflow-wrap: anywhere; }
+.bp-invoice-title { color: var(--ledger); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; font-size: 14px; }
+.colour-pick { display: flex; gap: 0.6rem; align-items: center; }
+.colour-pick input[type="color"] { width: 3rem; height: 2.5rem; padding: 0.15rem; flex: none; }
+.colour-pick input[type="text"] { max-width: 9rem; }
+.swatch { display: inline-block; width: 1.1rem; height: 1.1rem; border-radius: 3px; border: 1px solid var(--rule-strong); vertical-align: -0.2rem; margin-inline: 0.25rem; }
+.fixed-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.75rem 1.5rem; margin: 0; }
+.fixed-details dt { font-size: 13px; color: var(--pencil); }
+.fixed-details dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+@media (max-width: 640px) { .brand-preview { grid-template-columns: 1fr; } }

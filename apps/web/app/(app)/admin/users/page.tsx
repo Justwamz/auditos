@@ -1,5 +1,6 @@
 'use client';
 import { useState, type FormEvent } from 'react';
+import { FirmTabs } from '@/components/FirmTabs';
 import { HelpLink } from '@/components/HelpLink';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
@@ -146,6 +147,7 @@ export default function PeoplePage() {
         action={<button type="button" onClick={() => { setLink(''); setInvited(''); setPanel(true); }}>+ Invite someone</button>}
         help={<HelpLink topic="admin.users" />}
       />
+      <FirmTabs />
       <ErrorNote error={error ?? list.error} />
       {invited && (
         <Notice>

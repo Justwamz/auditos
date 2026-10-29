@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { billingTabs, navFor, qualityTabs, shownTabs } from '../lib/nav';
+import { billingTabs, canOpenBranding, firmTabs, isCurrent, navFor, qualityTabs, shownTabs } from '../lib/nav';
 
 const summary = (role: string, isAdmin = false) =>
   navFor(role, isAdmin).map((g) => `${g.heading ?? '-'}: ${g.items.map((i) => i.href).join(' ')}`);
@@ -78,5 +78,34 @@ describe('tab bars', () => {
     expect(shown(qualityTabs('senior', false))).toEqual(['Independence']);
     expect(shown(qualityTabs('manager', false))).toEqual(['Independence', 'Activity history']);
     expect(shown(qualityTabs('firm_admin', false))).toEqual(['Activity history']);
+  });
+});
+
+describe('Branding (firm administrator only)', () => {
+  const shown = (tabs: { label: string; show: boolean }[]) => tabs.filter((t) => t.show).map((t) => t.label);
+  test('is never a menu link, for any role, so the ten-link cap holds', () => {
+    for (const role of ['staff', 'senior', 'manager', 'partner', 'firm_admin', 'quality_officer', 'eqr']) {
+      for (const isAdmin of [false, true]) {
+        const items = navFor(role, isAdmin).flatMap((g) => g.items);
+        expect(items.map((i) => i.href)).not.toContain('/branding');
+        expect(items.length).toBeLessThanOrEqual(10);
+      }
+    }
+    // The fullest menu is already at the cap, which is why Branding is a tab.
+    expect(navFor('partner', true).flatMap((g) => g.items)).toHaveLength(10);
+  });
+  test('is a tab next to People for the firm administrator and the administrator permission only', () => {
+    expect(shown(firmTabs('firm_admin', false))).toEqual(['People', 'Branding']);
+    expect(shown(firmTabs('partner', true))).toEqual(['People', 'Branding']);
+    expect(shown(firmTabs('staff', true))).toEqual(['People', 'Branding']);
+    for (const role of ['partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr']) expect(shown(firmTabs(role, false)), role).toEqual([]);
+  });
+  test('only the administrator may open the page', () => {
+    expect(canOpenBranding('firm_admin', false)).toBe(true);
+    expect(canOpenBranding('staff', true)).toBe(true);
+    for (const role of ['partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr']) expect(canOpenBranding(role, false), role).toBe(false);
+  });
+  test('the People link stays current on the Branding page', () => {
+    expect(isCurrent('/admin/users', '/branding')).toBe(true);
   });
 });
