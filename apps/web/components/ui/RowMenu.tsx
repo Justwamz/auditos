@@ -21,13 +21,17 @@ export function RowMenu({ label, items }: { label: string; items: RowMenuItem[] 
   };
 
   // Place the menu next to the button; flip upward when it would run off the bottom of the window.
-  useLayoutEffect(() => {
-    if (!open || !trigger.current) return;
+  const place = () => {
+    if (!trigger.current) return;
     const r = trigger.current.getBoundingClientRect();
     const height = visible.length * ROW + PAD;
     const right = Math.max(8, window.innerWidth - r.right);
     const flip = r.bottom + 4 + height > window.innerHeight && r.top - 4 - height >= 0;
     setPos(flip ? { bottom: window.innerHeight - r.top + 4, right } : { top: r.bottom + 4, right });
+  };
+  useLayoutEffect(() => {
+    if (!open) return;
+    place();
     menu.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
   }, [open, visible.length]);
 
@@ -38,12 +42,13 @@ export function RowMenu({ label, items }: { label: string; items: RowMenuItem[] 
       if (!menu.current?.contains(t) && !trigger.current?.contains(t)) setOpen(false);
     };
     const shut = () => setOpen(false);
+    const follow = () => place();
     document.addEventListener('mousedown', away);
-    window.addEventListener('scroll', shut, true);
+    window.addEventListener('scroll', follow, true);
     window.addEventListener('resize', shut);
     return () => {
       document.removeEventListener('mousedown', away);
-      window.removeEventListener('scroll', shut, true);
+      window.removeEventListener('scroll', follow, true);
       window.removeEventListener('resize', shut);
     };
   }, [open]);

@@ -113,7 +113,7 @@ export default function PeoplePage() {
     setBusy(true);
     try {
       const r = await api.post<{ inviteToken: string | null }>('/admin/users', { ...form, fullName: form.fullName.trim(), email: form.email.trim() });
-      setLink(r.inviteToken ? `${window.location.origin}/accept-invite?token=${encodeURIComponent(r.inviteToken)}` : '');
+      setLink(r.inviteToken ? `${window.location.origin}/accept-invite?invite=${encodeURIComponent(r.inviteToken)}` : '');
       setInvited(form.fullName.trim());
       setForm(BLANK);
       setPanel(false);
@@ -147,10 +147,10 @@ export default function PeoplePage() {
         help={<HelpLink topic="admin.users" />}
       />
       <ErrorNote error={error ?? list.error} />
-      {invited && link && (
+      {invited && (
         <Notice>
-          Send this one-time link to {invited}. It expires in 72 hours and works once.
-          <div className="secret small" style={{ marginTop: '0.4rem' }}>{link}</div>
+          {link ? <>Send this one-time link to {invited}. It expires in 72 hours and works once.</> : <>Invited {invited}.</>}
+          {link && <div className="secret small" style={{ marginTop: '0.4rem' }}>{link}</div>}
         </Notice>
       )}
 

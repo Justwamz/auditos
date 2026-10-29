@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "install-browsers": "playwright install chromium",
-    "e2e": "playwright test"
+    "e2e": "playwright test --grep-invert @sweep",
+    "e2e:sweep": "playwright test --grep @sweep"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1"

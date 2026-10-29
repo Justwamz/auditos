@@ -23,6 +23,8 @@ export interface BillingPdf {
   simulatedTax?: { controlNumber: string | null; message: string } | null;
 }
 
+/** Printed whenever the tax submission was practice only, whatever wording an older invoice saved. */
+const PRACTICE_SENTENCE = 'PRACTICE ONLY: this invoice has not been sent to KRA and is not a valid tax invoice.';
 const LEFT = 56;
 const RIGHT = 556;
 
@@ -101,7 +103,7 @@ export function exportBillingPdf(d: BillingPdf): Promise<Buffer> {
 
     if (d.notes) doc.moveDown().font('Helvetica').fontSize(9).text(d.notes, LEFT, undefined, { width: RIGHT - LEFT });
     if (d.kind === 'invoice' && d.issuer.bankDetails) doc.moveDown().font('Helvetica-Bold').fontSize(9).text('Payment details').font('Helvetica').text(d.issuer.bankDetails, { width: RIGHT - LEFT });
-    if (d.simulatedTax) doc.moveDown().font('Helvetica-Oblique').fontSize(9).fillColor('#b00020').text(d.simulatedTax.message, { width: RIGHT - LEFT }).fillColor('#000000');
+    if (d.simulatedTax) doc.moveDown().font('Helvetica-Oblique').fontSize(9).fillColor('#b00020').text(PRACTICE_SENTENCE, { width: RIGHT - LEFT }).fillColor('#000000');
     doc.end();
   });
 }

@@ -49,6 +49,12 @@ describe('invoice and quote PDFs', () => {
     expect(t).toContain('has not been sent to KRA');
   });
 
+  test('an invoice saved with the old wording still prints the fixed practice sentence', async () => {
+    const t = await text({ ...base, simulatedTax: { controlNumber: 'SIM-OLD0000001', message: 'Simulation: nothing was sent to KRA. This is not a valid tax invoice.' } });
+    expect(t).not.toMatch(/simulat/i);
+    expect(t).toContain('PRACTICE ONLY: this invoice has not been sent to KRA and is not a valid tax invoice.');
+  });
+
   test('a document without tax says none was charged; an inclusive one says the tax is included', async () => {
     expect(await text({ ...base, taxes: [], total: '5,250.00' })).toContain('None charged');
     expect(await text({ ...base, taxMode: 'inclusive' })).toContain('(included)');

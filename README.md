@@ -51,7 +51,7 @@ Four clients, three account managers and teams, so each profile sees something d
 
 **Calendar.** Month, Day, Work week and Week views, with a legend to switch kinds of event on and off, and (for managers and partners) **See by person** to put a day side by side by colleague. A week of events for the current and next week. Brian sees his fieldwork but not the Savannah meetings; Tom sees only his leave; Grace and Charles see everything; managers see the events of people on their teams.
 
-**Account managers.** Grace can change a client's account manager from the client page; Daniel cannot. Wanjiru cannot switch Ruth off while Ruth manages clients, and the Hand over panel lists what she holds.
+**Account managers.** Grace can change a client's account manager from the client page; Daniel cannot. Wanjiru cannot pause Ruth's access while Ruth manages clients, and the Hand over panel lists what she holds.
 
 **Time and billing.** Rates (staff 1,500, senior 2,500, manager 4,500, partner 9,000 per hour), taxes (VAT 16%, excise duty 10%, VAT on excise), fees per job, three weeks of time and expenses, and invoices in different states.
 - Brian and the other staff log time and expenses on the **Timesheet** and see no rates, values, invoices or billing.
@@ -67,7 +67,8 @@ Waweru & Associates is a second firm with no clients, to show that firms never s
 pnpm test          # unit + API/database tests (needs the local Postgres running)
 pnpm typecheck
 pnpm lint
-pnpm --filter @auditos/e2e e2e     # Playwright, own database (auditos_e2e) and ports 3100/4110
+pnpm --filter @auditos/e2e e2e     # Playwright, own database (auditos_e2e) and ports 3100/4110. Skips the slow plain-words sweep
+pnpm --filter @auditos/e2e e2e:sweep  # the sweep alone (about 20 minutes): every role, page, tab, panel and help guide, checked for software words
 ```
 
 ## Layout

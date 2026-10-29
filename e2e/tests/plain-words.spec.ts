@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 import { BANNED, freshCode, signIn, user } from '../helpers';
 
+// Roles that only get their menu pages checked (their screens are the same ones the four below see).
+const MENU_ONLY = [
+  { name: 'Faith (senior)', email: 'faith.njeri@kangethe.example.test', admin: false },
+  { name: 'Mercy (quality officer)', email: 'mercy.achieng@kangethe.example.test', admin: false },
+  { name: 'Samuel (EQR)', email: 'samuel.kariuki@kangethe.example.test', admin: false },
+];
 const PEOPLE = [
   { name: 'Grace (partner)', email: 'grace.kangethe@kangethe.example.test', admin: false },
   { name: 'Daniel (manager)', email: 'daniel.otieno@kangethe.example.test', admin: false },
@@ -16,13 +22,15 @@ const settle = async (page: Page) => {
   await expect(page.locator('.today-skeleton, .skeleton')).toHaveCount(0, { timeout: 15_000 }).catch(() => undefined);
 };
 
-/** Opens everything that is collapsed, so innerText (which skips hidden content) sees it. */
-async function openAll(page: Page): Promise<void> {
-  for (let round = 0; round < 3; round++) {
-    const closed = page.locator('main button[aria-expanded="false"]:visible:not(.row-menu-btn)');
-    const n = await closed.count();
-    if (n === 0) break;
-    for (let i = 0; i < n; i++) await closed.first().click({ timeout: 2000 }).catch(() => undefined);
+/** Opens every collapsed section one by one, calling check after each, because some sections close the others. */
+async function openAll(page: Page, check: () => Promise<void>): Promise<void> {
+  const all = page.locator('main button[aria-expanded]:visible:not(.row-menu-btn)');
+  const n = await all.count();
+  for (let i = 0; i < n; i++) {
+    const b = all.nth(i);
+    if ((await b.getAttribute('aria-expanded').catch(() => null)) !== 'false') continue;
+    await b.click({ timeout: 2000 }).catch(() => undefined);
+    await check();
   }
 }
 
@@ -39,8 +47,7 @@ async function words(page: Page): Promise<string[]> {
 async function scan(page: Page, label: string): Promise<void> {
   await settle(page);
   expect(await words(page), `${label} (collapsed)`).toEqual([]);
-  await openAll(page);
-  expect(await words(page), `${label} (opened)`).toEqual([]);
+  await openAll(page, async () => expect(await words(page), `${label} (a section opened)`).toEqual([]));
 }
 
 /** Opens each "+ ..." panel on the page in turn, reads it, and closes it again. */
@@ -59,7 +66,7 @@ async function scanPanels(page: Page, label: string): Promise<void> {
   }
 }
 
-test('the sign-in steps use plain words', async ({ page }) => {
+test('the sign-in steps use plain words @sweep', async ({ page }) => {
   const email = PEOPLE[0]!.email;
   await page.goto('/login');
   await settle(page);
@@ -75,7 +82,7 @@ test('the sign-in steps use plain words', async ({ page }) => {
 });
 
 for (const person of PEOPLE) {
-  test(`${person.name}: the menu follows the plan and every screen in it uses plain words`, async ({ page }) => {
+  test(`${person.name}: the menu follows the plan and every screen in it uses plain words @sweep`, async ({ page }) => {
     test.setTimeout(600_000);
     await signIn(page, person.email);
     const main = page.getByRole('navigation', { name: 'Main' });
@@ -162,3 +169,20 @@ test('every help guide uses plain words', async ({ page }) => {
     await scan(page, `help ${href}`);
   }
 });
+
+for (const person of MENU_ONLY) {
+  test(`${person.name}: the menu follows the plan and its pages use plain words @sweep`, async ({ page }) => {
+    test.setTimeout(600_000);
+    await signIn(page, person.email);
+    const main = page.getByRole('navigation', { name: 'Main' });
+    await expect(main.getByRole('link').first()).toBeVisible();
+    const links = await main.getByRole('link').evaluateAll((els) => els.map((e) => e.getAttribute('href') ?? ''));
+    expect(links.length).toBeLessThanOrEqual(10);
+    expect(links[0]).toBe('/');
+    expect(links.at(-1)).toBe('/help');
+    for (const href of links) {
+      await page.goto(href);
+      await scan(page, `${person.name} ${href}`);
+    }
+  });
+}

@@ -16,7 +16,7 @@ Prospects opens as a table with one row for each prospect: the name, its stage, 
 
 ## Finding a prospect
 - The stage buttons at the top show **All open** or only one stage, with how many prospects are in each.
-- Type in **Search prospects** to find a name or an owner.
+- Type in the box that says "Search by prospect or owner" to find a name or an owner.
 - Managers and partners also have **Show prospects of**, to look at one person's prospects or **Everyone**. The totals by person are on the page too.
 - Won and lost prospects are counted next to the stage buttons and listed under Closed.
 

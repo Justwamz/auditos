@@ -5,7 +5,8 @@ import { api } from '@/lib/api';
 import { ErrorNote } from '@/components/bits';
 
 function Accept() {
-  const token = useSearchParams().get('token') ?? '';
+  const params = useSearchParams();
+  const token = params.get('invite') ?? params.get('token') ?? '';
   const router = useRouter();
   const [password, setPassword] = useState('');
   const [again, setAgain] = useState('');

@@ -142,7 +142,7 @@ Open the engagement and follow the roadmap. The first step creates the checklist
     body: `You must declare your independence before you can be added to an engagement team, and the engagement cannot move to planning without a current declaration from everyone on it.
 
 ## How
-Open **Independence**, write your declaration, list any threats and the safeguards applied, and save it.
+Open **Quality and independence**, then the **Independence** tab, write your declaration, list any threats and the safeguards applied, and save it.
 
 ## When it applies
 A general declaration covers the firm's engagements. If a relationship affects one client, say so and describe the safeguards, and tell the manager.`,
