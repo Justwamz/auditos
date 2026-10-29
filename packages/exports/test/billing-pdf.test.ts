@@ -195,3 +195,37 @@ describe('a damaged picture is found out before the PDF software sees it', () =>
     expect(lines.length).toBeLessThanOrEqual(3);
   });
 });
+
+const pngRaw = (w: number, h: number, depth: number, colour: number, interlace: number, raw: Buffer): Buffer => {
+  const chunk = (type: string, data: Buffer) => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    return Buffer.concat([len, Buffer.from(type, 'latin1'), data, Buffer.alloc(4)]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
+  ihdr[8] = depth;
+  ihdr[9] = colour;
+  ihdr[12] = interlace;
+  return Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+};
+
+describe('pngDecodes limits and variants', () => {
+  test('a decompression bomb (tiny file, claimed small, data far larger) is refused quickly', () => {
+    const t = Date.now();
+    expect(pngDecodes(pngRaw(10, 10, 8, 2, 0, Buffer.alloc(300 * 1024 * 1024)))).toBe(false);
+    expect(Date.now() - t).toBeLessThan(2000);
+  });
+
+  test('a picture claiming more than 2000 pixels a side is refused', () => {
+    expect(pngDecodes(pngRaw(2001, 1, 8, 0, 0, Buffer.alloc(1 + 2001)))).toBe(false);
+    expect(pngDecodes(pngRaw(1, 2001, 8, 0, 0, Buffer.alloc(2001 * 2)))).toBe(false);
+  });
+
+  test('valid interlaced, palette and 16-bit pictures are accepted', () => {
+    expect(pngDecodes(pngRaw(8, 8, 8, 0, 1, Buffer.alloc(79)))).toBe(true);
+    expect(pngDecodes(pngRaw(4, 3, 4, 3, 0, Buffer.alloc(3 * (1 + 2))))).toBe(true);
+    expect(pngDecodes(pngRaw(2, 2, 16, 6, 0, Buffer.alloc(2 * (1 + 16))))).toBe(true);
+  });
+});

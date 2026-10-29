@@ -134,7 +134,7 @@ function render(d: BillingPdf, logoIn: PdfLetterhead['logo']): Promise<Buffer> {
 
     // Letterhead: the logo (kept inside a box), then the name, which stands alone in the firm colour when there is no logo.
     let top = 56;
-    if (logo && !pngDecodes(logo.bytes) && logo.type === 'image/png') logo = null;
+    if (logo && logo.type === 'image/png' && !pngDecodes(logo.bytes)) logo = null;
     if (logo) {
       try {
         const img = (doc as unknown as { openImage(b: Buffer): { width: number; height: number } & object }).openImage(logo.bytes);

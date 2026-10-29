@@ -1,5 +1,7 @@
 import { inflateSync } from 'node:zlib';
 
+/** The largest side a logo may have; shared with the upload check. */
+export const MAX_LOGO_SIDE = 2000;
 const SIG = Buffer.from('89504e470d0a1a0a', 'hex');
 const CHANNELS: Record<number, number> = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
 const ADAM7 = [[0, 0, 8, 8], [4, 0, 8, 8], [0, 4, 4, 8], [2, 0, 4, 4], [0, 2, 2, 4], [1, 0, 2, 2], [0, 1, 1, 2]] as const;
@@ -17,7 +19,7 @@ export function pngDecodes(b: Buffer): boolean {
     const depth = b[24]!;
     const channels = CHANNELS[b[25]!];
     const interlaced = b[28] === 1;
-    if (!channels || w < 1 || h < 1 || w > 20000 || h > 20000 || ![1, 2, 4, 8, 16].includes(depth)) return false;
+    if (!channels || w < 1 || h < 1 || w > MAX_LOGO_SIDE || h > MAX_LOGO_SIDE || ![1, 2, 4, 8, 16].includes(depth)) return false;
     const idat: Buffer[] = [];
     for (let o = 8; o + 12 <= b.length; ) {
       const len = b.readUInt32BE(o);
@@ -28,7 +30,6 @@ export function pngDecodes(b: Buffer): boolean {
       o += 12 + len;
     }
     if (idat.length === 0) return false;
-    const raw = inflateSync(Buffer.concat(idat));
     const bpp = channels * depth;
     const rows: number[] = []; // bytes per scanline, in order
     if (!interlaced) for (let y = 0; y < h; y++) rows.push(Math.ceil((w * bpp) / 8));
@@ -39,6 +40,9 @@ export function pngDecodes(b: Buffer): boolean {
         if (pw > 0 && ph > 0) for (let y = 0; y < ph; y++) rows.push(Math.ceil((pw * bpp) / 8));
       }
     }
+    // The size is known from the header, so a stream that inflates to more is refused without being unpacked.
+    const expected = rows.reduce((t, n) => t + 1 + n, 0);
+    const raw = inflateSync(Buffer.concat(idat), { maxOutputLength: expected + 1 });
     let o = 0;
     for (const n of rows) {
       if (o >= raw.length || raw[o]! > 4) return false;
