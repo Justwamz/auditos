@@ -21,6 +21,7 @@
 - Emails are plain text: firm name, address, phone, email, website, then "Powered by AuditOS"; no logo. Excel statements get one header row of text and a last footer row; no image.
 - Validation: phone up to 30 characters of digits, spaces, plus, dash, brackets; website must start with http:// or https://; email must look like an email; footer note plain text up to 300 characters; blank fields are left out silently.
 - Plain words in all user text (`apps/web/lib/plain.ts` BANNED_WORDS and the shared list in `e2e/helpers.ts`): say "colour code", never "hex", "token" or "CSS". 13px text floor, Inter, one primary button per screen, shared primitives (`PageHead`, `SidePanel`, `Disclosure`, `Chips`, `SectionHead`), errors shown once. Ten-link menu cap (`lib/nav.ts`): if the Firm group would exceed it, Branding becomes a tab of an existing Firm page instead of a link.
+- Help stays true: every task that changes what a person sees or does updates the matching articles in `packages/help/content` in the same task (billing and invoices guides in Task 6, the statement export guide in Task 7, the new Branding article in Task 5, a menu or People mention if the Firm group changes), and `pnpm --filter @auditos/help test` must pass.
 - Strict TypeScript (`noUncheckedIndexedAccess`). Restore `apps/web/tsconfig.tsbuildinfo` if a typecheck changes it. E2E runs use the project's private Postgres on 5433 (never 5432), spec files one at a time.
 
 ## Review Focus
