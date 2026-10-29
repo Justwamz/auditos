@@ -78,8 +78,8 @@ Make a CSV or Excel file of everything the sample is drawn from, such as all pay
 - **Monetary-unit**: items are chosen in proportion to their value, so large items are very likely to be picked. An item at least as large as the sampling interval is always selected and marked **key item**.
 - **Top items**: the largest items, all tested. These are not a sample of the rest, so nothing is projected from them.
 
-## Seed and fingerprint
-The draw uses a seed. Leave it blank and the system makes one and records it. Anyone drawing from the same population with the same seed gets the same items. The schedule also keeps a fingerprint of the population, so you can show later that it was the same file.
+## Seed and proof of the file
+The draw uses a seed. Leave it blank and the system makes one and records it. Anyone drawing from the same population with the same seed gets the same items. The schedule also keeps a tamper check of the population, so you can show later that it was the same file.
 
 ## Recording results
 Open the schedule and mark each item:

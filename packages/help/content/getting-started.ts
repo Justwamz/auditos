@@ -53,25 +53,25 @@ Either you are not on a team for that client, or you are not its account manager
   },
   {
     id: 'sign-in-and-codes',
-    title: 'Signing in and authenticator codes',
+    title: 'Signing in and your sign-in code',
     summary: 'Your password, the six-digit code and when you are asked for a fresh one.',
     category: 'Getting started',
     audience: ['all'],
-    tags: ['password', 'authenticator', 'code', 'mfa', 'step-up', 'login', 'security'],
+    tags: ['password', 'code app', 'code', 'two-step', 'step-up', 'login', 'security'],
     topics: ['login', 'step-up'],
-    body: `You sign in with your password and a six-digit code from your authenticator app.
+    body: `You sign in with your password and a six-digit code from the code app on your phone.
 
 ## Fresh codes for important actions
 Some actions ask for a new code even though you are signed in: signing off a paper, approving a deletion, approving or issuing the engagement, locking and unlocking, and exporting statements. A code you gave within the last five minutes is still good.
 
-## Sessions
+## Staying signed in
 You are signed out after 30 minutes without activity, and after 12 hours in any case.
 
 ## Locked out
-Five wrong attempts lock the account for 15 minutes and end its sessions. Wait, or ask a person with the administrator permission.
+Five wrong attempts lock the account for 15 minutes and sign the person out everywhere. Wait, or ask a person with the administrator permission.
 
 ## One person, one account
-Every account belongs to one named person. Never share your login or your authenticator. What you do is recorded under your name.`,
+Every account belongs to one named person. Never share your password or your sign-in code. What you do is recorded under your name.`,
   },
   {
     id: 'audit-roadmap',
@@ -184,7 +184,7 @@ Recalculating saves a new version of the same paper. If the paper was already re
 3. Attach evidence in the **Evidence** tab and refer to it from the paper or checklist.
 
 ## Mark it prepared
-When it is complete, sign it off as **Prepared** (you will be asked for a fresh authenticator code). The paper then goes to the manager for review.
+When it is complete, sign it off as **Prepared** (you will be asked for a fresh sign-in code). The paper then goes to the manager for review.
 
 ## If you edit afterwards
 Editing a paper that the manager or partner has already signed off cancels their sign-offs, and the paper goes back for review. Your own prepared sign-off stays. The old text is kept in the history.
@@ -206,7 +206,7 @@ You can delete your own draft or prepared paper with a reason. Papers that have 
 In the **Evidence** tab, choose a file. PDF, PNG, JPG, XLSX, DOCX and CSV files up to 25 MB are accepted. The system checks that the file really is what its name says.
 
 ## How it is protected
-- A fingerprint (SHA-256) of the file is recorded when it is uploaded and checked again on every download.
+- A tamper check of the file is recorded when it is uploaded and run again on every download, so any change is noticed.
 - An evidence file can never be edited or replaced. To correct it, upload a new one.
 - Every download is recorded in the activity history.
 
@@ -261,6 +261,6 @@ For a client with an earlier engagement, use **carry forward** to bring last yea
 IFRS for SMEs applies. The second edition applies to periods beginning before 1 January 2027 and the third edition after. Full IFRS statements are not available yet.
 
 ## Exports
-You can export Word, Excel or PDF. Exports are marked DRAFT until the engagement is approved. Exporting asks for a fresh authenticator code and is recorded.`,
+You can export Word, Excel or PDF. Exports are marked DRAFT until the engagement is approved. Exporting asks for a fresh sign-in code and is recorded.`,
   },
 ];

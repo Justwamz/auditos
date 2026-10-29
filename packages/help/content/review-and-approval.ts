@@ -14,7 +14,7 @@ export const reviewAndApproval: Article[] = [
 ## Manager review
 1. Open the paper from your Today page: each paper waiting for you has an **Open** button.
 2. Read it and its evidence. Raise review notes for anything unclear.
-3. Sign off as **Reviewed**. You need a fresh authenticator code.
+3. Sign off as **Reviewed**. You need a fresh sign-in code.
 
 You must rank above the person who last edited the paper, and you cannot review work you prepared or edited.
 
@@ -69,7 +69,7 @@ A paper with an open note cannot get partner approval, and the engagement cannot
 - **To Partner approved**: all review notes are cleared or accepted, and where a quality review is required it has final sign-off.
 
 ## Who moves it
-Managers and partners can move it to Planning through Review. Only the engagement partner approves, issues the report and locks, and each of those needs a fresh authenticator code.
+Managers and partners can move it to Planning through Review. Only the engagement partner approves, issues the report and locks, and each of those needs a fresh sign-in code.
 
 ## When it is blocked
 The Overview lists exactly what is missing. Fix those and try again.`,
@@ -85,7 +85,7 @@ The Overview lists exactly what is missing. Fix those and try again.`,
     body: `These steps belong to the engagement partner.
 
 ## Approve
-Move the engagement to **Partner approved** once review is complete. Enter your authenticator code when asked.
+Move the engagement to **Partner approved** once review is complete. Enter your sign-in code when asked.
 
 ## Issue the report
 Choose **Report issued** and enter the report date. The file must be assembled and locked within 60 days of that date.

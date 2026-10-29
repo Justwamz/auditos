@@ -38,7 +38,7 @@ A page that says "could not be found" is the same whether the item does not exis
 - **Role.** Only managers and partners review; only partners approve (the quality reviewer signs the quality review paper).
 - **Open review notes.** Partner approval waits until every note is cleared or accepted.
 - **Locked.** A locked engagement accepts no sign-offs.
-- **Fresh code.** You need an authenticator code from the last five minutes.
+- **Fresh code.** You need a sign-in code from the last five minutes.
 - **View only.** A partner who is not on the team can read the paper but not sign it.`,
   },
   {
@@ -71,15 +71,15 @@ The partner steps (approve, issue, lock) can only be taken by the engagement par
     summary: 'Wrong password, lockout and codes that are refused.',
     category: 'When something goes wrong',
     audience: ['all'],
-    tags: ['login', 'locked', 'password', 'code', 'authenticator', 'cannot sign in', 'invalid'],
+    tags: ['login', 'locked', 'password', 'code', 'code app', 'cannot sign in', 'invalid'],
     topics: ['login.help'],
     body: `## Check
 - The email and password are exactly right. The message does not say which is wrong, on purpose.
-- Your phone's clock is correct. Authenticator codes depend on it.
+- Your phone's clock is correct. Sign-in codes depend on it.
 - You are not reusing a code. Each code works once; wait for the next one.
 
 ## Locked
-After five wrong attempts the account is locked for 15 minutes and its sessions end. Wait, then try again.
+After five wrong attempts the account is locked for 15 minutes and anyone signed in on that account is signed out. Wait, then try again.
 
 ## Still stuck
 Ask a person in your firm who holds the administrator permission. They can check your access under **People**.`,
@@ -87,7 +87,7 @@ Ask a person in your firm who holds the administrator permission. They can check
   {
     id: 'export-asks-for-code',
     title: 'Why am I asked for a code again?',
-    summary: 'Important actions need a fresh authenticator code.',
+    summary: 'Important actions need a fresh sign-in code.',
     category: 'When something goes wrong',
     audience: ['all'],
     tags: ['code again', 'step up', 'fresh code', 'confirm', 'dialog'],
@@ -98,6 +98,6 @@ Ask a person in your firm who holds the administrator permission. They can check
 Signing off, approving a deletion, approving, issuing or locking an engagement, unlocking, and exporting statements each need a code from the last five minutes. This protects the file if a screen is left open.
 
 ## What to do
-Enter the current code from your authenticator. If you gave one a few minutes ago, you will not be asked again until five minutes have passed. A code can be used only once, so if it is refused, wait for the next one.`,
+Enter the current code from your code app. If you gave one a few minutes ago, you will not be asked again until five minutes have passed. A code can be used only once, so if it is refused, wait for the next one.`,
   },
 ];

@@ -5,7 +5,18 @@ import type { Audience } from '../src';
 const AUDIENCES: Audience[] = ['all', 'admin', 'firm_admin', 'partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr'];
 const ROLES = ['firm_admin', 'partner', 'manager', 'senior', 'staff', 'quality_officer', 'eqr'];
 
+// A copy of apps/web/lib/plain.ts BANNED_WORDS (the packages cannot import from the web app).
+const BANNED = [/authenticator/i, /outbox/i, /simulat\w*/i, /session/i, /csrf/i, /malware/i, /quarantin\w*/i, /fingerprint/i, /sha-?256/i, /tenant/i, /token/i, /payload/i, /\bapi\b/i, /\bmfa\b/i, /\btotp\b/i];
+
 describe('help content', () => {
+  test('titles, summaries and bodies use plain words', () => {
+    for (const a of ARTICLES) {
+      for (const [part, text] of [['title', a.title], ['summary', a.summary], ['body', a.body]] as const) {
+        for (const re of BANNED) expect(text, `${a.id} ${part} contains ${re}`).not.toMatch(re);
+      }
+    }
+  });
+
   test('ids are unique, kebab-case and every article is complete', () => {
     const ids = ARTICLES.map((a) => a.id);
     expect(new Set(ids).size).toBe(ids.length);
