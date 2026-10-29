@@ -151,6 +151,8 @@ importers:
         specifier: 0.15.2
         version: 0.15.2
 
+  packages/brand: {}
+
   packages/db:
     dependencies:
       pg:
