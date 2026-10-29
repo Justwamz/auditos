@@ -156,7 +156,7 @@ describe('invoicing time and expenses', () => {
     const inv = await get(sP, id);
     expect(inv.tax).toMatchObject({ provider: 'simulation', simulated: true, status: 'simulated' });
     expect(inv.tax.controlNumber).toMatch(/^SIM-/);
-    expect(inv.tax.message).toMatch(/nothing was sent to KRA/i);
+    expect(inv.tax.message).toMatch(/has not been sent to KRA/i);
   });
 
   test('the time and expenses are now billed: they cannot be edited, deleted or invoiced again', async () => {
@@ -278,7 +278,7 @@ describe('sending and the PDF', () => {
     const box = (await call(sM, 'GET', '/outbox')).json().messages as { to: string; subject: string; body: string; delivered: boolean }[];
     expect(box[0]).toMatchObject({ to: 'jane@mwangaza.example.test', delivered: false });
     expect(box[0]!.subject).toMatch(/Invoice KA-\d{4}-\d{4} from Kangethe & Associates/);
-    expect(box[0]!.body).toMatch(/simulated/i);
+    expect(box[0]!.body).toMatch(/not actually sent/i);
     expect((await call(sM, 'POST', `/invoices/${id}/send`, { to: 'not-an-email' })).statusCode).toBe(400);
     expect((await call(sF, 'GET', '/outbox')).statusCode).toBe(403);
   });

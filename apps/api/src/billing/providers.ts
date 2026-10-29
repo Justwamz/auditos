@@ -39,7 +39,7 @@ export class SimulationTaxProvider implements TaxProvider {
       controlNumber: `SIM-${digest}`,
       qrPayload: `SIMULATION|${inv.number}|${inv.totalCents.toString()}`,
       submittedAt: new Date().toISOString(),
-      message: 'Simulation: nothing was sent to KRA. This is not a valid tax invoice.',
+      message: 'PRACTICE ONLY: this invoice has not been sent to KRA and is not a valid tax invoice.',
     };
   }
 }

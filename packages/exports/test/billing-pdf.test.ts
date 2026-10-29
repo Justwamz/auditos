@@ -43,10 +43,10 @@ describe('invoice and quote PDFs', () => {
   });
 
   test('a simulated tax submission is stated on the document, with the made-up control number', async () => {
-    const t = await text({ ...base, simulatedTax: { controlNumber: 'SIM-ABCDEF1234', message: 'Simulation: nothing was sent to KRA. This is not a valid tax invoice.' } });
-    expect(t).toContain('SIMULATION: not submitted to KRA. Not a valid tax invoice.');
+    const t = await text({ ...base, simulatedTax: { controlNumber: 'SIM-ABCDEF1234', message: 'PRACTICE ONLY: this invoice has not been sent to KRA and is not a valid tax invoice.' } });
+    expect(t).toContain('PRACTICE ONLY: not sent to KRA. Not a valid tax invoice.');
     expect(t).toContain('SIM-ABCDEF1234');
-    expect(t).toContain('nothing was sent to KRA');
+    expect(t).toContain('has not been sent to KRA');
   });
 
   test('a document without tax says none was charged; an inclusive one says the tax is included', async () => {

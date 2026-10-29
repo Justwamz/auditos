@@ -342,7 +342,7 @@ export async function invoiceRoutes(app: FastifyInstance): Promise<void> {
       if (r.status === 'draft' || r.status === 'void' || !r.number) throw httpError(409, 'invoice_not_issued');
       const firm = ((await tx.query('select legal_name from billing_settings')).rows[0]?.legal_name as string | null) ?? 'Your auditors';
       const subject = `Invoice ${r.number} from ${firm}`;
-      const body = [b.message ?? `Please find invoice ${r.number} for ${r.client_name}.`, '', `Amount due: KES ${money(BigInt(r.total_cents) - BigInt(r.paid_cents))}`, `Due date: ${r.due_date ?? ''}`, '', 'Email delivery is simulated: this message was kept in the outbox and not sent.'].join('\n');
+      const body = [b.message ?? `Please find invoice ${r.number} for ${r.client_name}.`, '', `Amount due: KES ${money(BigInt(r.total_cents) - BigInt(r.paid_cents))}`, `Due date: ${r.due_date ?? ''}`, '', 'Practice mode: this message was kept in Sent emails and not actually sent.'].join('\n');
       const sent = await emailProvider.send({ to: b.to, subject, body });
       const outboxId = (
         await tx.query('insert into outbox (tenant_id, kind, ref_id, to_address, subject, body, provider, created_by) values ($1, $2, $3, $4, $5, $6, $7, $8) returning id', [ctx.tenantId, 'invoice', id.data, b.to, subject, body, sent.provider, ctx.userId])

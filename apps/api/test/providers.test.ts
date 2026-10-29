@@ -7,7 +7,7 @@ describe('tax-submission providers', () => {
   test('the simulation says plainly that nothing was sent to KRA', async () => {
     const r = await new SimulationTaxProvider().submit(invoice);
     expect(r).toMatchObject({ provider: 'simulation', simulated: true, status: 'simulated' });
-    expect(r.message).toMatch(/nothing was sent to KRA/i);
+    expect(r.message).toMatch(/has not been sent to KRA/i);
     expect(r.message).toMatch(/not a valid tax invoice/i);
   });
 

@@ -141,7 +141,7 @@ export async function quoteRoutes(app: FastifyInstance): Promise<void> {
       if (b.to) {
         const q = (await tx.query(`${QUOTE_SQL} where q.id = $1`, [id.data])).rows[0] as QuoteRow;
         const subject = `Quotation ${number} from ${s?.legal_name ?? 'Your auditors'}`;
-        const body = [b.message ?? `Please find our quotation ${number}: ${q.title}.`, '', `Total: KES ${money(q.total_cents)}`, q.valid_until ? `Valid until: ${q.valid_until}` : '', '', 'Email delivery is simulated: this message was kept in the outbox and not sent.'].join('\n');
+        const body = [b.message ?? `Please find our quotation ${number}: ${q.title}.`, '', `Total: KES ${money(q.total_cents)}`, q.valid_until ? `Valid until: ${q.valid_until}` : '', '', 'Practice mode: this message was kept in Sent emails and not actually sent.'].join('\n');
         const sent = await emailProvider.send({ to: b.to, subject, body });
         outboxId = (
           await tx.query('insert into outbox (tenant_id, kind, ref_id, to_address, subject, body, provider, created_by) values ($1, $2, $3, $4, $5, $6, $7, $8) returning id', [ctx.tenantId, 'quote', id.data, b.to, subject, body, sent.provider, ctx.userId])

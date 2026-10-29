@@ -5,7 +5,7 @@
 export function mailText(body: string): string {
   return body
     .split('\n')
-    .filter((line) => !/delivery is simulated|kept in the outbox/i.test(line))
+    .filter((line) => !/delivery is simulated|kept in the outbox|not actually sent/i.test(line))
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();

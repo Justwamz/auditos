@@ -46,7 +46,7 @@ export function exportBillingPdf(d: BillingPdf): Promise<Buffer> {
         doc.restore();
       }
       if (d.simulatedTax) {
-        doc.fontSize(8).fillColor('#b00020').opacity(1).text('SIMULATION: not submitted to KRA. Not a valid tax invoice.', LEFT, 790, { lineBreak: false });
+        doc.fontSize(8).fillColor('#b00020').opacity(1).text('PRACTICE ONLY: not sent to KRA. Not a valid tax invoice.', LEFT, 790, { lineBreak: false });
       }
       doc.fontSize(8).fillColor('#666666').opacity(1).text(d.number ? `${label} ${d.number}` : `Draft ${label.toLowerCase()}`, LEFT, 804, { lineBreak: false });
       doc.fillColor('#000000');
@@ -66,7 +66,7 @@ export function exportBillingPdf(d: BillingPdf): Promise<Buffer> {
     if (d.date) doc.text(`${d.kind === 'invoice' ? 'Date' : 'Sent'}: ${d.date}`);
     if (d.dueOrValidUntil) doc.text(`${d.kind === 'invoice' ? 'Due' : 'Valid until'}: ${d.dueOrValidUntil}`);
     doc.text('Currency: KES');
-    if (d.simulatedTax?.controlNumber) doc.text(`Control number: ${d.simulatedTax.controlNumber} (SIMULATION)`);
+    if (d.simulatedTax?.controlNumber) doc.text(`Control number: ${d.simulatedTax.controlNumber} (practice)`);
     doc.moveDown();
 
     const cols = { desc: LEFT, qty: 330, unit: 400, amt: 480 };
