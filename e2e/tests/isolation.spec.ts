@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { signIn } from '../helpers';
 
+const BANNED = [/authenticator/i, /outbox/i, /simulat\w*/i, /session/i, /csrf/i, /malware/i, /quarantin\w*/i, /fingerprint/i, /sha-?256/i, /tenant/i, /token/i, /payload/i, /\bapi\b/i, /\bmfa\b/i, /\btotp\b/i];
+const MAIN = 'main button:visible:not(.secondary):not(.quiet):not(.danger):not(.chip):not(.disclosure-btn):not(.row-menu-btn)';
+
 test('another firm, and staff not on the engagement, cannot reach the engagement', async ({ browser }) => {
   const a = await (await browser.newContext()).newPage();
   await signIn(a, 'grace.kangethe@kangethe.example.test');
@@ -30,7 +33,7 @@ test('another firm, and staff not on the engagement, cannot reach the engagement
   const admin = await (await browser.newContext()).newPage();
   await signIn(admin, 'wanjiru.mugo@kangethe.example.test');
   await admin.goto('/admin/users');
-  await expect(admin.getByRole('heading', { name: 'People and access' })).toBeVisible();
+  await expect(admin.getByRole('heading', { name: 'People', level: 1 })).toBeVisible();
   await admin.goto(`/engagements/${id}`);
   await expect(admin.getByText('could not be found')).toBeVisible();
 });
@@ -47,4 +50,43 @@ test('the statements page shows the draft statements with comparatives after car
   await expect(page.getByRole('cell', { name: 'Profit for the year' }).first()).toBeVisible();
   await expect(page.getByRole('cell', { name: '130,000.00' }).first()).toBeVisible();
   await expect(page.getByRole('cell', { name: '1,150,000.00' }).first()).toBeVisible();
+});
+
+test('people: invite in a side panel, pause and restore access from the row menu', async ({ page }) => {
+  await signIn(page, 'wanjiru.mugo@kangethe.example.test');
+  await page.goto('/admin/users');
+  await expect(page.getByRole('heading', { name: 'People', level: 1 })).toBeVisible();
+  const table = page.getByRole('table', { name: 'Everyone in the firm' });
+  await expect(table.getByRole('row', { name: /Ruth Wambui/ })).toBeVisible();
+  const before = (await table.getByRole('row').count()) - 1;
+  await expect(page.locator(MAIN)).toHaveCount(1);
+  await expect(page.getByLabel('Full name')).toHaveCount(0);
+  const text = await page.locator('main').innerText();
+  for (const re of BANNED) expect(text, `people contains ${re}`).not.toMatch(re);
+  await expect(page.getByRole('button', { name: 'Switch off' })).toHaveCount(0);
+  await expect(page.getByRole('columnheader', { name: 'Sign-in code' })).toBeVisible();
+
+  await page.getByRole('button', { name: '+ Invite someone' }).click();
+  const panel = page.getByRole('dialog', { name: 'Invite someone' });
+  await expect(panel.getByLabel('Full name')).toBeFocused();
+  const email = `temp.person.${Date.now()}@kangethe.example.test`;
+  await panel.getByLabel('Full name').fill('Temp Person');
+  await panel.getByLabel('Personal email').fill(email);
+  await panel.getByRole('button', { name: 'Create invite' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByText('Send this one-time link to Temp Person')).toBeVisible();
+  await expect(table.getByRole('row')).toHaveCount(before + 2);
+
+  const row = table.getByRole('row', { name: /Temp Person/ });
+  await expect(row).toContainText('Active');
+  await row.scrollIntoViewIfNeeded();
+  await row.getByRole('button', { name: 'Actions for Temp Person' }).click();
+  await expect(page.getByRole('menuitem')).toHaveText(['Pause access', 'Hand over']);
+  await page.getByRole('menuitem', { name: 'Pause access' }).click();
+  await expect(row).toContainText('Paused');
+  await row.scrollIntoViewIfNeeded();
+  await row.getByRole('button', { name: 'Actions for Temp Person' }).click();
+  await expect(page.getByRole('menuitem')).toHaveText(['Restore access']);
+  await page.getByRole('menuitem', { name: 'Restore access' }).click();
+  await expect(row).toContainText('Active');
 });

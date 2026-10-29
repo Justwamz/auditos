@@ -773,8 +773,13 @@ test('a person who still holds clients cannot be switched off, and the hand-over
   await signIn(page, 'wanjiru.mugo@kangethe.example.test');
   await page.goto('/admin/users');
   const row = page.getByRole('row', { name: /Ruth Wambui/ });
-  await row.getByRole('button', { name: 'Switch off' }).click();
+  await expect(row.getByRole('button', { name: 'Switch off' })).toHaveCount(0);
+  await row.getByRole('button', { name: 'Actions for Ruth Wambui' }).click();
+  await page.getByRole('menuitem', { name: 'Pause access' }).click();
   await expect(page.getByText('still manages clients or owns open prospects')).toBeVisible();
-  await row.getByRole('button', { name: 'Hand over' }).click();
-  await expect(page.getByText('Savannah Farms Ltd, Umoja Staff Pension Scheme')).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: 'still manages clients' })).toHaveCount(1);
+  await row.getByRole('button', { name: 'Actions for Ruth Wambui' }).click();
+  await page.getByRole('menuitem', { name: 'Hand over' }).click();
+  const panel = page.getByRole('dialog', { name: 'Hand over Ruth Wambui' });
+  await expect(panel.getByText('Savannah Farms Ltd, Umoja Staff Pension Scheme')).toBeVisible();
 });
