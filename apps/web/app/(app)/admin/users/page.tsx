@@ -178,7 +178,7 @@ export default function PeoplePage() {
                   <tr key={u.id}>
                     <td><strong>{nameOf(u)}</strong>{u.fullName && <div className="small muted">{u.email}</div>}</td>
                     <td>
-                      <select aria-label={`Role for ${nameOf(u)}`} value={u.role} onChange={(e) => patch(u.id, { role: e.target.value })}>
+                      <select style={{ minWidth: '13rem' }} aria-label={`Role for ${nameOf(u)}`} value={u.role} onChange={(e) => patch(u.id, { role: e.target.value })}>
                         {Object.entries(ROLE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                       </select>
                     </td>

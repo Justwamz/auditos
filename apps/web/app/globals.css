@@ -60,7 +60,6 @@ a:hover { color: var(--ledger); }
 .stack-lg > * + * { margin-top: 2rem; }
 .row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
 .row.between { justify-content: space-between; }
-.grow { flex: 1 1 auto; }
 
 /* Shell */
 .shell { display: grid; grid-template-columns: 15rem minmax(0, 1fr); min-height: 100vh; }
@@ -309,21 +308,9 @@ table.ledger td.num { min-width: 8.5rem; }
 .prose h3 { margin: 1.4rem 0 0.4rem; }
 .prose p, .prose li { line-height: 1.6; }
 .prose ul, .prose ol { padding-left: 1.3rem; }
-.board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start; }
-@media (max-width: 1000px) { .board { grid-template-columns: 1fr; } }
 .cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.7rem; }
 .card { border: 1px solid var(--rule); border-radius: var(--radius); background: #fff; padding: 0.75rem 1rem; box-shadow: var(--shadow-1); transition: box-shadow var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease); }
 .card:hover { box-shadow: var(--shadow-2); background: #fbfdfa; }
-.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.5rem; align-items: start; }
-@media (max-width: 1100px) { .week { grid-template-columns: 1fr; } }
-.day { border: 1px solid var(--rule); background: #fff; padding: 0.5rem 0.6rem; min-height: 8rem; }
-.day.today { border-color: var(--ledger); box-shadow: inset 0 3px 0 var(--ledger); }
-.day h3 { margin: 0 0 0.4rem; font-size: 0.9rem; }
-.event { border-left: 4px solid var(--rule-strong); background: var(--paper, #fafaf6); padding: 0.3rem 0.5rem; margin-bottom: 0.4rem; }
-.event.kind-fieldwork { border-color: var(--ledger); }
-.event.kind-deadline { border-color: var(--red-pen); }
-.event.kind-leave { border-color: var(--amber); }
-.milestone { color: var(--red-pen); font-size: 0.82rem; margin-bottom: 0.3rem; }
 .attendees { border: 1px solid var(--rule); max-height: 9rem; overflow: auto; padding: 0.4rem 0.6rem; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .prior { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; font-size: 0.85rem; color: var(--pencil); }
@@ -348,8 +335,8 @@ table.ledger td.num { min-width: 8.5rem; }
 @keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 
 .page-head-bar { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); flex-wrap: wrap; }
-.page-head-text { min-width: 0; }
-.page-head-actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.page-head-text { flex: 1 1 20rem; min-width: 0; max-width: 36rem; }
+.page-head-actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; flex: 0 0 auto; margin-left: auto; }
 
 .panel-backdrop { position: fixed; inset: 0; z-index: 30; display: flex; justify-content: flex-end; background: rgba(29, 39, 51, 0.4); animation: fade-in var(--dur) var(--ease); }
 .side-panel { width: min(440px, 100%); height: 100%; display: flex; flex-direction: column; background: var(--sheet); box-shadow: var(--shadow-3); animation: slide-in var(--dur) var(--ease); }
@@ -406,6 +393,7 @@ table.ledger td.num { min-width: 8.5rem; }
 .prospects-closed-counts { white-space: nowrap; }
 .prospects-search { width: min(22rem, 100%); }
 .prospects-person { width: auto; min-width: 12rem; }
+.prospects-toolbar .row { flex: 1 1 auto; flex-wrap: wrap; }
 .prospects-sheet { padding: var(--space-2) var(--space-3); }
 .prospects-scroll { overflow-x: auto; }
 .prospects-table td { vertical-align: top; padding-top: var(--space-2); padding-bottom: var(--space-2); }

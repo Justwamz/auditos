@@ -10,9 +10,7 @@ describe('mailText', () => {
     expect(findJargon(t)).toEqual([]);
   });
   test('also drops the practice-mode line the system adds now', () => {
-    expect(mailText('Hello
-
-Practice mode: this message was kept in Sent emails and not actually sent.')).toBe('Hello');
+    expect(mailText('Hello\n\nPractice mode: this message was kept in Sent emails and not actually sent.')).toBe('Hello');
   });
   test('leaves a message without that line alone', () => {
     expect(mailText('Hello\n\nBye')).toBe('Hello\n\nBye');
