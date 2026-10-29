@@ -116,7 +116,7 @@ function Detail({ clientId, contact, field, masked }: { clientId: string; contac
             aria-label={`Reason for revealing the ${field} of ${contact.name}`} placeholder="Why do you need this? It is recorded."
             required minLength={5} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} style={{ maxWidth: '22rem' }}
           />
-          <button className="secondary">Reveal and record</button>
+          <button className="secondary">Show details (this is recorded)</button>
           <button type="button" className="quiet" onClick={() => setAsking(false)}>Cancel</button>
         </form>
       )}

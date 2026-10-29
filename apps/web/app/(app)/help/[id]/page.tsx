@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useApi } from '@/lib/hooks';
 import { Markdown } from '@/components/Markdown';
+import { Skeleton } from '@/components/ui/EmptyState';
 
 interface Article { id: string; title: string; summary: string; category: string; body: string }
 
@@ -17,7 +18,14 @@ export default function ArticlePage() {
       </div>
     );
   }
-  if (!article.data) return <p className="muted">Loading…</p>;
+  if (!article.data) {
+    return (
+      <div className="stack" aria-label="Loading the guide">
+        <Skeleton height={32} width="40%" />
+        <Skeleton height={120} />
+      </div>
+    );
+  }
   const a = article.data;
   return (
     <div className="stack-lg">
