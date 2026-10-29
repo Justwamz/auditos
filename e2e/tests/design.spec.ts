@@ -142,6 +142,10 @@ test.describe('firm branding', () => {
 
       await signIn(page, partnerEmail);
       const firmName = 'Waweru & Associates';
+      // The very first HTML from the server already carries the brand, so there is no flash of the default colours.
+      const html = await (await page.request.get('/')).text();
+      expect(html).toContain(`--ledger: ${saved.primary};`);
+
       for (const path of ['/', '/clients', '/calendar']) {
         await page.goto(path);
         const t = await tokens(page);
@@ -149,6 +153,17 @@ test.describe('firm branding', () => {
         expect(t.railBg, path).not.toBe('#235640');
         expect(t.redPen, path).toBe('#b42318');
         expect(t.amber, path).toBe('#8a5a00');
+        // Success stays green whatever the brand: a success notice keeps the fixed --ok colour.
+        const ok = await page.evaluate(() => {
+          const el = document.createElement('div');
+          el.className = 'notice ok';
+          document.body.append(el);
+          const c = getComputedStyle(el);
+          const r = { border: c.borderLeftColor, token: getComputedStyle(document.documentElement).getPropertyValue('--ok').trim() };
+          el.remove();
+          return r;
+        });
+        expect(ok, path).toEqual({ border: 'rgb(46, 107, 76)', token: '#2e6b4c' });
         const rail = page.locator('.rail');
         await expect(rail.getByText(firmName, { exact: true })).toBeVisible();
         await expect(rail.getByText('Powered by AuditOS')).toBeVisible();
@@ -158,9 +173,12 @@ test.describe('firm branding', () => {
       // The meeting colour on the calendar is fixed, whatever the brand.
       expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--kind-meeting').trim())).toBe('#2e6b4c');
     } finally {
-      // Put the firm back to the default colours.
-      await saveBrand(adminPage, '#2e6b4c', '#e3eee4');
-      await admin.close();
+      // Put the firm back to the default colours. A failure here is thrown, never swallowed.
+      try {
+        await saveBrand(adminPage, '#2e6b4c', '#e3eee4');
+      } finally {
+        await admin.close();
+      }
     }
   });
 });

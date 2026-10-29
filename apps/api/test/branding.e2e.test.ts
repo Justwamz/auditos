@@ -228,3 +228,15 @@ describe('the other firm', () => {
     expect((await call(sB, 'GET', '/branding')).json().branding.primary).toBe('#2e6b4c');
   });
 });
+
+describe('a default-looking firm', () => {
+  test('saving the default colours with no logo leaves /me branding null', async () => {
+    const put = await call(sB, 'PUT', '/branding', { primary: '#2E6B4C', secondary: '#e3eee4', phone: '+254 711 000 000' });
+    expect(put.statusCode).toBe(200);
+    expect((await call(sB, 'GET', '/me')).json().branding).toBeNull();
+    await call(sB, 'PUT', '/branding', { primary: '#b42318', secondary: '#fbe9e6' });
+    expect((await call(sB, 'GET', '/me')).json().branding).not.toBeNull();
+    await call(sB, 'PUT', '/branding', { primary: '#2e6b4c', secondary: '#e3eee4' });
+    expect((await call(sB, 'GET', '/me')).json().branding).toBeNull();
+  });
+});

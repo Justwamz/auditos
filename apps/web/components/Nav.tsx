@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { api } from '@/lib/api';
 import { isCurrent, navFor } from '@/lib/nav';
 import { ROLE_LABELS, initialsOf } from '@/lib/text';
@@ -17,6 +18,7 @@ export function Nav({ name, role, isAdmin, firm, multiFirm, brandName, logoId }:
   const path = usePathname();
   const router = useRouter();
   const groups = navFor(role, isAdmin);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   async function signOut() {
     try {
@@ -32,13 +34,13 @@ export function Nav({ name, role, isAdmin, firm, multiFirm, brandName, logoId }:
       <a className="skip-link" href="#content">Skip to content</a>
       {brandName ? (
         <div>
-          {logoId ? (
+          {logoId && !logoFailed ? (
             <>
-              <div className="brand-logo"><img src={`/api/branding/logo/${logoId}`} alt={brandName} /></div>
+              <div className="brand-logo"><img src={`/api/branding/logo/${logoId}`} alt="" height={40} onError={() => setLogoFailed(true)} /></div>
               <div className="firm">{brandName}</div>
             </>
           ) : (
-            <div className="brand" style={{ color: '#fff' }}>{brandName}</div>
+            <div className="brand brand-name">{brandName}</div>
           )}
           <div className="powered">Powered by AuditOS</div>
         </div>

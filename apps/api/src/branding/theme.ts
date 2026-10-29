@@ -22,10 +22,13 @@ export async function loadBrandingRow(tx: PoolClient): Promise<BrandingRow | nul
 export const paletteOf = (row: BrandingRow | null): Palette =>
   derivePalette({ primary: row?.primary ?? DEFAULT_BRAND.primary, secondary: row?.secondary ?? DEFAULT_BRAND.secondary }).palette;
 
-/** The theme sent with /me: the palette, the name to show and the current logo; null when the firm has saved none. */
+/** The theme sent with /me: the palette, the name to show and the current logo; null when the firm has saved none or only the default look. */
 export async function loadTheme(tx: PoolClient, firmName: string): Promise<{ palette: Palette; name: string; logoId: string | null } | null> {
   const row = await loadBrandingRow(tx);
   if (!row) return null;
+  // A firm whose saved look is the default (no logo, default colours) keeps the plain AuditOS menu.
+  const same = (a: string | null, b: string) => (a ?? b).toLowerCase() === b.toLowerCase();
+  if (!row.logoId && same(row.primary, DEFAULT_BRAND.primary) && same(row.secondary, DEFAULT_BRAND.secondary)) return null;
   // The firm's own name for every role (the legal name sits behind billing permissions, so it is not used here).
   return { palette: paletteOf(row), name: firmName, logoId: row.logoId };
 }

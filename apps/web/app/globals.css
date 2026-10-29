@@ -8,6 +8,10 @@
   --ledger: #2e6b4c;
   --ledger-deep: #1e4a34;
   --ledger-wash: #e3eee4;
+  /* Meaning colours: success greens stay fixed whatever the firm's brand */
+  --ok: #2e6b4c;
+  --ok-deep: #1e4a34;
+  --ok-wash: #e3eee4;
   --red-pen: #b42318;
   --red-wash: #fbe9e6;
   --amber: #8a5a00;
@@ -74,9 +78,10 @@ a:hover { color: var(--ledger); }
   top: 0;
   height: 100vh;
 }
+.rail .brand-name { color: #fff; }
 .rail .brand { font-family: var(--sans); font-size: 1.35rem; letter-spacing: 0.01em; overflow-wrap: anywhere; }
-.rail .brand-logo { display: inline-flex; align-items: center; justify-content: center; max-width: 100%; padding: 6px 8px; background: #fff; border-radius: var(--radius-sm); }
-.rail .brand-logo img { display: block; max-width: 100%; max-height: 40px; width: auto; height: auto; object-fit: contain; }
+.rail .brand-logo { display: inline-flex; align-items: center; justify-content: center; max-width: 100%; padding: 6px 8px; background: #fff; color: var(--ink); border-radius: var(--radius-sm); }
+.rail .brand-logo img { display: block; max-width: 100%; max-height: 40px; width: auto; height: 40px; object-fit: contain; }
 .rail .powered { font-size: 13px; color: var(--rail-muted, #b7ccbc); margin-top: 0.15rem; }
 .rail .firm { font-size: 0.85rem; color: var(--rail-muted, #b7ccbc); }
 .rail nav { display: flex; flex-direction: column; gap: 0.15rem; overflow-y: auto; }
@@ -195,7 +200,7 @@ input[type='radio'], input[type='checkbox'] { width: auto; min-height: 0; height
 /* Notices */
 .notice { padding: 0.75rem 1rem; border-left: 4px solid var(--rule-strong); border-radius: var(--radius-sm); background: #eef2ea; margin: 0.75rem 0; max-width: 70ch; }
 .notice.error { border-color: var(--red-pen); background: var(--red-wash); }
-.notice.ok { border-color: var(--ledger); background: var(--ledger-wash); }
+.notice.ok { border-color: var(--ok); background: var(--ok-wash); }
 .notice.warn { border-color: var(--amber); background: var(--amber-wash); }
 .notice ul { margin: 0.35rem 0 0; padding-left: 1.2rem; }
 
@@ -203,8 +208,8 @@ input[type='radio'], input[type='checkbox'] { width: auto; min-height: 0; height
 .state { display: inline-block; padding: 0.1rem 0.65rem; border: 1px solid var(--rule-strong); border-radius: var(--radius-pill); font-size: 13px; font-weight: 500; background: #fff; white-space: nowrap; }
 .state.draft { color: var(--pencil); }
 .state.prepared { color: var(--amber); border-color: var(--amber); background: var(--amber-wash); }
-.state.manager_reviewed { color: var(--ledger-deep); border-color: var(--ledger); background: var(--ledger-wash); }
-.state.partner_approved, .state.locked { color: #fff; background: var(--ledger-deep); border-color: var(--ledger-deep); }
+.state.manager_reviewed { color: var(--ok-deep); border-color: var(--ok); background: var(--ok-wash); }
+.state.partner_approved, .state.locked { color: #fff; background: var(--ok-deep); border-color: var(--ok-deep); }
 .state.open { color: var(--red-pen); border-color: var(--red-pen); background: var(--red-wash); }
 
 /* Tables */
@@ -245,7 +250,7 @@ table.ledger td.num { min-width: 8.5rem; }
 /* Stage line: where the engagement is in its life */
 .stages { display: flex; flex-wrap: wrap; gap: 0; margin: 0.5rem 0 1rem; padding: 0; list-style: none; }
 .stages li { padding: 0.3rem 0.8rem; border: 1px solid var(--rule-strong); margin-left: -1px; background: #fff; font-size: 0.85rem; color: var(--pencil); }
-.stages li.done { background: var(--ledger-wash); color: var(--ledger-deep); }
+.stages li.done { background: var(--ok-wash); color: var(--ok-deep); }
 .stages li.current { background: var(--ledger-deep); color: #fff; font-weight: 600; }
 
 .bar { height: 0.55rem; background: var(--rule); border-radius: 99px; overflow: hidden; }
@@ -302,7 +307,7 @@ table.ledger td.num { min-width: 8.5rem; }
 .roadmap .next-step p { margin: 0 0 0.7rem; }
 .roadmap-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
 .roadmap-steps li { display: flex; gap: 0.6rem; align-items: baseline; color: var(--pencil); }
-.roadmap-steps li.done { color: var(--ledger-deep); }
+.roadmap-steps li.done { color: var(--ok-deep); }
 .roadmap-steps li.current { color: inherit; }
 .roadmap-steps .mark { width: 1.2rem; text-align: center; }
 .help-link { font-size: 0.85rem; color: var(--ledger-deep); text-decoration: none; border: 1px solid var(--rule-strong); border-radius: 99px; padding: 0.15rem 0.7rem; white-space: nowrap; }
@@ -321,7 +326,7 @@ table.ledger td.num { min-width: 8.5rem; }
 /* Version history */
 .changes { margin: 0.4rem 0 0; padding-left: 1rem; }
 .changes del { color: var(--red-pen); }
-.changes ins { color: var(--ledger-deep); text-decoration: none; font-weight: 600; }
+.changes ins { color: var(--ok-deep); text-decoration: none; font-weight: 600; }
 
 /* Billing */
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.8rem; }

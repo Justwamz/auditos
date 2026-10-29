@@ -5,6 +5,7 @@ export default {
   poweredByHeader: false,
   distDir: process.env.NEXT_DIST_DIR ?? '.next',
   reactStrictMode: true,
+  transpilePackages: ['@auditos/brand'],
   // The browser only ever talks to this origin; the API is reached through /api so cookies stay same-origin.
   async rewrites() {
     return [{ source: '/api/:path*', destination: `${API_URL}/:path*` }];
