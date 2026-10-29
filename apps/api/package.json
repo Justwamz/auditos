@@ -7,6 +7,7 @@
   "dependencies": {
     "@auditos/audit-log": "workspace:*",
     "@auditos/bank-statements": "workspace:*",
+    "@auditos/brand": "workspace:*",
     "@auditos/authz": "workspace:*",
     "@auditos/db": "workspace:*",
     "@auditos/exports": "workspace:*",

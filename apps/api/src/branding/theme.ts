@@ -1,0 +1,32 @@
+import type { PoolClient } from 'pg';
+import { DEFAULT_BRAND, derivePalette, type Palette } from '@auditos/brand';
+
+export interface BrandingRow {
+  primary: string | null;
+  secondary: string | null;
+  logoId: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  footerNote: string | null;
+}
+
+/** The saved branding of the firm of this transaction, or null when nothing has been saved. */
+export async function loadBrandingRow(tx: PoolClient): Promise<BrandingRow | null> {
+  const r = (await tx.query('select primary_color, secondary_color, logo_id, phone, email, website, footer_note from firm_branding where tenant_id = app_tenant()')).rows[0];
+  if (!r) return null;
+  return { primary: r.primary_color, secondary: r.secondary_color, logoId: r.logo_id, phone: r.phone, email: r.email, website: r.website, footerNote: r.footer_note };
+}
+
+/** The palette for what is saved (the colours were stored already adjusted, so nothing changes here). */
+export const paletteOf = (row: BrandingRow | null): Palette =>
+  derivePalette({ primary: row?.primary ?? DEFAULT_BRAND.primary, secondary: row?.secondary ?? DEFAULT_BRAND.secondary }).palette;
+
+/** The theme sent with /me: the palette, the name to show and the current logo; null when the firm has saved none. */
+export async function loadTheme(tx: PoolClient, firmName: string): Promise<{ palette: Palette; name: string; logoId: string | null } | null> {
+  const row = await loadBrandingRow(tx);
+  if (!row) return null;
+  // Only people who may see billing details can read the legal name; everyone else sees the firm name.
+  const legal = (await tx.query('select legal_name from billing_settings where tenant_id = app_tenant()')).rows[0]?.legal_name as string | null | undefined;
+  return { palette: paletteOf(row), name: legal || firmName, logoId: row.logoId };
+}

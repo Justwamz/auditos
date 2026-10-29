@@ -34,6 +34,16 @@ const STATE_LABELS: Record<string, string> = {
 };
 const FIELD_LABELS: Record<string, string> = { phone: 'phone number', email: 'email address', idNumber: 'ID number', kraPin: 'KRA PIN' };
 
+const BRANDING_LABELS: Record<string, string> = {
+  logo: 'logo',
+  primaryColor: 'main colour',
+  secondaryColor: 'second colour',
+  phone: 'phone number',
+  email: 'email address',
+  website: 'website',
+  footerNote: 'footer note',
+};
+
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 const kindLabel = (kind: string | null | undefined) => KIND_LABELS[kind ?? ''] ?? 'document';
 
@@ -134,6 +144,12 @@ export function describeEvent(e: AuditRow): string {
       return `${who} recorded that quotation ${str(d.number)} was accepted by ${str(d.subject)}`;
     case 'quote.declined':
       return `${who} recorded that quotation ${str(d.number)} was declined by ${str(d.subject)}`;
+    case 'branding.updated': {
+      const parts = (Array.isArray(d.changed) ? d.changed : []).map((c) => BRANDING_LABELS[str(c)]).filter((x): x is string => !!x);
+      // Colours are named by what they are, never printed as codes.
+      const list = [...new Set(parts)];
+      return `${who} changed the firm's branding${list.length ? ` (${list.join(', ')})` : ''}`;
+    }
     case 'auth.login':
       return `${who} signed in`;
     case 'auth.logout':

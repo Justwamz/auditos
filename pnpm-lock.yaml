@@ -45,6 +45,9 @@ importers:
       '@auditos/bank-statements':
         specifier: workspace:*
         version: link:../../packages/bank-statements
+      '@auditos/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@auditos/db':
         specifier: workspace:*
         version: link:../../packages/db

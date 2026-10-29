@@ -20,7 +20,7 @@ const query = z.object({
 const KIND_SQL: Record<string, string> = {
   all: 'true',
   views: "e.action like 'view.%' or e.action = 'evidence.downloaded' or e.action = 'export.created'",
-  changes: "e.action like 'item.%' or e.action like 'evidence.statement%' or e.action like 'evidence.sample%' or e.action like 'prospect.%' or e.action like 'client.%' or e.action like 'calendar.%' or e.action like 'member.%' or e.action like 'invoice.%' or e.action like 'quote.%' or e.entity_type in ('billing_settings', 'billing_rates', 'tax_rates', 'engagement_fees', 'signoffs', 'deletion_requests', 'unlock_requests', 'review_notes', 'engagement_members', 'engagements', 'clients')",
+  changes: "e.action like 'item.%' or e.action like 'evidence.statement%' or e.action like 'evidence.sample%' or e.action like 'prospect.%' or e.action like 'client.%' or e.action like 'calendar.%' or e.action like 'member.%' or e.action like 'invoice.%' or e.action like 'quote.%' or e.action like 'branding.%' or e.entity_type in ('billing_settings', 'billing_rates', 'tax_rates', 'engagement_fees', 'signoffs', 'deletion_requests', 'unlock_requests', 'review_notes', 'engagement_members', 'engagements', 'clients')",
   reveals: "e.action like 'pii.%'",
   signins: "e.action like 'auth.%'",
 };

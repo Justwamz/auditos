@@ -54,6 +54,12 @@ describe('describeEvent', () => {
   test('system events have no person', () => {
     expect(describeEvent(row({ action: 'engagement.auto_locked', entityType: 'engagement', actorName: null }))).toBe('The system locked the file for Mwangaza Traders Ltd after the 60-day deadline');
   });
+  test('a branding change names what changed, never a colour code', () => {
+    const detail = { changed: ['logo', 'primaryColor'], primaryColor: { old: '#2e6b4c', new: '#1f5f4a' } };
+    expect(describeEvent(row({ action: 'branding.updated', entityType: 'branding', clientName: null, detail }))).toBe("Grace Kangethe changed the firm's branding (logo, main colour)");
+    expect(describeEvent(row({ action: 'branding.updated', entityType: 'branding', clientName: null, detail: { changed: ['phone', 'email'] } }))).toBe("Grace Kangethe changed the firm's branding (phone number, email address)");
+    expect(describeEvent(row({ action: 'branding.updated', entityType: 'branding', clientName: null, detail: {} }))).toBe("Grace Kangethe changed the firm's branding");
+  });
   test('an event the renderer does not know is still readable', () => {
     expect(describeEvent(row({ action: 'INSERT', entityType: 'engagement_members', clientName: null }))).toBe('Grace Kangethe added a team member');
     expect(describeEvent(row({ action: 'WEIRD', entityType: 'thing', clientName: null }))).toBe('Grace Kangethe made a change (WEIRD on thing)');

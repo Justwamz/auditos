@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { appendEvent } from '@auditos/audit-log';
 import { withTenant, withUser } from '@auditos/db';
+import { loadTheme } from '../branding/theme';
 import { decrypt, encrypt, randomToken, sha256Hex, signToken, verifyToken } from '../security/crypto';
 import { burnPasswordCheck, verifyPassword } from '../security/password';
 import { generateSecret, otpauthUri, verifyTotp } from '../security/totp';
@@ -183,6 +184,11 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       ).rows.map((r) => ({ tenantId: r.tenant_id as string, tenantName: r.name as string, role: r.role as string, grade: r.grade as number })),
       };
     });
+    const activeFirm = memberships.find((m) => m.tenantId === a.tenantId);
+    const branding =
+      a.tenantId && a.membershipActive && activeFirm
+        ? await withTenant(pool, { tenantId: a.tenantId, userId: a.userId, readOnly: true }, (tx) => loadTheme(tx, activeFirm.tenantName))
+        : null;
     return {
       userId: a.userId,
       email,
@@ -192,6 +198,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       activeTenantId: a.tenantId,
       role: a.role,
       stepUpValid: a.stepUpAgeSec !== null && a.stepUpAgeSec < cfg.stepUpMinutes * 60,
+      branding,
     };
   });
 }

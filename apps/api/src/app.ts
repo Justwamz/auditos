@@ -20,6 +20,7 @@ import { handoverRoutes } from './people/handover';
 import { calendarRoutes } from './calendar/routes';
 import { statementRoutes } from './statements/routes';
 import { samplingRoutes } from './sampling/routes';
+import { brandingRoutes } from './branding/routes';
 import { billingSettingsRoutes } from './billing/settings';
 import { timeRoutes } from './billing/time';
 import { invoiceRoutes } from './billing/invoices';
@@ -108,7 +109,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   await app.register(rateLimit, { global: true, max: cfg.globalRateLimit, timeWindow: '1 minute' });
 
   app.addHook('onSend', async (_req, reply) => {
-    reply.header('cache-control', 'no-store');
+    if (!reply.hasHeader('cache-control')) reply.header('cache-control', 'no-store');
   });
 
   app.addHook('onRequest', async (req, reply) => {
@@ -184,6 +185,7 @@ export async function buildApp(opts: AppOptions = {}): Promise<FastifyInstance> 
   await app.register(handoverRoutes);
   await app.register(calendarRoutes);
   await app.register(billingSettingsRoutes);
+  await app.register(brandingRoutes);
   await app.register(timeRoutes);
   await app.register(invoiceRoutes);
   await app.register(quoteRoutes);
