@@ -15,7 +15,7 @@ const PEOPLE = [
 ];
 const HEADINGS = ['My work', 'Clients and audits', 'Business', 'Firm'];
 // Pages outside the menu that people reach from it. A page a role may not open just says so, in plain words.
-const EXTRA = ['/billing/settings', '/billing/outbox', '/invoices', '/invoices/new', '/quotes', '/quotes/new', '/audit-trail', '/help'];
+const EXTRA = ['/branding', '/billing/settings', '/billing/outbox', '/invoices', '/invoices/new', '/quotes', '/quotes/new', '/audit-trail', '/help'];
 
 const settle = async (page: Page) => {
   await page.waitForLoadState('networkidle').catch(() => undefined);
