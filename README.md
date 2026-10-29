@@ -22,7 +22,7 @@ Seeded users are synthetic (`@example.test`). The random password and each user'
 `apps/api/.seed-credentials.local.json` (git-ignored). Print the current code for a user:
 
 ```powershell
-pnpm --filter @auditos/api totp partner@kangethe.example.test
+pnpm --filter @auditos/api totp grace.kangethe@kangethe.example.test
 ```
 
 While testing locally you can skip the authenticator: set `DEV_FIXED_OTP=123456` in `.env.local` and restart the API; every account then accepts `123456` for sign-in and step-up. The API refuses to start with it in production, so it cannot reach Render. Remove the line when you want to test the real authenticator.
@@ -31,7 +31,9 @@ Seeded people are named, one account each (no shared logins). Kangethe & Associa
 
 ## Demo guide: who sees what (Kangethe & Associates)
 
-Four clients, three account managers and teams, so each profile sees something different. Every profile also has a "What you can see" panel on its dashboard.
+Four clients, three account managers and teams, so each profile sees something different. Everyone except the firm administrator lands on **Today**, which greets them by first name, lists what needs them (papers to review, overdue invoices, year ends coming up) with an Open link on each row, and shows a "What you can see" panel. Wanjiru starts on Clients.
+
+**The side menu** is grouped, and a role only sees the groups it can use: Today; **My work** (Calendar, Timesheet); **Clients and audits** (Clients, Engagements); **Business** (Prospects, Billing); **Firm** (Quality and independence, People); Help. Billing has tabs (Overview, Invoices, Quotations, Sent emails, Settings) and Quality and independence has two (Independence, Activity history), each shown only to the people who could always see them.
 
 | Person | Role | Clients they see | Why |
 |---|---|---|---|
@@ -45,17 +47,17 @@ Four clients, three account managers and teams, so each profile sees something d
 | Mercy Achieng / Samuel Kariuki | Quality officer / EQR | Mwangaza | on its team |
 | Wanjiru Mugo | Firm administrator | all four (list only) | administrator; cannot open files or reveal personal details |
 
-**Pipeline.** Six prospects across the team. Staff and seniors see only what they own (Brian: Baraka Hauliers; Tom: Kito Logistics); managers and partners see all six and the totals by person. The firm administrator has no pipeline.
+**Prospects** (the old Pipeline; the address is still /pipeline). Six prospects across the team, shown as a table you can switch to cards, with stage buttons, a search box and, for managers and partners, a "Show prospects of" person filter. Click a row to open it and see Move to, Hand over and Make a client, or use the ... button. Staff and seniors see only what they own (Brian: Baraka Hauliers; Tom: Kito Logistics); managers and partners see all six and the totals by person. The firm administrator has no Prospects page.
 
-**Calendar.** A week of events for the current and next week. Brian sees his fieldwork but not the Savannah meetings; Tom sees only his leave; Grace and Charles see everything; managers see the events of people on their teams.
+**Calendar.** Month, Day, Work week and Week views, with a legend to switch kinds of event on and off, and (for managers and partners) **See by person** to put a day side by side by colleague. A week of events for the current and next week. Brian sees his fieldwork but not the Savannah meetings; Tom sees only his leave; Grace and Charles see everything; managers see the events of people on their teams.
 
 **Account managers.** Grace can change a client's account manager from the client page; Daniel cannot. Wanjiru cannot switch Ruth off while Ruth manages clients, and the Hand over panel lists what she holds.
 
 **Time and billing.** Rates (staff 1,500, senior 2,500, manager 4,500, partner 9,000 per hour), taxes (VAT 16%, excise duty 10%, VAT on excise), fees per job, three weeks of time and expenses, and invoices in different states.
 - Brian and the other staff log time and expenses on the **Timesheet** and see no rates, values, invoices or billing.
-- Daniel (manager) sees **Billing** for his own engagements, the Mwangaza invoice (issued, part paid, marked SIMULATION), the overdue Lakeview invoice, and quotations; he cannot see Ruth's draft Savannah invoice.
+- Daniel (manager) sees **Billing** for his own engagements, the Mwangaza invoice (issued, part paid, marked PRACTICE ONLY), the overdue Lakeview invoice, and quotations; he cannot see Ruth's draft Savannah invoice.
 - Grace (partner) sees the whole firm, issues invoices and records payments, and sets rates and taxes. Wanjiru (administrator) sees invoicing but not hours.
-- Invoices are issued through a simulated KRA connection and say so everywhere. Email is simulated too: see **Billing > Outbox**.
+- Invoices are issued in practice mode (no real KRA connection) and say "PRACTICE ONLY" on screen and on the PDF. Email is not sent either: messages are kept under **Billing > Sent emails**.
 
 Waweru & Associates is a second firm with no clients, to show that firms never see each other.
 
@@ -86,8 +88,8 @@ pnpm --filter @auditos/e2e e2e     # Playwright, own database (auditos_e2e) and 
 Tenant = audit firm. Every tenant table has row-level security forced on and the API connects as a role that cannot bypass it.
 Engagements are visible only to their members. Reviewed work cannot change without its sign-offs being revoked (database trigger),
 items are never hard-deleted, locked engagements are immutable, and unlock and approved-item deletion need a second person. All of
-it is recorded in a per-firm, hash-chained, append-only audit log written by the database. Login needs a password and an
-authenticator code; sign-off, deletion approval, unlock and export need a fresh code (step-up).
+it is recorded in a per-firm, hash-chained, append-only audit log written by the database. Login needs a password and a
+six-digit code from a phone app; sign-off, deletion approval, unlock and export need a fresh code (step-up).
 
 ## Deploying to Render
 
