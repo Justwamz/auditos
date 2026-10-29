@@ -147,10 +147,10 @@ export default function PeoplePage() {
         help={<HelpLink topic="admin.users" />}
       />
       <ErrorNote error={error ?? list.error} />
-      {invited && (
+      {invited && link && (
         <Notice>
-          Send this one-time link to {invited || 'the new user'}. It expires in 72 hours and works once.
-          {link && <div className="secret small" style={{ marginTop: '0.4rem' }}>{link}</div>}
+          Send this one-time link to {invited}. It expires in 72 hours and works once.
+          <div className="secret small" style={{ marginTop: '0.4rem' }}>{link}</div>
         </Notice>
       )}
 

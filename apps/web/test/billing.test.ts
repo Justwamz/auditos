@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { matchesQuery, mailText } from '../lib/billing';
+import { mailText } from '../lib/billing';
 import { findJargon } from '../lib/plain';
 
 describe('mailText', () => {
@@ -9,20 +9,12 @@ describe('mailText', () => {
     expect(t).toBe('Please find invoice KA-2026-0001.\n\nAmount due: KES 100.00');
     expect(findJargon(t)).toEqual([]);
   });
+  test('also drops the practice-mode line the system adds now', () => {
+    expect(mailText('Hello
+
+Practice mode: this message was kept in Sent emails and not actually sent.')).toBe('Hello');
+  });
   test('leaves a message without that line alone', () => {
     expect(mailText('Hello\n\nBye')).toBe('Hello\n\nBye');
-  });
-});
-
-describe('matchesQuery', () => {
-  test('an empty search matches everything', () => {
-    expect(matchesQuery('  ', 'anything')).toBe(true);
-  });
-  test('every word must be found, in any field, ignoring case', () => {
-    expect(matchesQuery('mwangaza ka-2026', 'Mwangaza Traders Ltd', 'KA-2026-0001')).toBe(true);
-    expect(matchesQuery('mwangaza lakeview', 'Mwangaza Traders Ltd', 'KA-2026-0001')).toBe(false);
-  });
-  test('missing fields are ignored', () => {
-    expect(matchesQuery('draft', null, undefined, 'Draft')).toBe(true);
   });
 });

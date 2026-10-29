@@ -41,7 +41,7 @@ function HelpHome() {
     if (query.length < 2) return;
     try {
       const r = await api.get<{ results: Hit[] }>(`/help/search?q=${encodeURIComponent(query)}`);
-      setHits(r.results);
+      setHits(r.results.filter((h, i) => r.results.findIndex((x) => x.articleId === h.articleId) === i));
       setAsked(query);
     } catch (e) {
       setError(e);
@@ -64,8 +64,8 @@ function HelpHome() {
           <h2 id="help-results">Results for "{asked}"</h2>
           {hits.length === 0 && <EmptyState kind="folder" title="Nothing found for your role">Try other words, or browse the guides below.</EmptyState>}
           <ul className="item-list">
-            {hits.map((h, i) => (
-              <li key={`${h.articleId}-${i}`}>
+            {hits.map((h) => (
+              <li key={h.articleId}>
                 <Link href={`/help/${h.articleId}`}><strong>{h.title}</strong></Link>
                 <div className="small muted">{h.section}</div>
                 <div>{h.snippet}</div>

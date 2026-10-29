@@ -10,7 +10,7 @@ import { PracticeTag, statusLabel } from '@/components/billing';
 import { Chips } from '@/components/ui/Chips';
 import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
 import { PageHead } from '@/components/ui/PageHead';
-import { matchesQuery } from '@/lib/billing';
+import { matchesQuery } from '@/lib/text-match';
 import { kes } from '@/lib/dates';
 
 interface Row {

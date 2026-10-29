@@ -4,7 +4,7 @@ import { QualityTabs } from '@/components/QualityTabs';
 import { HelpLink } from '@/components/HelpLink';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
-import { matchesQuery } from '@/lib/billing';
+import { matchesQuery } from '@/lib/text-match';
 import { ErrorNote } from '@/components/bits';
 import { Chips } from '@/components/ui/Chips';
 import { Disclosure } from '@/components/ui/Disclosure';
