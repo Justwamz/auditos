@@ -445,7 +445,7 @@ test('the invoice keeps the letterhead it was issued with, on screen and on the 
     await expect(head.locator('img')).toHaveAttribute('src', /\/api\/branding\/logo\//);
     await partner.waitForLoadState('networkidle');
     expect(await head.locator('img').evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-    await partner.screenshot({ path: process.env.TASK6_SHOT ?? 'task6-invoice.png', fullPage: true });
+    if (process.env.TASK6_SHOT) await partner.screenshot({ path: process.env.TASK6_SHOT, fullPage: true });
     await plain(partner, 'issued invoice with letterhead');
 
     // The PDF download carries the same letterhead.
