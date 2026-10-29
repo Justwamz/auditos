@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
-import { statusLabel } from '@/components/billing';
+import { Letterhead, statusLabel, type LetterheadData } from '@/components/billing';
 import { PageHead } from '@/components/ui/PageHead';
 import { RowMenu } from '@/components/ui/RowMenu';
 import { SidePanel } from '@/components/ui/SidePanel';
@@ -19,6 +19,7 @@ interface Invoice {
   id: string; number: string | null; status: string; overdue: boolean; clientName: string; issueDate: string | null; dueDate: string | null; notes: string | null; taxMode: string;
   taxes: { name: string; rate: string; onPrevious: boolean; amount: string }[]; subtotal: string; taxTotal: string; total: string; paid: string; outstanding: string; voidReason: string | null;
   tax: { provider: string; simulated: boolean; status: string; controlNumber: string | null; message: string } | null;
+  letterhead: LetterheadData | null; letterheadIsLive: boolean;
   lines: { description: string; quantity: string; unitPrice: string; amount: string; source: string }[];
   payments: { amount: string; paidOn: string; method: string; reference: string | null }[];
 }
@@ -116,6 +117,7 @@ export default function InvoicePage() {
       {i.status === 'void' && <div className="notice error">This invoice was voided: {i.voidReason}</div>}
 
       <section className="sheet stack">
+        <Letterhead letterhead={i.letterhead} live={i.status !== 'draft' && i.letterheadIsLive} />
         <table className="lines" aria-label="Invoice lines">
           <thead><tr><th>Description</th><th className="num">Qty</th><th className="num">Unit price</th><th className="num">Amount</th></tr></thead>
           <tbody>

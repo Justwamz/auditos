@@ -589,3 +589,9 @@ button.cal-day-head:hover:not(:disabled) { background: var(--ledger-wash); color
 .fixed-details dt { font-size: 13px; color: var(--pencil); }
 .fixed-details dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 @media (max-width: 640px) { .brand-preview { grid-template-columns: 1fr; } }
+
+/* The firm's letterhead at the top of an invoice or quotation. */
+.letterhead { display: grid; gap: 0.15rem; padding-bottom: 0.75rem; margin-bottom: 0.5rem; }
+.letterhead-logo { max-width: 160px; max-height: 60px; object-fit: contain; justify-self: start; }
+.letterhead-name { margin: 0; font-weight: 700; font-size: 1.1rem; overflow-wrap: anywhere; }
+.letterhead-line { margin: 0; font-size: 0.875rem; overflow-wrap: anywhere; }

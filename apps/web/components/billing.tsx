@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { useApi } from '@/lib/hooks';
 
 export interface LineInput { description: string; quantity: string; unitPrice: string }
@@ -57,4 +58,29 @@ export const statusLabel = (s: string, overdue = false): string => (overdue ? 'O
 /** The small "practice" tag shown beside a document that has not really been sent to the tax authority. */
 export function PracticeTag() {
   return <span className="practice-tag">practice</span>;
+}
+
+export interface LetterheadData {
+  name: string; address: string | null; phone: string | null; email: string | null; website: string | null; kraPin: string | null;
+  bankDetails: string | null; footerNote: string | null; primary: string; logoId: string | null;
+}
+
+/**
+ * The firm's letterhead at the top of an invoice or quotation: logo (or the name when there is none or it will not load),
+ * contact lines and KRA PIN. Everything is shown as plain text. "Powered by AuditOS" is always part of it.
+ */
+export function Letterhead({ letterhead: l, live = false }: { letterhead: LetterheadData | null; live?: boolean }) {
+  const [logoFailed, setLogoFailed] = useState(false);
+  if (!l) return null;
+  const lines = [l.address, l.phone && `Tel: ${l.phone}`, l.email && `Email: ${l.email}`, l.website && `Web: ${l.website}`, l.kraPin && `KRA PIN: ${l.kraPin}`].filter((x): x is string => !!x);
+  const showLogo = !!l.logoId && !logoFailed;
+  return (
+    <header className="letterhead" aria-label="Letterhead" style={{ borderBottom: `3px solid ${/^#[0-9a-fA-F]{6}$/.test(l.primary) ? l.primary : 'currentColor'}` }}>
+      {showLogo && <img className="letterhead-logo" src={`/api/branding/logo/${l.logoId}`} alt="" onError={() => setLogoFailed(true)} />}
+      <p className="letterhead-name" style={showLogo ? undefined : { color: l.primary }}>{l.name}</p>
+      {lines.map((x, n) => <p key={n} className="letterhead-line">{x}</p>)}
+      {live && <p className="letterhead-line muted">Shown with your current details.</p>}
+      <p className="letterhead-line muted">Powered by AuditOS</p>
+    </header>
+  );
 }

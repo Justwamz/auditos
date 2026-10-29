@@ -12,6 +12,10 @@ describe('mailText', () => {
   test('also drops the practice-mode line the system adds now', () => {
     expect(mailText('Hello\n\nPractice mode: this message was kept in Sent emails and not actually sent.')).toBe('Hello');
   });
+  test('keeps the letterhead lines and the closing Powered by AuditOS line', () => {
+    const mail = ['Kangethe & Associates', 'Nairobi', 'Tel: +254 700 111 222', '', 'Please find invoice KA-1.', '', 'Practice mode: this message was kept in Sent emails and not actually sent.', '', 'Powered by AuditOS'].join('\n');
+    expect(mailText(mail)).toBe('Kangethe & Associates\nNairobi\nTel: +254 700 111 222\n\nPlease find invoice KA-1.\n\nPowered by AuditOS');
+  });
   test('leaves a message without that line alone', () => {
     expect(mailText('Hello\n\nBye')).toBe('Hello\n\nBye');
   });

@@ -75,6 +75,9 @@ No tax is added unless you choose it. Choose any of the firm's taxes (up to five
 ## Issuing
 A partner or a person with the administrator permission issues the invoice. Issuing gives it the next number, with no gaps, marks the time and expenses as billed, and locks the invoice: lines, taxes and totals can never change.
 
+## Letterhead
+The top of the invoice, on screen and on the PDF, shows your firm's logo (or its name), address, phone, email, website and KRA PIN, with your footer note and bank details. These come from **Billing settings** and from the **Branding** page. When you issue an invoice, the letterhead is copied onto it and frozen, so changing your name, address, logo or colour later does not alter invoices already issued. A draft always shows the current letterhead. Invoices issued before this was kept show your current details. "Powered by AuditOS" always appears at the bottom of every page and in the emails kept in **Sent emails**.
+
 ## Tax authority submission
 Until KRA is connected, issued invoices are for **practice only**: they carry a "practice" tag in the list and a **PRACTICE ONLY** warning on screen, and the PDF is marked as not valid too. They are not valid tax invoices. See "Tax invoices and the KRA practice mode".
 
@@ -103,6 +106,9 @@ Press **+ New quotation**. Choose a client or a prospect, give it a title and an
 ## Sending
 **Send and number it** gives it the next quotation number and locks it. If you give an email address, a message is kept in the **Sent emails** tab; email is not connected, so it is not actually sent (practice mode).
 
+## Letterhead
+A quotation shows your firm's letterhead and bank details, taken from **Billing settings** and the **Branding** page. When you send and number it, the letterhead is copied onto the quotation and frozen, so later changes to your branding do not alter it. "Powered by AuditOS" always shows at the bottom of every page.
+
 ## Acceptance
 Record whether the client accepted or declined. Each can be recorded once.
 
@@ -129,7 +135,7 @@ Set a rate in KES for each role. A rate applies to time logged from then on; tim
 The list holds the taxes that can be put on an invoice or quotation, for example VAT at 16%. Mark a tax as **charged on top of the tax before it** for cases such as VAT on excise duty. A tax can be switched off but never deleted, so old invoices stay readable. Nothing from the list is applied unless someone chooses it on a document.
 
 ## Invoice details
-The firm's name, address, KRA PIN and bank details print on invoices. The number prefixes (for example KA gives KA-2026-0001) and the days allowed for payment are set here. The logo, phone, email, website, footer note and colours are set by the firm administrator on the **Branding** page (see **Set your firm's logo and colours**).
+The firm's name, address, KRA PIN and bank details print on invoices and quotations, as part of the letterhead that is frozen when a document is issued or sent. The number prefixes (for example KA gives KA-2026-0001) and the days allowed for payment are set here. The logo, phone, email, website, footer note and colours are set by the firm administrator on the **Branding** page (see **Set your firm's logo and colours**).
 
 ## Changes are recorded
 Every change to rates, taxes and details is in the activity history.`,

@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
-import { statusLabel } from '@/components/billing';
+import { Letterhead, statusLabel, type LetterheadData } from '@/components/billing';
 import { PageHead } from '@/components/ui/PageHead';
 import { RowMenu } from '@/components/ui/RowMenu';
 import { SidePanel } from '@/components/ui/SidePanel';
@@ -18,6 +18,7 @@ import { saveBlob } from '@/lib/download';
 interface Quote {
   id: string; number: string | null; status: string; clientId: string | null; subjectName: string; title: string; validUntil: string | null; notes: string | null; taxMode: string;
   taxes: { name: string; rate: string; amount: string }[]; subtotal: string; taxTotal: string; total: string;
+  letterhead: LetterheadData | null; letterheadIsLive: boolean;
   lines: { description: string; quantity: string; unitPrice: string; amount: string }[];
 }
 type Panel = 'send' | 'fee' | null;
@@ -95,6 +96,7 @@ export default function QuotePage() {
       {info && <Notice>{info}</Notice>}
 
       <section className="sheet stack">
+        <Letterhead letterhead={d.letterhead} live={d.status !== 'draft' && d.letterheadIsLive} />
         <table className="lines" aria-label="Quotation lines">
           <thead><tr><th>Description</th><th className="num">Qty</th><th className="num">Unit price</th><th className="num">Amount</th></tr></thead>
           <tbody>{d.lines.map((l, n) => <tr key={n}><td>{l.description}</td><td className="num">{Number(l.quantity).toFixed(2)}</td><td className="num">{kes(l.unitPrice)}</td><td className="num">{kes(l.amount)}</td></tr>)}</tbody>
