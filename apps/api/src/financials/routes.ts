@@ -7,6 +7,7 @@ import { exportDocx, exportPdf, exportXlsx, type ExportMeta } from '@auditos/exp
 import { formatMoney, mapTrialBalance, parseMoney, suggestMapping, TAXONOMY, UnsupportedFrameworkError } from '@auditos/fs-engine';
 import { assertCan, httpError, tenantCtx } from '../authz';
 import { recordView } from '../audit/views';
+import { loadLetterhead, loadLogo } from '../branding/letterhead';
 import { registerGate } from '../engagements/gates';
 import { loadEngagement } from '../engagements/service';
 import { parseTbUpload } from './parse';
@@ -331,7 +332,10 @@ export async function financialRoutes(app: FastifyInstance): Promise<void> {
       assertCan(req, 'export', { assigned: true });
       const f = await loadFinancials(tx, engagementId);
       const email = (await tx.query('select email from users where id = $1', [ctx.userId])).rows[0]?.email as string;
-      return { eng, f, email };
+      // Statements show the firm's branding as it is now (only invoices and quotes are frozen when issued).
+      const lh = await loadLetterhead(tx);
+      const letterhead = { ...lh, logo: await loadLogo(tx, lh.logoId) };
+      return { eng, f, email, letterhead };
     });
     let computed;
     try {
@@ -350,6 +354,7 @@ export async function financialRoutes(app: FastifyInstance): Promise<void> {
       exportedBy: loaded.email,
       exportedAt: new Date().toISOString(),
       trialBalance: applyAdjustments(toTbLines(tbOf(loaded.f.tb)), entriesOf(loaded.f.adjustments)),
+      letterhead: loaded.letterhead,
     };
     const s = computed.result.statements;
     const buf = format === 'docx' ? await exportDocx(s, meta) : format === 'xlsx' ? await exportXlsx(s, meta) : await exportPdf(s, meta);

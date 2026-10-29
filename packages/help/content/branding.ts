@@ -25,6 +25,9 @@ If a colour would make text hard to read, for example a very pale yellow, we dar
 ## Save, or start again
 Press **Save branding** to keep your colours and contact details. **Reset to AuditOS colours** puts the two colours back to the standard green and saves that. Warning colours such as overdue, and the colours used in the calendar, never change.
 
+## Exported statements
+Word, Excel and PDF statements show your letterhead too: logo and firm name at the top (in Excel, one line of text with the firm name and contact details), your footer note and "Powered by AuditOS" at the bottom. They always use your branding as it is now, so a change shows on the next export. The firm name and contact details are read for the person exporting; if someone who cannot see Billing settings exports, the firm name shown is the one the firm was set up with.
+
 ## Already issued documents
 An invoice or quotation takes your letterhead at the moment it is issued or sent. Changing your logo, colours or details later does not change documents that are already out; it applies to new ones.`,
   },

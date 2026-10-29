@@ -1,17 +1,18 @@
 import ExcelJS from 'exceljs';
+import { deflateSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import type { TestTenant } from '@auditos/db/testing';
 import { consultancy, trading } from '../../../packages/fs-engine/test/fixtures';
-import { csvOf, harness, importTb, login, makeTenant, makeUser, ownerQuery, stepUp, type Harness, type Session, type TestUser } from './helpers';
+import { csvOf, harness, importTb, login, makeTenant, makeUser, multipartBody, ownerQuery, stepUp, type Harness, type Session, type TestUser } from './helpers';
 
 let h: Harness;
 let T: TestTenant;
-let P: TestUser, M: TestUser, F: TestUser;
-let sP: Session, sM: Session, sF: Session;
+let P: TestUser, M: TestUser, F: TestUser, A: TestUser;
+let sP: Session, sM: Session, sF: Session, sA: Session;
 let client: string;
 let fullIfrsClient: string;
 
-const call = (s: Session, method: 'GET' | 'POST' | 'PUT' | 'PATCH', url: string, payload?: object) =>
+const call = (s: Session, method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, payload?: object) =>
   h.app.inject({ method, url, headers: s.headers, ...(payload ? { payload } : {}) });
 
 const newEngagement = async (c = client, start = '2026-01-01', end = '2026-12-31'): Promise<string> => {
@@ -35,6 +36,8 @@ beforeAll(async () => {
   P = await makeUser(h, T.id, 'partner', 4);
   M = await makeUser(h, T.id, 'manager', 3);
   F = await makeUser(h, T.id, 'staff', 1);
+  A = await makeUser(h, T.id, 'firm_admin', 0);
+  sA = await login(h, A);
   sP = await login(h, P);
   sM = await login(h, M);
   sF = await login(h, F);
@@ -283,6 +286,70 @@ describe('exports', () => {
     const r = await h.owner.query("select detail from audit_events where tenant_id = $1 and action = 'export.created' and entity_id = $2", [T.id, e]);
     expect(r.rowCount).toBe(1);
     expect(r.rows[0].detail).toMatchObject({ format: 'xlsx', draft: true });
+  });
+});
+
+const chunk = (type: string, data: Buffer): Buffer => {
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length);
+  return Buffer.concat([len, Buffer.from(type, 'latin1'), data, Buffer.alloc(4)]);
+};
+const realPng = (): Buffer => {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(2, 0);
+  ihdr.writeUInt32BE(2, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 2;
+  const raw = Buffer.from([0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 255, 255, 255, 0]);
+  return Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+};
+const pdfText = (buf: Buffer): string => {
+  const hex = (x: string) => Buffer.from(x, 'hex').toString('latin1');
+  const out: string[] = [];
+  for (const m of buf.toString('latin1').matchAll(/\[([^\]]*)\]\s*TJ|<([0-9a-fA-F]+)>\s*Tj/g)) {
+    if (m[1] !== undefined) out.push([...m[1].matchAll(/<([0-9a-fA-F]*)>/g)].map((x) => hex(x[1]!)).join(''));
+    else out.push(hex(m[2]!));
+  }
+  return out.join('\n');
+};
+
+describe('branding on exported statements', () => {
+  test('a firm without saved branding still gets its name and Powered by AuditOS', async () => {
+    const e = await newEngagement();
+    await withTrading(e);
+    await stepUp(h, sF, F);
+    const t = pdfText((await call(sF, 'POST', `/engagements/${e}/export`, { format: 'pdf' })).rawPayload);
+    expect(t).toContain('Powered by AuditOS');
+    expect(t).toContain('Fin Client Ltd');
+  });
+
+  test('the current branding (name, contact line, note, logo) appears in the PDF and the Excel file, and changes follow at once', async () => {
+    const e = await newEngagement();
+    await withTrading(e);
+    await stepUp(h, sP, P);
+    expect((await call(sP, 'PUT', '/billing/settings', { legalName: 'Kangethe & Associates', address: 'Old Street 1, Nairobi', kraPin: 'P051234567Q', invoicePrefix: 'KA', quotePrefix: 'KQ', bankDetails: 'Bank' })).statusCode).toBe(200);
+    expect((await call(sA, 'PUT', '/branding', { primary: '#1f5f4a', secondary: '#e8c547', phone: '+254 700 111 222', email: 'old@firm.example.test', website: 'https://old.firm.example.test', footerNote: 'Old footer note' })).statusCode).toBe(200);
+    const m = multipartBody('logo.png', realPng());
+    expect((await h.app.inject({ method: 'POST', url: '/branding/logo', headers: { ...sA.headers, 'content-type': m.contentType }, payload: m.payload })).statusCode).toBe(200);
+
+    const pdf = (await call(sP, 'POST', `/engagements/${e}/export`, { format: 'pdf' })).rawPayload;
+    const t = pdfText(pdf);
+    for (const s of ['Kangethe & Associates', 'Tel: +254 700 111 222', 'old@firm.example.test', 'Old footer note', 'Powered by AuditOS']) expect(t, s).toContain(s);
+    expect(pdf.toString('latin1')).toContain('/Subtype /Image');
+
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load((await call(sP, 'POST', `/engagements/${e}/export`, { format: 'xlsx' })).rawPayload as unknown as ArrayBuffer);
+    const ws = wb.getWorksheet('Financial position')!;
+    expect(String(ws.getCell('A1').value)).toContain('Kangethe & Associates');
+    expect(String(ws.getRow(ws.rowCount).getCell(1).value)).toContain('Powered by AuditOS');
+
+    // Statements are live: a later change shows on the next export (unlike an issued invoice).
+    expect((await call(sA, 'PUT', '/branding', { primary: '#1f5f4a', secondary: '#e8c547', phone: '+254 711 999 888', email: 'new@firm.example.test', website: '', footerNote: '' })).statusCode).toBe(200);
+    expect((await call(sA, 'DELETE', '/branding/logo')).statusCode).toBeLessThan(300);
+    const after = (await call(sP, 'POST', `/engagements/${e}/export`, { format: 'pdf' })).rawPayload;
+    expect(pdfText(after)).toContain('+254 711 999 888');
+    expect(pdfText(after)).not.toContain('Old footer note');
+    expect(after.toString('latin1')).not.toContain('/Subtype /Image');
   });
 });
 

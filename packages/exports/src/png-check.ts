@@ -53,3 +53,35 @@ export function pngDecodes(b: Buffer): boolean {
     return false;
   }
 }
+
+/**
+ * The size of a logo that is safe to hand to PDF or Word software, or null when it is not. A PNG must really decode; a JPEG
+ * must start with the right signature and carry a readable size. Anything else is treated as "no logo".
+ */
+export function logoSize(logo: { bytes: Buffer; type: 'image/png' | 'image/jpeg' }): { width: number; height: number } | null {
+  try {
+    const b = logo.bytes;
+    if (logo.type === 'image/png') {
+      if (!pngDecodes(b)) return null;
+      return { width: b.readUInt32BE(16), height: b.readUInt32BE(20) };
+    }
+    if (b.length < 4 || b[0] !== 0xff || b[1] !== 0xd8) return null;
+    for (let o = 2; o + 9 < b.length; ) {
+      if (b[o] !== 0xff) return null;
+      const marker = b[o + 1]!;
+      if (marker === 0xff) { o += 1; continue; }
+      if (marker === 0xd8 || (marker >= 0xd0 && marker <= 0xd7) || marker === 0x01) { o += 2; continue; }
+      const len = b.readUInt16BE(o + 2);
+      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+        const height = b.readUInt16BE(o + 5);
+        const width = b.readUInt16BE(o + 7);
+        return width > 0 && height > 0 && width <= MAX_LOGO_SIDE && height <= MAX_LOGO_SIDE ? { width, height } : null;
+      }
+      if (len < 2) return null;
+      o += 2 + len;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}

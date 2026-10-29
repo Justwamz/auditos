@@ -1,9 +1,13 @@
 import PDFDocument from 'pdfkit';
 import type { Statements } from '@auditos/fs-engine';
-import { blocks, footerText, titleText, type ExportMeta } from './model';
+import { blocks, cleanText, contactLine, footerParts, letterheadName, titleText, type ExportMeta } from './model';
+import { logoSize } from './png-check';
 
 const LEFT = 56;
 const RIGHT = 556;
+const LOGO_MAX_W = 160;
+const LOGO_MAX_H = 60;
+const FALLBACK_PRIMARY = '#1f3a5f';
 
 export function exportPdf(s: Statements, meta: ExportMeta): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -29,14 +33,57 @@ export function exportPdf(s: Statements, meta: ExportMeta): Promise<Buffer> {
         doc.rotate(-35, { origin: [300, 420] }).fontSize(110).fillColor('#e8b4b4').opacity(0.35).text('DRAFT', 90, 360, { lineBreak: false });
         doc.restore();
       }
-      doc.fontSize(8).fillColor('#666666').opacity(1).text(footerText(meta), LEFT, 800, { lineBreak: false });
+      const foot = footerParts(meta);
+      doc.font('Helvetica').fontSize(8).fillColor('#666666').opacity(1);
+      if (foot.note) {
+        // One line, cut by width, so a long note can never run off the page or push over Powered by AuditOS.
+        let note = foot.note;
+        if (doc.widthOfString(note) > RIGHT - LEFT) {
+          while (note.length > 1 && doc.widthOfString(`${note}...`) > RIGHT - LEFT) note = note.slice(0, -1);
+          note = `${note}...`;
+        }
+        doc.text(note, LEFT, 788, { lineBreak: false });
+      }
+      doc.text(foot.exported, LEFT, 800, { lineBreak: false });
+      // No width here: text with a width is wrapped, and this line sits below the bottom margin on purpose.
+      if (foot.powered) doc.text(foot.powered, RIGHT - doc.widthOfString(foot.powered), 800, { lineBreak: false });
       doc.fillColor('#000000');
       doc.y = cursorY;
     };
     decorate();
     doc.on('pageAdded', decorate);
 
-    doc.fontSize(15).font('Helvetica-Bold').text(titleText(meta), LEFT, 56, { width: RIGHT - LEFT });
+    let top = 56;
+    const lh = meta.letterhead;
+    if (lh) {
+      const primary = /^#[0-9a-fA-F]{6}$/.test(lh.primary) ? lh.primary : FALLBACK_PRIMARY;
+      // A logo is used only if it is checked first: a damaged one would crash the PDF software in a background callback.
+      const size = lh.logo ? logoSize(lh.logo) : null;
+      let drawn = false;
+      if (lh.logo && size) {
+        try {
+          const scale = Math.min(LOGO_MAX_W / size.width, LOGO_MAX_H / size.height, 1);
+          doc.image(lh.logo.bytes, LEFT, top, { width: size.width * scale, height: size.height * scale });
+          top += size.height * scale + 6;
+          drawn = true;
+        } catch {
+          drawn = false;
+        }
+      }
+      doc.font('Helvetica-Bold').fontSize(drawn ? 12 : 15).fillColor(drawn ? '#000000' : primary).text(letterheadName(lh), LEFT, top, { width: RIGHT - LEFT });
+      doc.fillColor('#000000').font('Helvetica').fontSize(9);
+      const address = cleanText(lh.address);
+      if (address) doc.text(address, LEFT, undefined, { width: RIGHT - LEFT });
+      const contact = contactLine(lh);
+      if (contact) doc.text(contact, LEFT, undefined, { width: RIGHT - LEFT });
+      doc.moveDown(0.4);
+      const ruleY = doc.y;
+      doc.save().moveTo(LEFT, ruleY).lineTo(RIGHT, ruleY).lineWidth(1.5).strokeColor(primary).stroke().restore();
+      doc.fillColor('#000000');
+      top = ruleY + 12;
+    }
+
+    doc.fontSize(15).font('Helvetica-Bold').text(titleText(meta), LEFT, top, { width: RIGHT - LEFT });
     doc.fontSize(9).font('Helvetica-Oblique').text(`Reporting framework: ${s.framework.replace(/_/g, ' ')}`).moveDown();
 
     for (const b of blocks(s)) {

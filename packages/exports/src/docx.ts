@@ -1,8 +1,9 @@
 import {
-  AlignmentType, Document, Footer, Header, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType,
+  AlignmentType, Document, Footer, Header, ImageRun, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType,
 } from 'docx';
 import type { Statements } from '@auditos/fs-engine';
-import { blocks, footerText, titleText, type Block, type ExportMeta } from './model';
+import { blocks, cleanText, contactLine, footerParts, letterheadName, titleText, type Block, type ExportMeta } from './model';
+import { logoSize } from './png-check';
 
 const table = (b: Block): Table =>
   new Table({
@@ -21,6 +22,30 @@ const table = (b: Block): Table =>
     ],
   });
 
+/** The letterhead at the top of every page: logo (when it checks out), firm name, address and contact line. */
+function letterheadParagraphs(meta: ExportMeta): Paragraph[] {
+  const lh = meta.letterhead;
+  if (!lh) return [];
+  const out: Paragraph[] = [];
+  const size = lh.logo ? logoSize(lh.logo) : null;
+  if (lh.logo && size) {
+    try {
+      const scale = Math.min(160 / size.width, 60 / size.height, 1);
+      out.push(new Paragraph({
+        children: [new ImageRun({ type: lh.logo.type === 'image/png' ? 'png' : 'jpg', data: lh.logo.bytes, transformation: { width: Math.round(size.width * scale), height: Math.round(size.height * scale) } })],
+      }));
+    } catch {
+      // a logo that cannot be placed is left out; the name still shows
+    }
+  }
+  out.push(new Paragraph({ children: [new TextRun({ text: letterheadName(lh), bold: true, size: 26 })] }));
+  const address = cleanText(lh.address);
+  if (address) out.push(new Paragraph({ children: [new TextRun({ text: address, size: 18 })] }));
+  const contact = contactLine(lh);
+  if (contact) out.push(new Paragraph({ children: [new TextRun({ text: contact, size: 18 })] }));
+  return out;
+}
+
 export async function exportDocx(s: Statements, meta: ExportMeta): Promise<Buffer> {
   const children: (Paragraph | Table)[] = [
     new Paragraph({ children: [new TextRun({ text: titleText(meta), bold: true, size: 32 })] }),
@@ -36,12 +61,25 @@ export async function exportDocx(s: Statements, meta: ExportMeta): Promise<Buffe
       {
         headers: {
           default: new Header({
-            children: meta.draft
-              ? [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'DRAFT: not approved for issue', bold: true, color: 'C00000', size: 28 })] })]
-              : [new Paragraph({ children: [] })],
+            children: [
+              ...(meta.draft
+                ? [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'DRAFT: not approved for issue', bold: true, color: 'C00000', size: 28 })] })]
+                : meta.letterhead ? [] : [new Paragraph({ children: [] })]),
+              ...letterheadParagraphs(meta),
+            ],
           }),
         },
-        footers: { default: new Footer({ children: [new Paragraph({ children: [new TextRun({ text: footerText(meta), size: 16 })] })] }) },
+        footers: {
+          default: new Footer({
+            children: (() => {
+              const f = footerParts(meta);
+              return [
+                ...(f.note ? [new Paragraph({ children: [new TextRun({ text: f.note, size: 16 })] })] : []),
+                new Paragraph({ children: [new TextRun({ text: f.powered ? `${f.exported} | ${f.powered}` : f.exported, size: 16 })] }),
+              ];
+            })(),
+          }),
+        },
         children,
       },
     ],
