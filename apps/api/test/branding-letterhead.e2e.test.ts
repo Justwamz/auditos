@@ -245,3 +245,20 @@ describe('documents issued before letterheads existed', () => {
     expect(row.rows[0].letterhead).toBeNull();
   });
 });
+
+describe('sending a quotation with an email address', () => {
+  test('keeps an email with the letterhead that was frozen on the quotation, and the firm name in the subject', async () => {
+    const q = await newQuote();
+    const sent = await call(sM, 'POST', `/quotes/${q}/send`, { to: 'prospect@example.test' });
+    expect(sent.statusCode).toBe(200);
+    const { number, outboxId } = sent.json() as { number: string; outboxId: string };
+    expect(outboxId).toBeTruthy();
+    const frozen = (await get(sM, `/quotes/${q}`)).letterhead as { name: string };
+    const mail = ((await get(sM, '/outbox')).messages as { id: string; subject: string; body: string }[]).find((m) => m.id === outboxId)!;
+    expect(mail.subject).toBe(`Quotation ${number} from ${frozen.name}`);
+    const lines = mail.body.split('\n');
+    expect(lines.slice(0, 5)).toEqual(['Renamed & Co', 'New Road 9, Mombasa', 'Tel: +254 711 999 888', 'Email: new@firm.example.test', 'Web: https://new.firm.example.test']);
+    expect(lines[lines.length - 1]).toBe('Powered by AuditOS');
+    expect(mail.body).toContain('Total: KES');
+  });
+});

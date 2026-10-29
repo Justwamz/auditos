@@ -1,6 +1,7 @@
 import { deflateSync } from 'node:zlib';
 import { describe, expect, test } from 'vitest';
 import { exportBillingPdf, type BillingPdf } from '../src/billing-pdf';
+import { pngDecodes } from '../src/png-check';
 
 const base: BillingPdf = {
   kind: 'invoice', number: 'KA-2026-0001', status: 'sent',
@@ -148,5 +149,49 @@ describe('letterhead on the page', () => {
     const t = await text({ ...base, letterhead: { ...base.letterhead, footerNote: '<b>Bold</b> & "quoted"', name: '<i>Firm</i> (Pty)' } });
     expect(t).toContain('<b>Bold</b> & "quoted"');
     expect(t).toContain('<i>Firm</i> (Pty)');
+  });
+});
+
+const pngWith = (colourType: number, idat: Buffer, w = 2, h = 2): Buffer => {
+  const chunk = (type: string, data: Buffer) => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    return Buffer.concat([len, Buffer.from(type, 'latin1'), data, Buffer.alloc(4)]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
+  ihdr[8] = 8;
+  ihdr[9] = colourType;
+  return Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), chunk('IHDR', ihdr), chunk('IDAT', idat), chunk('IEND', Buffer.alloc(0))]);
+};
+
+describe('a damaged picture is found out before the PDF software sees it', () => {
+  test('a damaged transparent (RGBA) logo does not crash and the name stands in', async () => {
+    const bytes = pngWith(6, Buffer.from('truncated'));
+    const buf = await exportBillingPdf({ ...base, letterhead: { ...base.letterhead, logo: { bytes, type: 'image/png' } } });
+    expect(hasImage(buf)).toBe(false);
+    expect(pdfText(buf)).toContain('Kangethe & Associates');
+    await new Promise((r) => setTimeout(r, 200)); // a late background error would surface here
+  });
+
+  test('pngDecodes accepts real pictures and rejects short data, bad filter bytes and wrong sizes', () => {
+    expect(pngDecodes(tinyPng())).toBe(true);
+    expect(pngDecodes(pngWith(6, deflateSync(Buffer.alloc(2 * (1 + 8), 0))))).toBe(true);
+    expect(pngDecodes(pngWith(6, deflateSync(Buffer.alloc(5, 0))))).toBe(false);
+    expect(pngDecodes(pngWith(6, deflateSync(Buffer.alloc(2 * (1 + 8) + 1, 0))))).toBe(false);
+    const badFilter = Buffer.alloc(2 * (1 + 8), 0);
+    badFilter[9] = 9;
+    expect(pngDecodes(pngWith(6, deflateSync(badFilter)))).toBe(false);
+    expect(pngDecodes(Buffer.from('not a picture'))).toBe(false);
+  });
+
+  test('a long unbroken web address in the footer note stays inside the page width', async () => {
+    const url = `https://example.test/${'a'.repeat(400)}`;
+    const buf = await exportBillingPdf({ ...base, letterhead: { ...base.letterhead, footerNote: url } });
+    const lines = pdfText(buf).split('\n').filter((l) => /^(https:\/\/example\.test|a+)/.test(l));
+    expect(lines.length).toBeGreaterThan(1);
+    expect(lines.every((l) => l.length < 140)).toBe(true);
+    expect(lines.length).toBeLessThanOrEqual(3);
   });
 });

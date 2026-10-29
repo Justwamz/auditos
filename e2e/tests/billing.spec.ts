@@ -466,6 +466,8 @@ test('the invoice keeps the letterhead it was issued with, on screen and on the 
     await expect(head2).not.toContainText('Completely Renamed');
     await expect(head2).toContainText('Powered by AuditOS');
     await expect(head2.locator('img')).toHaveCount(1);
+    await partner.waitForLoadState('networkidle');
+    expect(await head2.locator('img').evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
     const pdfAfter = await (await partner.request.get(`/api/invoices/${invoiceId}/pdf`)).body();
     const t2 = pdfText(pdfAfter);
     expect(t2).toContain('Waweru Letterhead LLP');

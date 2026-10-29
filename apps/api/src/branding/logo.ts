@@ -1,3 +1,4 @@
+import { pngDecodes } from '@auditos/exports';
 export const MAX_LOGO_BYTES = 1024 * 1024;
 export const MAX_LOGO_SIDE = 2000;
 
@@ -70,5 +71,7 @@ export function checkLogo(data: Buffer): LogoCheck {
   }
   if (!size || size.width < 1 || size.height < 1) return { ok: false, reason: LOGO_NOT_PICTURE };
   if (size.width > MAX_LOGO_SIDE || size.height > MAX_LOGO_SIDE) return { ok: false, reason: LOGO_TOO_WIDE };
+  // A picture whose data cannot be decoded would break the PDF, so it is refused here.
+  if (isPng && !pngDecodes(data)) return { ok: false, reason: LOGO_NOT_PICTURE };
   return { ok: true, contentType: isPng ? 'image/png' : 'image/jpeg', width: size.width, height: size.height };
 }

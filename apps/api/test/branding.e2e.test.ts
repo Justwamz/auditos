@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { deflateSync } from 'node:zlib';
 import type { TestTenant } from '@auditos/db/testing';
 import { harness, login, makeTenant, makeUser, multipartBody, ownerQuery, type Harness, type Session, type TestUser } from './helpers';
 
@@ -22,7 +23,7 @@ const png = (w: number, hgt: number, extra = 0): Buffer => {
   ihdr.writeUInt32BE(hgt, 4);
   ihdr[8] = 8;
   ihdr[9] = 2;
-  return Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), chunk('IHDR', ihdr), chunk('IDAT', Buffer.alloc(20 + extra, 7)), chunk('IEND', Buffer.alloc(0))]);
+  return Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(Buffer.alloc(hgt * (1 + 3 * w)))), ...(extra ? [chunk('tEXt', Buffer.alloc(extra, 65))] : []), chunk('IEND', Buffer.alloc(0))]);
 };
 const jpg = (w: number, hgt: number): Buffer => {
   const sof = Buffer.alloc(15);
@@ -36,6 +37,15 @@ const jpg = (w: number, hgt: number): Buffer => {
 const upload = (s: Session, name: string, data: Buffer) => {
   const m = multipartBody(name, data);
   return h.app.inject({ method: 'POST', url: '/branding/logo', headers: { ...s.headers, 'content-type': m.contentType }, payload: m.payload });
+};
+/** A transparent (RGBA) picture whose image data is not real: it passes the header checks but cannot be decoded. */
+const rgbaWithBadData = (): Buffer => {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(2, 0);
+  ihdr.writeUInt32BE(2, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  return Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), chunk('IHDR', ihdr), chunk('IDAT', Buffer.from('truncated')), chunk('IEND', Buffer.alloc(0))]);
 };
 const animatedPng = (): Buffer => {
   const p = png(10, 10);
@@ -204,6 +214,7 @@ describe('logo upload', () => {
       ['big.png', png(100, 100, 3 * 1024 * 1024), 'Logos can be at most 1 MB.'],
       ['wide.png', png(3000, 100), 'Logos can be at most 2000 pixels wide or tall.'],
       ['tall.jpg', jpg(100, 3000), 'Logos can be at most 2000 pixels wide or tall.'],
+      ['damaged.png', rgbaWithBadData(), 'That file is not a PNG or JPG picture.'],
       ['cut.png', png(10, 10).subarray(0, 20), 'That file is not a PNG or JPG picture.'],
       ['cut.jpg', Buffer.from('ffd8ffe000040000ffdb0004000011', 'hex'), 'That file is not a PNG or JPG picture.'],
       ['moving.png', animatedPng(), 'Animated pictures cannot be used as a logo. Please use a still PNG or JPG.'],

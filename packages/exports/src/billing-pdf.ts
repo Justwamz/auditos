@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit';
+import { pngDecodes } from './png-check';
 
 export interface PdfLetterhead {
   name: string;
@@ -80,12 +81,22 @@ function render(d: BillingPdf, logoIn: PdfLetterhead['logo']): Promise<Buffer> {
     // The footer note is wrapped by hand into at most three lines, so a long note can never push into the page body.
     const note = clean(lh.footerNote);
     const noteLines: string[] = [];
+    const fits3 = (t: string) => doc.font('Helvetica').fontSize(8).widthOfString(t) <= RIGHT - LEFT;
     if (note) {
       doc.font('Helvetica').fontSize(8);
+      const fits = (t: string) => doc.widthOfString(t) <= RIGHT - LEFT;
       let cur = '';
-      for (const w of note.split(/\s+/)) {
+      for (let w of note.split(/\s+/)) {
+        // A word wider than the page (a long web address) is cut by width into pieces.
+        while (!fits(w)) {
+          let n = w.length - 1;
+          while (n > 1 && !fits(w.slice(0, n))) n--;
+          if (cur) { noteLines.push(cur); cur = ''; }
+          noteLines.push(w.slice(0, n));
+          w = w.slice(n);
+        }
         const next = cur ? `${cur} ${w}` : w;
-        if (cur && doc.widthOfString(next) > RIGHT - LEFT) {
+        if (cur && !fits(next)) {
           noteLines.push(cur);
           cur = w;
         } else cur = next;
@@ -93,7 +104,11 @@ function render(d: BillingPdf, logoIn: PdfLetterhead['logo']): Promise<Buffer> {
       if (cur) noteLines.push(cur);
     }
     const shownNote = noteLines.slice(0, 3);
-    if (noteLines.length > 3) shownNote[2] = `${shownNote[2]!.slice(0, 90)}...`;
+    if (noteLines.length > 3) {
+      let last = shownNote[2]!;
+      while (last.length > 1 && !fits3(`${last}...`)) last = last.slice(0, -1);
+      shownNote[2] = `${last}...`;
+    }
 
     const watermark = d.status === 'draft' ? 'DRAFT' : d.status === 'void' ? 'VOID' : null;
     const decorate = () => {
@@ -119,6 +134,7 @@ function render(d: BillingPdf, logoIn: PdfLetterhead['logo']): Promise<Buffer> {
 
     // Letterhead: the logo (kept inside a box), then the name, which stands alone in the firm colour when there is no logo.
     let top = 56;
+    if (logo && !pngDecodes(logo.bytes) && logo.type === 'image/png') logo = null;
     if (logo) {
       try {
         const img = (doc as unknown as { openImage(b: Buffer): { width: number; height: number } & object }).openImage(logo.bytes);
