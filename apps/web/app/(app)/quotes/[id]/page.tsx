@@ -14,6 +14,7 @@ import { SidePanel } from '@/components/ui/SidePanel';
 import { Skeleton } from '@/components/ui/EmptyState';
 import { kes } from '@/lib/dates';
 import { saveBlob } from '@/lib/download';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Quote {
   id: string; number: string | null; status: string; clientId: string | null; subjectName: string; title: string; validUntil: string | null; notes: string | null; taxMode: string;
@@ -97,7 +98,7 @@ export default function QuotePage() {
 
       <section className="sheet stack">
         <Letterhead letterhead={d.letterhead} live={d.status !== 'draft' && d.letterheadIsLive} />
-        <table className="lines" aria-label="Quotation lines">
+        <TableScroll label="Quotation lines list"><table className="lines" aria-label="Quotation lines">
           <thead><tr><th>Description</th><th className="num">Qty</th><th className="num">Unit price</th><th className="num">Amount</th></tr></thead>
           <tbody>{d.lines.map((l, n) => <tr key={n}><td>{l.description}</td><td className="num">{Number(l.quantity).toFixed(2)}</td><td className="num">{kes(l.unitPrice)}</td><td className="num">{kes(l.amount)}</td></tr>)}</tbody>
           <tfoot>
@@ -105,7 +106,7 @@ export default function QuotePage() {
             {d.taxes.map((t) => <tr key={t.name}><td colSpan={3} className="num">{t.name} {t.rate}%{d.taxMode === 'inclusive' ? ' (included)' : ''}</td><td className="num">{kes(t.amount)}</td></tr>)}
             <tr><td colSpan={3} className="num"><strong>Total</strong></td><td className="num"><strong>{kes(d.total)}</strong></td></tr>
           </tfoot>
-        </table>
+        </table></TableScroll>
         {d.notes && <p className="muted">{d.notes}</p>}
         <div className="doc-actions">
           <button type="button" className="secondary" onClick={() => run(async () => { const f = await api.downloadGet(`/quotes/${d.id}/pdf`); saveBlob(f.blob, f.filename); })}>Download PDF</button>

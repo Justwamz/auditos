@@ -1,5 +1,5 @@
 'use client';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote, StateBadge } from '@/components/bits';
@@ -53,6 +53,13 @@ function Workspace() {
 
   const setTab = (t: string) => router.replace(`${path}?tab=${t}`);
 
+  // On a phone the tab row scrolls sideways; keep the chosen tab in view.
+  const tabRow = useRef<HTMLDivElement>(null);
+  const ready = !!eng.data && !!me.data;
+  useEffect(() => {
+    tabRow.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [tab, ready]);
+
   if (eng.error) return <ErrorNote error={eng.error} />;
   if (!eng.data || !me.data) return (
     <section className="sheet prospects-loading" aria-label="Loading engagement">
@@ -78,7 +85,7 @@ function Workspace() {
         </div>
       )}
 
-      <div className="tabs" role="tablist" aria-label="Engagement sections">
+      <div ref={tabRow} className="tabs" role="tablist" aria-label="Engagement sections">
         {TABS.map((t) => (
           <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>{t.label}</button>
         ))}

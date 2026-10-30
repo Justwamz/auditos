@@ -9,6 +9,7 @@ import { fmtCents } from '@/lib/text';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { SidePanel } from '@/components/ui/SidePanel';
 import type { Engagement } from '../page';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 type Section = 'tb' | 'mapping' | 'adjustments' | 'statements' | 'notes' | 'export';
 const SECTIONS: { id: Section; label: string }[] = [
@@ -60,10 +61,10 @@ function TrialBalance({ e, viewer }: { e: Engagement; viewer: Viewer }) {
     <section className="sheet">
       <h3>{title}</h3>
       {lines.length === 0 ? <Empty>Nothing imported yet.</Empty> : (
-        <table>
+        <TableScroll label="Trial balance"><table>
           <thead><tr><th>Code</th><th>Account</th><th className="num">Debit</th><th className="num">Credit</th></tr></thead>
           <tbody>{lines.map((l) => <tr key={l.code}><td>{l.code}</td><td>{l.name}</td><td className="num">{l.debit}</td><td className="num">{l.credit}</td></tr>)}</tbody>
-        </table>
+        </table></TableScroll>
       )}
     </section>
   );
@@ -135,7 +136,7 @@ function Mapping({ e, viewer }: { e: Engagement; viewer: Viewer }) {
         <button className="secondary" onClick={() => setDraft({ ...draft, ...(m.data?.suggestions ?? {}) })} disabled={!m.data || Object.keys(m.data.suggestions).length === 0}>Fill in suggestions</button>
         <span className="muted small">{tb.data.lines.filter((l) => !draft[l.code]).length} accounts not mapped</span>
       </div>
-      <table>
+      <TableScroll label="Statement lines"><table>
         <thead><tr><th>Code</th><th>Account</th><th>Statement line</th></tr></thead>
         <tbody>
           {tb.data.lines.map((l) => (
@@ -155,7 +156,7 @@ function Mapping({ e, viewer }: { e: Engagement; viewer: Viewer }) {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></TableScroll>
       <ErrorNote error={error} />
       {info && <Notice>{info}</Notice>}
       {!viewer.engagementLocked && <div><button onClick={save}>Save mapping</button></div>}
@@ -252,7 +253,7 @@ function Adjustments({ e, viewer }: { e: Engagement; viewer: Viewer }) {
                 <option value="proposed">Proposed</option><option value="agreed">Agreed</option><option value="unadjusted">Unadjusted</option>
               </select>
             </div>
-            <table><tbody>{en.lines.map((l, i) => <tr key={i}><td>{l.code}</td><td className="num">{l.debit !== '0.00' ? l.debit : ''}</td><td className="num">{l.credit !== '0.00' ? l.credit : ''}</td></tr>)}</tbody></table>
+            <TableScroll label="Adjustment lines"><table><tbody>{en.lines.map((l, i) => <tr key={i}><td>{l.code}</td><td className="num">{l.debit !== '0.00' ? l.debit : ''}</td><td className="num">{l.credit !== '0.00' ? l.credit : ''}</td></tr>)}</tbody></table></TableScroll>
           </div>
         ))}
         {!panel && <ErrorNote error={error} />}
@@ -298,7 +299,7 @@ function StatementsView({ s, framework }: { s: Statements; framework: string }) 
   return (
     <div className="stack-lg">
       <p className="muted small">Prepared under {framework.replace('IFRS_SME_', 'IFRS for SMEs, ').replace('2E', '2nd edition').replace('3E', '3rd edition')}.</p>
-      <table className="ledger">
+      <TableScroll label="Financial position"><table className="ledger">
         {head('Statement of financial position')}
         <tbody>
           {s.sofp.sections.filter((x) => x.rows.length > 0).map((sec) => (
@@ -311,16 +312,16 @@ function StatementsView({ s, framework }: { s: Statements; framework: string }) 
           ))}
           <tr className="grand"><td>Total equity and liabilities</td><td className="num">{fmtCents(s.sofp.totalEquityAndLiabilities)}</td>{cmp && <td className="num">{fmtCents(s.sofp.priorTotalEquityAndLiabilities)}</td>}</tr>
         </tbody>
-      </table>
+      </table></TableScroll>
 
-      <table className="ledger">
+      <TableScroll label="Profit or loss"><table className="ledger">
         {head('Statement of profit or loss')}
         <tbody>
           {s.pl.rows.map((r) => <Cells key={r.id} r={r} cmp={cmp} cls={r.id === 'profit' ? 'grand' : r.subtotal ? 'sub' : ''} />)}
         </tbody>
-      </table>
+      </table></TableScroll>
 
-      <table className="ledger">
+      <TableScroll label="Changes in equity"><table className="ledger">
         <thead><tr><th scope="col">Statement of changes in equity</th><th className="num" scope="col">Share capital</th><th className="num" scope="col">Reserves</th><th className="num" scope="col">Retained earnings</th><th className="num" scope="col">Total</th></tr></thead>
         <tbody>
           {s.equity.rows.map((r) => (
@@ -330,10 +331,10 @@ function StatementsView({ s, framework }: { s: Statements; framework: string }) 
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></TableScroll>
 
       {s.cashflow ? (
-        <table className="ledger">
+        <TableScroll label="Cash flows"><table className="ledger">
           <thead><tr><th scope="col">Statement of cash flows</th><th className="num" scope="col">{year}</th></tr></thead>
           <tbody>
             {s.cashflow.rows.map((r) => <tr key={r.id} className={r.subtotal ? 'sub' : ''}><td>{r.label}</td><td className="num">{fmtCents(r.current)}</td></tr>)}
@@ -341,14 +342,14 @@ function StatementsView({ s, framework }: { s: Statements; framework: string }) 
             <tr><td>At start of year</td><td className="num">{fmtCents(s.cashflow.openingCash)}</td></tr>
             <tr className="grand"><td>At end of year</td><td className="num">{fmtCents(s.cashflow.closingCash)}</td></tr>
           </tbody>
-        </table>
+        </table></TableScroll>
       ) : <Notice kind="warn">The cash flow statement needs last year’s trial balance.</Notice>}
 
       {s.notes.filter((n) => n.rows.length > 0).map((n) => (
-        <table className="ledger" key={n.id}>
+        <TableScroll label="Note"><table className="ledger" key={n.id}>
           {head(`Note: ${n.title}`)}
           <tbody>{n.rows.map((r) => <Cells key={r.id} r={r} cmp={cmp} />)}</tbody>
-        </table>
+        </table></TableScroll>
       ))}
     </div>
   );

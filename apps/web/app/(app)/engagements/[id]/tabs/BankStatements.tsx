@@ -9,6 +9,7 @@ import type { Viewer } from '@/components/ItemPanel';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { SidePanel } from '@/components/ui/SidePanel';
 import type { Engagement } from '../page';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 const kes = (v: string | null | undefined) => (v === null || v === undefined || v === '' ? '' : Number(v).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
@@ -123,7 +124,7 @@ export function BankStatements({ engagement: e, viewer }: { engagement: Engageme
         {list.error ? <ErrorNote error={list.error} /> : !list.data ? <p className="muted">Loading…</p> : list.data.statements.length === 0 ? (
           <Empty>No statements yet. Use Upload a statement at the top to add one.</Empty>
         ) : (
-          <table>
+          <TableScroll label="Statements"><table>
             <thead><tr><th>Statement</th><th>Period</th><th className="num">Entries</th><th className="num">Closing (KES)</th><th>Check</th><th>Confirmed</th><th /></tr></thead>
             <tbody>
               {list.data.statements.map((s) => (
@@ -138,7 +139,7 @@ export function BankStatements({ engagement: e, viewer }: { engagement: Engageme
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></TableScroll>
         )}
       </section>
 
@@ -175,18 +176,18 @@ function PreviewCard({ e, p, onDone, readOnly }: { e: Engagement; p: Preview; on
       {p.integrity.messages.map((m) => <Notice key={m} kind={ok ? 'ok' : 'warn'}>{m}</Notice>)}
       {ok && <Notice>Every entry was read and the balances agree.</Notice>}
       {(p.integrity.balanceBreaks?.length ?? 0) > 0 && (
-        <table>
+        <TableScroll label="Where the balance stops following"><table>
           <caption>Where the running balance stops following</caption>
           <thead><tr><th>Date</th><th>Entry</th><th className="num">Should be</th><th className="num">Statement says</th></tr></thead>
           <tbody>{p.integrity.balanceBreaks!.slice(0, 5).map((b) => <tr key={b.index}><td>{fmtDate(b.date)}</td><td>{b.description}</td><td className="num">{kes(b.expected)}</td><td className="num">{kes(b.printed)}</td></tr>)}</tbody>
-        </table>
+        </table></TableScroll>
       )}
       {p.unreadable.length > 0 && <div className="notice warn"><p>Rows that could not be read:</p><ul>{p.unreadable.slice(0, 10).map((u, i) => <li key={i}>{u.message}{u.line ? `: ${u.line}` : ''}</li>)}</ul></div>}
-      <table>
+      <TableScroll label="First entries"><table>
         <caption>The first entries, to compare with the file</caption>
         <thead><tr><th>Date</th><th>Description</th><th className="num">Amount</th><th className="num">Balance</th></tr></thead>
         <tbody>{p.preview.map((t, i) => <tr key={i}><td>{fmtDate(t.date)}</td><td>{t.description}</td><td className="num">{kes(t.amount)}</td><td className="num">{kes(t.balance)}</td></tr>)}</tbody>
-      </table>
+      </table></TableScroll>
       <ErrorNote error={error} />
       {!readOnly && (
         <>
@@ -255,10 +256,10 @@ function StatementDetail({ e, s, readOnly, onChanged }: { e: Engagement; s: Summ
       <h3>Entries</h3>
       {!entries.data ? <p className="muted">Loading…</p> : (
         <>
-          <table>
+          <TableScroll label="Entries"><table>
             <thead><tr><th>#</th><th>Date</th><th>Description</th><th className="num">Amount</th><th className="num">Balance</th></tr></thead>
             <tbody>{entries.data.transactions.map((t) => <tr key={t.index}><td>{t.index + 1}</td><td>{fmtDate(t.date)}</td><td>{t.description}</td><td className="num">{kes(t.amount)}</td><td className="num">{kes(t.balance)}</td></tr>)}</tbody>
-          </table>
+          </table></TableScroll>
           <div className="row">
             <button className="secondary" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>Previous 50</button>
             <button className="secondary" disabled={offset + 50 >= s.transactionCount} onClick={() => setOffset(offset + 50)}>Next 50</button>
@@ -273,11 +274,11 @@ function StatementDetail({ e, s, readOnly, onChanged }: { e: Engagement; s: Summ
 function AnalysisView({ a }: { a: Analysis }) {
   return (
     <div className="stack" aria-label="Analysis results">
-      <table>
+      <TableScroll label="Analysis by month"><table>
         <caption>By month</caption>
         <thead><tr><th>Month</th><th className="num">Entries</th><th className="num">Money in</th><th className="num">Money out</th><th className="num">Month-end balance</th></tr></thead>
         <tbody>{a.monthly.map((m) => <tr key={m.month}><td>{m.month}</td><td className="num">{m.count}</td><td className="num">{kes(m.in)}</td><td className="num">{kes(m.out)}</td><td className="num">{kes(m.closing)}</td></tr>)}</tbody>
-      </table>
+      </table></TableScroll>
       <p>Cash: in {kes(a.cash.in)}, out {kes(a.cash.out)} ({a.cash.count} entries). Mobile money: in {kes(a.mobileMoney.in)}, out {kes(a.mobileMoney.out)} ({a.mobileMoney.count} entries).</p>
       {a.reconciliation && (
         <Notice kind={a.reconciliation.status === 'matched' ? 'ok' : 'warn'}>
@@ -294,9 +295,9 @@ function AnalysisView({ a }: { a: Analysis }) {
               <p><strong>{f.message}</strong></p>
               <p className="muted">Goes with: {FEEDS[f.feeds] ?? f.feeds}</p>
               {f.rows.length > 0 && (
-                <table>
+                <TableScroll label="Flagged entries"><table>
                   <tbody>{f.rows.map((r) => <tr key={r.index}><td>#{r.index + 1}</td><td>{fmtDate(r.date)}</td><td>{r.description}</td><td className="num">{kes(r.amount)}</td></tr>)}</tbody>
-                </table>
+                </table></TableScroll>
               )}
               {f.rowCount > f.rows.length && <p className="muted">…and {f.rowCount - f.rows.length} more.</p>}
             </li>
@@ -304,8 +305,8 @@ function AnalysisView({ a }: { a: Analysis }) {
         </ul>
       )}
       <div className="grid-2">
-        <table><caption>Largest money in</caption><tbody>{a.largestIn.map((r) => <tr key={r.index}><td>{fmtDate(r.date)}</td><td>{r.description}</td><td className="num">{kes(r.amount)}</td></tr>)}</tbody></table>
-        <table><caption>Largest money out</caption><tbody>{a.largestOut.map((r) => <tr key={r.index}><td>{fmtDate(r.date)}</td><td>{r.description}</td><td className="num">{kes(r.amount)}</td></tr>)}</tbody></table>
+        <TableScroll label="Largest money in"><table><caption>Largest money in</caption><tbody>{a.largestIn.map((r) => <tr key={r.index}><td>{fmtDate(r.date)}</td><td>{r.description}</td><td className="num">{kes(r.amount)}</td></tr>)}</tbody></table></TableScroll>
+        <TableScroll label="Largest money out"><table><caption>Largest money out</caption><tbody>{a.largestOut.map((r) => <tr key={r.index}><td>{fmtDate(r.date)}</td><td>{r.description}</td><td className="num">{kes(r.amount)}</td></tr>)}</tbody></table></TableScroll>
       </div>
     </div>
   );

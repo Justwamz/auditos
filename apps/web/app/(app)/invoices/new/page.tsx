@@ -10,6 +10,7 @@ import { HelpLink } from '@/components/HelpLink';
 import { PageHead } from '@/components/ui/PageHead';
 import { blankLine, LinesEditor, TaxPicker, type LineInput } from '@/components/billing';
 import { hoursLabel, kes } from '@/lib/dates';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Billable {
   client: { id: string; name: string };
@@ -102,7 +103,7 @@ function Builder() {
             )}
             {billable.data.time.length === 0 && billable.data.expenses.length === 0 && !billable.data.fee && <p className="muted">Nothing unbilled here.</p>}
             {billable.data.time.length > 0 && (
-              <table className="prospects-table">
+              <TableScroll label="Unbilled time"><table className="prospects-table">
                 <thead><tr><th /><th>Date</th><th>Person</th><th>Work</th><th>Time</th><th>Value</th></tr></thead>
                 <tbody>
                   {billable.data.time.map((t) => (
@@ -112,10 +113,10 @@ function Builder() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></TableScroll>
             )}
             {billable.data.expenses.length > 0 && (
-              <table className="prospects-table">
+              <TableScroll label="Unbilled expenses"><table className="prospects-table">
                 <thead><tr><th /><th>Date</th><th>Expense</th><th>Amount</th></tr></thead>
                 <tbody>
                   {billable.data.expenses.map((x) => (
@@ -125,7 +126,7 @@ function Builder() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></TableScroll>
             )}
           </section>
         )}

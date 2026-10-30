@@ -45,6 +45,9 @@ export function Nav({ name, role, isAdmin, firm, multiFirm, brandName, logoId }:
     if (el) (visibleFocusable(el).find((x) => x.tagName === 'A') ?? el).focus();
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // The page behind the menu cannot be reached by keyboard or screen reader while the menu is open.
+    const content = document.getElementById('content');
+    content?.setAttribute('inert', '');
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         setOpen(false);
@@ -62,6 +65,7 @@ export function Nav({ name, role, isAdmin, firm, multiFirm, brandName, logoId }:
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = previous;
+      content?.removeAttribute('inert');
     };
   }, [shown]);
 

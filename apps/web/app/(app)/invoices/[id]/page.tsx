@@ -14,6 +14,7 @@ import { SidePanel } from '@/components/ui/SidePanel';
 import { Skeleton } from '@/components/ui/EmptyState';
 import { kes, todayNairobi } from '@/lib/dates';
 import { saveBlob } from '@/lib/download';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Invoice {
   id: string; number: string | null; status: string; overdue: boolean; clientName: string; issueDate: string | null; dueDate: string | null; notes: string | null; taxMode: string;
@@ -118,7 +119,7 @@ export default function InvoicePage() {
 
       <section className="sheet stack">
         <Letterhead letterhead={i.letterhead} live={i.status !== 'draft' && i.letterheadIsLive} />
-        <table className="lines" aria-label="Invoice lines">
+        <TableScroll label="Invoice lines list"><table className="lines" aria-label="Invoice lines">
           <thead><tr><th>Description</th><th className="num">Qty</th><th className="num">Unit price</th><th className="num">Amount</th></tr></thead>
           <tbody>
             {i.lines.map((l, n) => <tr key={n}><td>{l.description}</td><td className="num">{Number(l.quantity).toFixed(2)}</td><td className="num">{kes(l.unitPrice)}</td><td className="num">{kes(l.amount)}</td></tr>)}
@@ -131,7 +132,7 @@ export default function InvoicePage() {
             {issued && i.status !== 'void' && <tr><td colSpan={3} className="num">Paid</td><td className="num">{kes(i.paid)}</td></tr>}
             {issued && i.status !== 'void' && <tr><td colSpan={3} className="num"><strong>Balance due</strong></td><td className="num"><strong>{kes(i.outstanding)}</strong></td></tr>}
           </tfoot>
-        </table>
+        </table></TableScroll>
         {i.notes && <p className="muted">{i.notes}</p>}
         <div className="doc-actions">
           <button type="button" className="secondary" onClick={() => run(async () => { const f = await api.downloadGet(`/invoices/${i.id}/pdf`); saveBlob(f.blob, f.filename); })}>Download PDF</button>

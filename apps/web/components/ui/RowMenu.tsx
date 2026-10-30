@@ -24,8 +24,11 @@ export function RowMenu({ label, items }: { label: string; items: RowMenuItem[] 
   const place = () => {
     if (!trigger.current) return;
     const r = trigger.current.getBoundingClientRect();
-    const height = visible.length * ROW + PAD;
-    const right = Math.max(8, window.innerWidth - r.right);
+    const box = menu.current?.getBoundingClientRect();
+    const height = box && box.height > 0 ? box.height : visible.length * ROW + PAD;
+    const width = box && box.width > 0 ? box.width : 192;
+    // Keep the right edge in the window and the left edge at least 8px inside it.
+    const right = Math.max(8, Math.min(window.innerWidth - r.right, window.innerWidth - width - 8));
     const flip = r.bottom + 4 + height > window.innerHeight && r.top - 4 - height >= 0;
     setPos(flip ? { bottom: window.innerHeight - r.top + 4, right } : { top: r.bottom + 4, right });
   };

@@ -104,19 +104,19 @@ export default function ClientsPage() {
           ) : (
             <section className="sheet prospects-sheet">
               <div className="prospects-scroll">
-                <table className="prospects-table">
+                <table className="prospects-table stack-table">
                   <thead><tr><th>Client</th><th>Account manager</th><th>Sector</th><th>Year end</th><th>Why you see it</th></tr></thead>
                   <tbody>
                     {rows.map((c) => (
                       <tr key={c.id}>
-                        <td>
+                        <td data-label="Client"><div>
                           <Link href={`/clients/${c.id}`}><strong>{c.name}</strong></Link>
                           <div className="small muted">{c.legalForm} · {c.framework === 'IFRS_SME' ? 'IFRS for SMEs' : 'Full IFRS'}</div>
-                        </td>
-                        <td>{c.accountManagerName ?? 'Not set'}</td>
-                        <td>{SECTOR_LABELS[c.sector] ?? c.sector}</td>
-                        <td>{MONTHS[c.yearEndMonth - 1]}</td>
-                        <td className="muted">{WHY[c.relationship]}</td>
+                        </div></td>
+                        <td data-label="Account manager">{c.accountManagerName ?? 'Not set'}</td>
+                        <td data-label="Sector">{SECTOR_LABELS[c.sector] ?? c.sector}</td>
+                        <td data-label="Year end">{MONTHS[c.yearEndMonth - 1]}</td>
+                        <td className="muted" data-label="Why you see it">{WHY[c.relationship]}</td>
                       </tr>
                     ))}
                   </tbody>

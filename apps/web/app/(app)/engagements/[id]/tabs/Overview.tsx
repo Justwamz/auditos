@@ -8,6 +8,7 @@ import { Roadmap } from '@/components/Roadmap';
 import { FeeCard } from '@/components/FeeCard';
 import { fmtDate, GATE_LABELS, ROLE_LABELS, STAGES, STATE_LABELS } from '@/lib/text';
 import type { Engagement, Me } from '../page';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Member { userId: string; fullName: string | null; email: string; role: string }
 interface UnlockRequest { id: string; requestedBy: string; requestedByEmail: string; reason: string; status: string; createdAt: string }
@@ -128,7 +129,7 @@ export function Overview({ engagement: e, me, onChanged, onGo }: { engagement: E
 
       <section className="sheet stack">
         <h2>Team</h2>
-        <table>
+        <TableScroll label="Team"><table>
           <thead><tr><th>Person</th><th>Role</th><th></th></tr></thead>
           <tbody>
             {team.data?.members.map((m) => (
@@ -139,7 +140,7 @@ export function Overview({ engagement: e, me, onChanged, onGo }: { engagement: E
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></TableScroll>
         {canMove && e.state !== 'locked' && (
           <form className="row" onSubmit={(ev) => { ev.preventDefault(); void run(() => api.post(`/engagements/${e.id}/members`, { userId: addId }), 'Added to the team.'); setAddId(''); }}>
             <div className="field" style={{ margin: 0, minWidth: '16rem' }}>

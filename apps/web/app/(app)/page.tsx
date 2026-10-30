@@ -12,6 +12,7 @@ import { PageHead } from '@/components/ui/PageHead';
 import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
 import { addDays, today as todayNairobi } from '@/lib/calendar';
 import { buildToday, greetingFor } from '@/lib/today';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Dash {
   engagements: { id: string; clientName: string; sector: string; periodEnd: string; state: string }[];
@@ -94,7 +95,7 @@ export default function Today() {
         {!d && !dash.error && <Skeleton height={64} />}
         {d && d.engagements.length === 0 && <Empty>You are not on any engagement yet. A manager or partner can add you from an engagement’s team list.</Empty>}
         {d && d.engagements.length > 0 && (
-          <table>
+          <TableScroll label="Your engagements"><table>
             <thead><tr><th>Client</th><th>Sector</th><th>Year end</th><th>Stage</th></tr></thead>
             <tbody>
               {d.engagements.map((e) => (
@@ -106,7 +107,7 @@ export default function Today() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></TableScroll>
         )}
       </section>
 

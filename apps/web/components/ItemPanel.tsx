@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote, Notice, SignoffStrip, StateBadge, type SignoffView } from './bits';
 import { useStepUp } from './StepUp';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 export interface ItemDetail {
   id: string;
@@ -181,10 +182,10 @@ export function ItemPanel({
         {showHistory && history.data && (
           <div className="stack small">
             <VersionHistory itemId={d.id} canRestore={!locked && viewer.role !== 'quality_officer' && viewer.role !== 'eqr'} onRestored={reload} />
-            <table>
+            <TableScroll label="Activity history list"><table>
               <thead><tr><th>Activity history</th><th>When</th></tr></thead>
               <tbody>{history.data.events.map((e) => <tr key={e.seq}><td>{e.action.replace(/^item\./, '').replace(/_/g, ' ')}</td><td>{new Date(e.at).toLocaleString('en-GB')}</td></tr>)}</tbody>
-            </table>
+            </table></TableScroll>
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { api } from '@/lib/api';
 import { useApi } from '@/lib/hooks';
 import { ErrorNote } from '@/components/bits';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Version { version: number; title: string; editedByName: string | null; at: string; reason: string | null; contentHash: string }
 interface Change { path: string; before: unknown; after: unknown }
@@ -40,7 +41,7 @@ export function History({ itemId, canRestore, onRestored }: { itemId: string; ca
     <div className="stack small">
       <p className="muted">Every version is kept for good. Going back creates a new version; nothing is erased.</p>
       <ErrorNote error={error} />
-      <table>
+      <TableScroll label="Versions"><table>
         <thead><tr><th>Version</th><th>Saved by</th><th>When</th><th>Reason</th><th /></tr></thead>
         <tbody>
           {versions.data.versions.map((v) => (
@@ -74,7 +75,7 @@ export function History({ itemId, canRestore, onRestored }: { itemId: string; ca
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></TableScroll>
     </div>
   );
 }

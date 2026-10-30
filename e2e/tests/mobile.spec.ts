@@ -11,22 +11,21 @@ test.beforeEach(async ({ page }) => {
   await signIn(page, grace);
 });
 
-test('phone: Menu opens a drawer with the same links, and Today fits', async ({ page }) => {
+test('phone: Menu opens a drawer with the same links, and Clients fits', async ({ page }) => {
   await page.goto('/');
   const desktopHrefs = await mainLinks(page).evaluateAll((els) => els.map((e) => e.getAttribute('href')));
   expect(desktopHrefs.length).toBeGreaterThan(0);
 
   await page.setViewportSize(PHONE);
-  // Grace is a firm administrator, so '/' sends her to Clients, whose table is made to fit in a later task.
-  // Help is a plain page that must already fit at phone width.
-  await page.goto('/help');
+  await page.goto('/clients');
+  await expect(page.getByRole('table')).toBeVisible();
   await expect(menuButton(page)).toBeVisible();
   await expect(menuButton(page)).toHaveAttribute('aria-expanded', 'false');
   for (const link of await mainLinks(page).all()) await expect(link).toBeHidden();
-  await expectNoHorizontalOverflow(page, 'help');
+  await expectNoHorizontalOverflow(page, 'clients');
   expect(await smallTapTargets(page)).toEqual([]);
   expect(await smallInputText(page)).toEqual([]);
-  await shot(page, 'phone-today');
+  await shot(page, 'phone-clients');
 
   const dialog = await openMenu(page);
   await expect(menuButton(page)).toHaveAttribute('aria-expanded', 'true');
@@ -94,4 +93,82 @@ test('reduced motion: the drawer does not slide', async ({ page }) => {
   await page.goto('/');
   await openMenu(page);
   expect(await page.evaluate(() => getComputedStyle(document.getElementById('main-menu')!).transitionDuration)).toBe('0s');
+});
+
+test('the page behind the open menu cannot be reached', async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await page.goto('/clients');
+  await openMenu(page);
+  expect(await page.evaluate(() => document.getElementById('content')!.hasAttribute('inert'))).toBe(true);
+  await page.keyboard.press('Escape');
+  expect(await page.evaluate(() => document.getElementById('content')!.hasAttribute('inert'))).toBe(false);
+});
+
+test('phone: Clients and Prospects show stacked rows', async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  for (const path of ['/clients', '/pipeline']) {
+    await page.goto(path);
+    const table = page.locator('main table.stack-table').first();
+    await expect(table).toBeVisible();
+    await expect(table.locator('thead')).toBeHidden();
+    const heading = (await table.locator('thead th').first().textContent())!.trim();
+    const before = await table.locator('tbody tr').first().locator('td').first().evaluate((el) => getComputedStyle(el, '::before').content);
+    expect(before.replace(/^"|"$/g, '')).toBe(heading);
+    await expectNoHorizontalOverflow(page, path);
+    await shot(page, `phone-stacked${path.replace('/', '-')}`);
+  }
+  await page.setViewportSize(TABLET);
+  await page.goto('/pipeline');
+  await expect(page.locator('main table.stack-table thead').first()).toBeVisible();
+});
+
+test('phone: a side panel fills the screen with its buttons in reach', async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await page.goto('/clients');
+  await page.locator('main button', { hasText: /^\+ / }).first().click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await page.waitForTimeout(400);
+  const box = (await dialog.boundingBox())!;
+  expect(Math.round(box.width)).toBe(PHONE.width);
+  expect(Math.round(box.height)).toBe(PHONE.height);
+  const foot = (await dialog.locator('.side-panel-foot').boundingBox())!;
+  expect(foot.y + foot.height).toBeLessThanOrEqual(PHONE.height + 0.5);
+  await shot(page, 'phone-side-panel');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+
+  await page.setViewportSize(TABLET);
+  await page.locator('main button', { hasText: /^\+ / }).first().click();
+  await page.waitForTimeout(400);
+  expect(Math.round((await page.getByRole('dialog').boundingBox())!.width)).toBe(440);
+});
+
+test('phone: tabs scroll sideways and the chosen tab is in view', async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await page.goto('/engagements');
+  await page.getByRole('link', { name: 'Mwangaza Traders Ltd' }).first().click();
+  const tabs = page.getByRole('tablist', { name: 'Engagement sections' }).getByRole('tab');
+  await tabs.last().click();
+  await page.waitForTimeout(500);
+  const box = (await tabs.last().boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(PHONE.width + 0.5);
+  await expectNoHorizontalOverflow(page, 'engagement tabs');
+  await shot(page, 'phone-engagement-tabs');
+});
+
+test('phone: a row menu stays on screen', async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await page.goto('/pipeline');
+  await page.locator('.row-menu-btn').first().click();
+  const menu = page.getByRole('menu');
+  await expect(menu).toBeVisible();
+  const box = (await menu.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(PHONE.width);
+  expect(box.y + box.height).toBeLessThanOrEqual(PHONE.height);
+  for (const item of await menu.getByRole('menuitem').all()) expect((await item.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await shot(page, 'phone-row-menu');
 });

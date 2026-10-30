@@ -8,6 +8,7 @@ import { SectionHead } from '@/components/ui/SectionHead';
 import { SidePanel } from '@/components/ui/SidePanel';
 import type { Engagement } from '../page';
 import { Materiality } from './Materiality';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Row { id: string; kind: string; title: string; state: string; version: number }
 
@@ -135,7 +136,7 @@ export function Papers({ engagement: e, viewer, focusItem }: { engagement: Engag
         <ErrorNote error={list.error} />
         {list.data && rows.length === 0 && <Empty>No papers yet. Start with the client acceptance and the engagement letter.</Empty>}
         {rows.length > 0 && (
-          <table>
+          <TableScroll label="Working papers"><table>
             <thead><tr><th>Paper</th><th>Type</th><th>Status</th><th></th></tr></thead>
             <tbody>
               {rows.map((r) => (
@@ -146,7 +147,7 @@ export function Papers({ engagement: e, viewer, focusItem }: { engagement: Engag
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></TableScroll>
         )}
         {open && (
           <ItemPanel key={open} itemId={open} viewer={viewer} onChanged={list.reload}>

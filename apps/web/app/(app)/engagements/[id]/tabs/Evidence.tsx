@@ -5,6 +5,7 @@ import { useApi } from '@/lib/hooks';
 import { Empty, ErrorNote, Notice, StateBadge } from '@/components/bits';
 import type { Viewer } from '@/components/ItemPanel';
 import type { Engagement } from '../page';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Row { id: string; title: string; state: string; createdAt: string }
 interface Detail { content: { sha256: string; size: number; scanStatus: string; parentItemId?: string } }
@@ -81,10 +82,10 @@ export function Evidence({ engagement: e, viewer }: { engagement: Engagement; vi
         <ErrorNote error={list.error} />
         {list.data && list.data.items.length === 0 && <Empty>No evidence uploaded yet.</Empty>}
         {list.data && list.data.items.length > 0 && (
-          <table>
+          <TableScroll label="Evidence files"><table>
             <thead><tr><th>File</th><th className="num">Size</th><th>Reference</th><th>Virus check</th><th>Status</th><th></th></tr></thead>
             <tbody>{list.data.items.map((r) => <EvidenceRow key={r.id} row={r} />)}</tbody>
-          </table>
+          </table></TableScroll>
         )}
       </section>
     </div>

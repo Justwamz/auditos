@@ -68,7 +68,7 @@ export function ProspectTable({ rows, actions, manager }: { rows: Prospect[]; ac
 
   return (
     <div className="prospects-scroll">
-      <table className="prospects-table">
+      <table className="prospects-table stack-table">
         <thead>
           <tr>
             <th>Prospect</th>
@@ -82,16 +82,16 @@ export function ProspectTable({ rows, actions, manager }: { rows: Prospect[]; ac
         <tbody>
           {rows.map((p) => (
             <tr key={p.id} className="prospects-row" onClick={(e) => onRow(e, p.id)}>
-              <td>
+              <td data-label="Prospect">
                 <Disclosure open={open.has(p.id)} onToggle={() => toggle(p.id)} summary={<strong className="prospect-name">{p.name}</strong>}>
                   <ProspectDetails p={p} actions={actions} manager={manager} />
                 </Disclosure>
               </td>
-              <td><StagePill stage={p.stage} /></td>
-              <td className="num">{kes(p.expectedFee)}</td>
-              <td>{p.expectedStart ? fmtDate(p.expectedStart) : 'Not set'}</td>
-              <td>{p.ownerName}</td>
-              <td className="num"><ProspectMenu p={p} actions={actions} manager={manager} /></td>
+              <td data-label="Stage"><StagePill stage={p.stage} /></td>
+              <td className="num" data-label="Fee">{kes(p.expectedFee)}</td>
+              <td data-label="Expected start">{p.expectedStart ? fmtDate(p.expectedStart) : 'Not set'}</td>
+              <td data-label="Owner">{p.ownerName}</td>
+              <td className="num" data-label=""><ProspectMenu p={p} actions={actions} manager={manager} /></td>
             </tr>
           ))}
         </tbody>

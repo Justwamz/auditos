@@ -8,6 +8,7 @@ import { ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
 import { ProspectCards } from '@/components/ProspectCards';
 import { ProspectPanel, type PanelMode, type Person } from '@/components/ProspectPanel';
+import { TableScroll } from '@/components/ui/TableScroll';
 import { ProspectTable, StagePill } from '@/components/ProspectTable';
 import { Chips } from '@/components/ui/Chips';
 import { Disclosure } from '@/components/ui/Disclosure';
@@ -146,18 +147,18 @@ export default function PipelinePage() {
           {closed.length > 0 && (
             <section className="sheet">
               <Disclosure open={closedOpen || (filtered && rows.length === 0)} onToggle={setClosedOpen} summary={<span>Closed <span className="muted small">({closed.length})</span></span>}>
-                <table className="prospects-table">
+                <TableScroll label="Closed prospects"><table className="prospects-table stack-table">
                   <thead><tr><th>Prospect</th><th>Outcome</th><th>Owner</th></tr></thead>
                   <tbody>
                     {closed.map((p) => (
                       <tr key={p.id}>
-                        <td>{p.name}</td>
-                        <td><StagePill stage={p.stage} />{p.stage === 'won' ? ' now a client' : p.lostReason ? ` ${p.lostReason}` : ''}</td>
-                        <td>{p.ownerName}</td>
+                        <td data-label="Prospect">{p.name}</td>
+                        <td data-label="Outcome"><StagePill stage={p.stage} />{p.stage === 'won' ? ' now a client' : p.lostReason ? ` ${p.lostReason}` : ''}</td>
+                        <td data-label="Owner">{p.ownerName}</td>
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></TableScroll>
               </Disclosure>
             </section>
           )}

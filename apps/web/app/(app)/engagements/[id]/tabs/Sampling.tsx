@@ -9,6 +9,7 @@ import type { Viewer } from '@/components/ItemPanel';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { SidePanel } from '@/components/ui/SidePanel';
 import type { Engagement } from '../page';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 const kes = (v: string | null | undefined) => (v === null || v === undefined || v === '' ? '' : Number(v).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
@@ -112,7 +113,7 @@ export function Sampling({ engagement: e, viewer }: { engagement: Engagement; vi
         {list.error ? <ErrorNote error={list.error} /> : !list.data ? <p className="muted">Loading…</p> : list.data.schedules.length === 0 ? (
           <Empty>No schedules yet. Use Draw a sample at the top to start one.</Empty>
         ) : (
-          <table>
+          <TableScroll label="Schedules"><table>
             <thead><tr><th>Schedule</th><th>Method</th><th className="num">Population</th><th className="num">Selected</th><th>Progress</th><th /></tr></thead>
             <tbody>
               {list.data.schedules.map((s) => (
@@ -126,7 +127,7 @@ export function Sampling({ engagement: e, viewer }: { engagement: Engagement; vi
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></TableScroll>
         )}
       </section>
 
@@ -163,14 +164,14 @@ function ScheduleView({ e, id, readOnly, onChanged, onDeleted }: { e: Engagement
         <p className="muted">{s.summary.note}</p>
       </div>
       <ErrorNote error={error} />
-      <table>
+      <TableScroll label="Sample items"><table>
         <thead><tr><th>#</th><th>Reference</th><th>Description</th><th className="num">Amount</th><th>Why selected</th><th>Result</th></tr></thead>
         <tbody>
           {s.items.map((i) => (
             <ItemRow key={i.id} e={e} scheduleId={id} item={i} readOnly={readOnly} evidence={evidence.data?.items ?? []} onSaved={() => { d.reload(); onChanged(); }} />
           ))}
         </tbody>
-      </table>
+      </table></TableScroll>
       {!readOnly && s.summary.pending === s.summary.selected && <div><button className="secondary" onClick={discard}>Discard this schedule and draw again</button></div>}
     </section>
   );
