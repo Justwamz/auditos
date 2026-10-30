@@ -10,6 +10,7 @@ import { RowMenu } from '@/components/ui/RowMenu';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { SidePanel } from '@/components/ui/SidePanel';
 import { addDays, dayLabel, hoursLabel, kes, mondayOf, parseHours, todayNairobi } from '@/lib/dates';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Entry { id: string; workDate: string; minutes: number; description: string; billable: boolean; invoiced: boolean; engagementId: string | null; engagementName: string | null }
 interface Expense { id: string; spentOn: string; category: string; description: string; amount: string; rebillable: boolean; invoiced: boolean; engagementName: string | null }
@@ -164,13 +165,13 @@ export default function TimesheetPage() {
                 Use + Log time at the top to add what you worked on.
               </EmptyState>
             ) : (
-              <div className="prospects-scroll">
+              <TableScroll label="Time this week list">
                 <table className="prospects-table">
                   <thead><tr><th>Date</th><th>What you did</th><th>Engagement</th><th className="num">Time</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
                   <tbody>
                     {entries.map((e) => (
                       <tr key={e.id}>
-                        <td>{dayLabel(e.workDate)}</td>
+                        <td className="nowrap">{dayLabel(e.workDate)}</td>
                         <td><strong>{e.description}</strong></td>
                         <td>{e.engagementName ?? 'Firm time'}</td>
                         <td className="num">{hoursLabel(e.minutes)}</td>
@@ -182,7 +183,7 @@ export default function TimesheetPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TableScroll>
             )}
           </section>
 
@@ -193,13 +194,13 @@ export default function TimesheetPage() {
                 Use + Record expense at the top to add a cost.
               </EmptyState>
             ) : (
-              <div className="prospects-scroll">
+              <TableScroll label="Expenses this week list">
                 <table className="prospects-table">
                   <thead><tr><th>Date</th><th>Engagement</th><th>What</th><th className="num">Amount</th><th><span className="sr-only">Actions</span></th></tr></thead>
                   <tbody>
                     {expenses.data?.expenses.map((x) => (
                       <tr key={x.id}>
-                        <td>{dayLabel(x.spentOn)}</td>
+                        <td className="nowrap">{dayLabel(x.spentOn)}</td>
                         <td>{x.engagementName ?? "-"}</td>
                         <td>
                           <strong>{x.description}</strong>
@@ -213,7 +214,7 @@ export default function TimesheetPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TableScroll>
             )}
           </section>
         </>

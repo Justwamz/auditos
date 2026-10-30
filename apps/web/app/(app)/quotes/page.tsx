@@ -12,6 +12,7 @@ import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
 import { PageHead } from '@/components/ui/PageHead';
 import { matchesQuery } from '@/lib/text-match';
 import { kes } from '@/lib/dates';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Row { id: string; number: string | null; status: string; subjectName: string; title: string; validUntil: string | null; total: string; createdBy: string }
 const FILTERS = [
@@ -73,7 +74,7 @@ export default function QuotesPage() {
 
       {rows.length > 0 && (
         <section className="sheet prospects-sheet">
-          <div className="prospects-scroll">
+          <TableScroll label="Quotations list">
             <table className="prospects-table" aria-label="Quotations">
               <thead><tr><th>Number</th><th>For</th><th>Title</th><th>Status</th><th>Valid until</th><th className="num">Total</th><th>By</th></tr></thead>
               <tbody>
@@ -90,7 +91,7 @@ export default function QuotesPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         </section>
       )}
     </div>

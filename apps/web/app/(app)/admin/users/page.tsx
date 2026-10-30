@@ -10,6 +10,7 @@ import { PageHead } from '@/components/ui/PageHead';
 import { RowMenu } from '@/components/ui/RowMenu';
 import { SidePanel } from '@/components/ui/SidePanel';
 import { ROLE_LABELS } from '@/lib/text';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Holding { clients: { id: string; name: string }[]; prospects: { id: string; name: string }[] }
 interface User { id: string; fullName: string | null; email: string; role: string; isAdmin: boolean; active: boolean; mfaEnabled: boolean }
@@ -172,7 +173,7 @@ export default function PeoplePage() {
 
       {users.length > 0 && (
         <section className="sheet prospects-sheet">
-          <div className="prospects-scroll">
+          <TableScroll label="People in the firm list">
             <table className="prospects-table" aria-label="Everyone in the firm">
               <thead><tr><th>Person</th><th>Role</th><th>Can administer</th><th>Sign-in code</th><th>Access</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
@@ -205,7 +206,7 @@ export default function PeoplePage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         </section>
       )}
 

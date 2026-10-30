@@ -8,6 +8,7 @@ import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
 import { PageHead } from '@/components/ui/PageHead';
 import { SidePanel } from '@/components/ui/SidePanel';
 import { fmtDate } from '@/lib/text';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Decl { id: string; engagementId: string | null; declaredAt: string; expiresAt: string }
 
@@ -79,20 +80,20 @@ export default function IndependencePage() {
 
       {rows.length > 0 && (
         <section className="sheet prospects-sheet">
-          <div className="prospects-scroll">
+          <TableScroll label="Your declarations list">
             <table className="prospects-table" aria-label="Your declarations">
               <thead><tr><th>Declared</th><th>Valid until</th><th>Applies to</th></tr></thead>
               <tbody>
                 {rows.map((d) => (
                   <tr key={d.id}>
-                    <td>{fmtDate(d.declaredAt)}</td>
-                    <td>{fmtDate(d.expiresAt)}</td>
+                    <td className="nowrap">{fmtDate(d.declaredAt)}</td>
+                    <td className="nowrap">{fmtDate(d.expiresAt)}</td>
                     <td>{d.engagementId ? 'One engagement' : 'All engagements'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         </section>
       )}
 

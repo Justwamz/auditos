@@ -10,6 +10,7 @@ import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
 import { PageHead } from '@/components/ui/PageHead';
 import { SidePanel } from '@/components/ui/SidePanel';
 import { fmtDate, SECTOR_LABELS } from '@/lib/text';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 /** Partners and administrators can change who is accountable for the client. The old manager loses sight of it. */
 function ChangeManager({ clientId, currentId, onDone, onClose }: { clientId: string; currentId: string | null; onDone: (message: string) => void; onClose: () => void }) {
@@ -216,7 +217,7 @@ export default function ClientPage() {
           </EmptyState>
         )}
         {contacts.data && contacts.data.contacts.length > 0 && (
-          <div className="prospects-scroll">
+          <TableScroll label="People at the client list">
             <table className="prospects-table">
               <thead><tr><th>Name</th>{FIELDS.map((f) => <th key={f.key}>{f.label}</th>)}</tr></thead>
               <tbody>
@@ -228,7 +229,7 @@ export default function ClientPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         )}
       </section>
 

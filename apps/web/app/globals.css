@@ -637,7 +637,7 @@ button.cal-day-head:hover:not(:disabled) { background: var(--ledger-wash); color
 
   /* Rows become small cards: each cell is a "heading: value" line. */
   .stack-table, .stack-table tbody, .stack-table tr, .stack-table td { display: block; width: 100%; }
-  .stack-table thead { position: absolute; width: 0; height: 0; overflow: hidden; padding: 0; border: 0; }
+  .stack-table thead { display: none; }
   .stack-table tr { padding: var(--space-3) 0; border-bottom: 1px solid var(--rule); }
   .stack-table tbody tr:last-child { border-bottom: 0; }
   .stack-table td { display: flex; gap: var(--space-3); align-items: baseline; height: auto; padding: var(--space-1) 0; border: 0; text-align: left; }
@@ -659,5 +659,11 @@ button.cal-day-head:hover:not(:disabled) { background: var(--ledger-wash); color
   .cal-month-title { order: -1; flex: 1 0 100%; margin: 0; }
   .cal-panel { position: static; }
   .prospects-cards { grid-template-columns: minmax(0, 1fr); }
+  .cal-panel { scroll-margin-top: 4.5rem; }
+
+  /* Invoice and quotation lines fit the screen: tighter sheets and cells, amounts and labels may wrap, so the totals are never scrolled out of view. */
+  .sheet:not(.cal-main):not(.cal-mini-sheet) { padding: var(--space-4) var(--space-3); }
+  .lines th, .lines td { padding-inline: var(--space-1); }
+  .lines th { white-space: normal; letter-spacing: 0; text-transform: none; }
+  .lines td.num, .lines th.num, .lines tfoot td[colspan] { white-space: normal; }
 }
-.lines tfoot td[colspan] { white-space: normal; }

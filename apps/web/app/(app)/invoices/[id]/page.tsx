@@ -154,12 +154,12 @@ export default function InvoicePage() {
           <h2>Payments</h2>
           {i.payments.length === 0 && <p className="muted">No payments recorded.</p>}
           {i.payments.length > 0 && (
-            <div className="prospects-scroll">
+            <TableScroll label="Payments list">
               <table className="prospects-table" aria-label="Payments">
                 <thead><tr><th>Date</th><th className="num">Amount</th><th>Method</th><th>Reference</th></tr></thead>
-                <tbody>{i.payments.map((p, n) => <tr key={n}><td>{p.paidOn}</td><td className="num">{kes(p.amount)}</td><td>{METHOD_LABEL[p.method] ?? p.method}</td><td>{p.reference}</td></tr>)}</tbody>
+                <tbody>{i.payments.map((p, n) => <tr key={n}><td className="nowrap">{p.paidOn}</td><td className="num">{kes(p.amount)}</td><td>{METHOD_LABEL[p.method] ?? p.method}</td><td>{p.reference}</td></tr>)}</tbody>
               </table>
-            </div>
+            </TableScroll>
           )}
         </section>
       )}

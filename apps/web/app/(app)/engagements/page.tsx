@@ -12,6 +12,7 @@ import { PageHead } from '@/components/ui/PageHead';
 import { SidePanel } from '@/components/ui/SidePanel';
 import { countByGroup, filterEngagements, STAGE_GROUPS, type StageGroup } from '@/lib/engagements';
 import { fmtDate, SECTOR_LABELS } from '@/lib/text';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Eng { id: string; clientName: string; sector: string; periodStart: string; periodEnd: string; state: string; member: boolean }
 interface Me { role: string }
@@ -104,7 +105,7 @@ export default function EngagementsPage() {
             </section>
           ) : (
             <section className="sheet prospects-sheet">
-              <div className="prospects-scroll">
+              <TableScroll label="Engagements list">
                 <table className="prospects-table">
                   <thead><tr><th>Client</th><th>Sector</th><th>Period</th><th>Stage</th></tr></thead>
                   <tbody>
@@ -112,13 +113,13 @@ export default function EngagementsPage() {
                       <tr key={e.id}>
                         <td><Link href={`/engagements/${e.id}`}><strong>{e.clientName}</strong></Link>{!e.member && <div className="small muted">View only</div>}</td>
                         <td>{SECTOR_LABELS[e.sector] ?? e.sector}</td>
-                        <td>{fmtDate(e.periodStart)} to {fmtDate(e.periodEnd)}</td>
+                        <td className="nowrap">{fmtDate(e.periodStart)} to {fmtDate(e.periodEnd)}</td>
                         <td><StateBadge state={e.state} /></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TableScroll>
             </section>
           )}
         </>

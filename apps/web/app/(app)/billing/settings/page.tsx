@@ -9,6 +9,7 @@ import { Disclosure } from '@/components/ui/Disclosure';
 import { BRANDING_POINTER } from '@/lib/branding';
 import { PageHead } from '@/components/ui/PageHead';
 import { ROLE_LABELS } from '@/lib/text';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Settings {
   settings: { legalName: string | null; address: string | null; kraPin: string | null; bankDetails: string | null; invoicePrefix: string; quotePrefix: string; paymentTermsDays: number };
@@ -102,7 +103,7 @@ export default function BillingSettingsPage() {
         <Disclosure summary="Taxes" open={section === 'taxes'} onToggle={toggle('taxes')}>
           <div className="stack">
             <p className="muted">No tax is added to an invoice unless the person making it chooses one, and chooses whether prices include it. Several can be applied, and one can be charged on top of another, for example VAT on top of excise duty.</p>
-            <div className="prospects-scroll">
+            <TableScroll label="Taxes list">
               <table className="prospects-table" aria-label="Taxes">
                 <thead><tr><th>Tax</th><th className="num">Rate</th><th>Charged</th><th>Status</th><th /></tr></thead>
                 <tbody>
@@ -115,7 +116,7 @@ export default function BillingSettingsPage() {
                   {data.data?.taxes.length === 0 && <tr><td colSpan={5} className="muted">No taxes yet.</td></tr>}
                 </tbody>
               </table>
-            </div>
+            </TableScroll>
             {canEdit && (
               <form className="row" onSubmit={addTax}>
                 <input aria-label="Tax name" placeholder="Name, for example VAT" required maxLength={60} value={tax.name} onChange={(e) => setTax({ ...tax, name: e.target.value })} />

@@ -65,6 +65,14 @@ export default function CalendarPage() {
   const canSchedule = me.data !== undefined && me.data.role !== 'firm_admin';
   const meId = me.data?.userId ?? '';
   const events = useMemo(() => (cal.data?.events ?? []).filter((e) => !hidden.includes(e.kind)), [cal.data, hidden]);
+  /** On a phone the day's details sit below the month, so bring them into view after a day is chosen. */
+  function pickDay(day: string) {
+    setSelected(day);
+    if (!window.matchMedia('(max-width: 40rem)').matches) return;
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    requestAnimationFrame(() => document.querySelector('.cal-panel')?.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' }));
+  }
+
   const hiddenCount = eventsOnDay(cal.data?.events ?? [], selected).length - eventsOnDay(events, selected).length;
   const milestones = cal.data?.milestones ?? [];
 
@@ -165,7 +173,7 @@ export default function CalendarPage() {
           </section>
         </div>
         <section className="sheet cal-main" aria-label={showPeople ? 'People on this day' : `${VIEWS.find((v) => v.id === view)!.label} calendar`}>
-          {view === 'month' && <MonthView days={grid} month={month} events={events} milestones={milestones} selected={selected} onSelect={setSelected} meId={meId} />}
+          {view === 'month' && <MonthView days={grid} month={month} events={events} milestones={milestones} selected={selected} onSelect={pickDay} meId={meId} />}
           {view !== 'month' && !showPeople && (
             <TimeGrid days={days} events={events} milestones={milestones} meId={meId} onOpen={setDetail} onOpenDay={days.length > 1 ? (d) => { go(d); choose('day'); } : undefined} />
           )}

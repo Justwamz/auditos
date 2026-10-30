@@ -9,6 +9,7 @@ import { PageHead } from '@/components/ui/PageHead';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { Skeleton } from '@/components/ui/EmptyState';
 import { hoursLabel, kes, monthEnd, monthStart, todayNairobi } from '@/lib/dates';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Summary {
   mine?: { minutes: number; billableMinutes: number; utilisation: number };
@@ -89,7 +90,7 @@ export default function BillingPage() {
       {d?.time && d.time.byEngagement.length > 0 && (
         <section className="sheet stack">
           <SectionHead title="By engagement" sentence="Hours against the budget, and how each job is billed." />
-          <div className="prospects-scroll"><table className="prospects-table" aria-label="By engagement">
+          <TableScroll label="By engagement list"><table className="prospects-table" aria-label="By engagement">
             <thead><tr><th>Client</th><th className="num">Hours</th><th className="num">Value</th><th>Fee</th><th>Budget used</th></tr></thead>
             <tbody>
               {d.time.byEngagement.map((e) => (
@@ -102,21 +103,21 @@ export default function BillingPage() {
                 </tr>
               ))}
             </tbody>
-          </table></div>
+          </table></TableScroll>
         </section>
       )}
 
       {d?.time && d.time.byPerson.length > 0 && (
         <section className="sheet stack">
           <SectionHead title="By person" sentence="Hours, billable share and value for each person." />
-          <div className="prospects-scroll"><table className="prospects-table" aria-label="By person">
+          <TableScroll label="By person list"><table className="prospects-table" aria-label="By person">
             <thead><tr><th>Person</th><th className="num">Hours</th><th className="num">Billable</th><th className="num">Utilisation</th><th className="num">Value</th></tr></thead>
             <tbody>
               {d.time.byPerson.map((p) => (
                 <tr key={p.userId}><td>{p.name}</td><td className="num">{hoursLabel(p.minutes)}</td><td className="num">{hoursLabel(p.billableMinutes)}</td><td className="num">{p.utilisation}%</td><td className="num">{kes(p.value)}</td></tr>
               ))}
             </tbody>
-          </table></div>
+          </table></TableScroll>
         </section>
       )}
 

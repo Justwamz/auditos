@@ -194,6 +194,9 @@ async function sweep(page: Page, label: string): Promise<void> {
   }
   const small = await smallTapTargets(page);
   if (small.length) problems.push(`${label} @${width}: small tap targets: ${small.slice(0, 6).join('; ')}`);
+  // The lines of an invoice or quotation carry the totals: they must fit without sideways scrolling.
+  const cut = await page.evaluate(() => Array.from(document.querySelectorAll<HTMLElement>('.table-scroll[aria-label$="lines list"]')).filter((el) => el.scrollWidth - el.clientWidth > 1).map((el) => `${el.getAttribute('aria-label')} ${el.scrollWidth}>${el.clientWidth}`));
+  if (cut.length) problems.push(`${label} @${width}: totals cut off: ${cut.join('; ')}`);
   const tiny = await smallInputText(page);
   if (tiny.length) problems.push(`${label} @${width}: small input text: ${tiny.slice(0, 6).join('; ')}`);
   await shot(page, `${label.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-${width}`);
@@ -378,4 +381,96 @@ test('phone: the focus ring on a tab is not cut off by the scrolling tab strip',
   expect(b.above, 'ring above the link').toBeGreaterThanOrEqual(-0.5);
   expect(b.below, 'ring below the link').toBeGreaterThanOrEqual(-0.5);
   await shot(page, 'phone-tab-focus');
+});
+
+// ---- Fix round 1 -------------------------------------------------------------------------------
+
+/** A draft invoice and quotation (made through the API when the lists are empty) and an issued invoice with a payment on it. */
+async function documents(page: Page): Promise<{ invoice: string; quote: string; paid: string }> {
+  const clients = (await (await page.request.get('/api/clients')).json()) as { clients: { id: string; name: string }[] };
+  const mwangaza = clients.clients.find((c) => c.name === 'Mwangaza Traders Ltd')!;
+  const line = { description: 'Audit fieldwork, interim visit and review of the year-end working papers', quantity: '1', unitPrice: '125000.00' };
+  const firstOf = async (kind: 'invoices' | 'quotes') => {
+    const list = (await (await page.request.get(`/api/${kind}`)).json()) as Record<string, { id: string; status: string }[]>;
+    return list[kind] ?? [];
+  };
+  const invoices = await firstOf('invoices');
+  const invoice = invoices[0]?.id ?? await create(page, '/api/invoices', { clientId: mwangaza.id, taxMode: 'exclusive', taxIds: [], lines: [line] });
+  const quotes = await firstOf('quotes');
+  const quote = quotes[0]?.id ?? await create(page, '/api/quotes', { clientId: mwangaza.id, title: 'Annual audit', taxMode: 'exclusive', taxIds: [], lines: [line] });
+  const issued = invoices.find((i) => i.status !== 'draft' && i.status !== 'void')!;
+  const res = await page.request.post(`/api/invoices/${issued.id}/payments`, { headers: { 'x-csrf-token': await csrfOf(page) }, data: { amount: '1000.00', paidOn: '2026-10-22', method: 'bank', reference: 'REF-1' } });
+  expect(res.ok(), `payment: ${res.status()}`).toBe(true);
+  return { invoice, quote, paid: issued.id };
+}
+
+for (const size of [PHONE, PHONE_LARGE]) {
+  test(`phone: invoice and quotation totals are fully on screen at ${size.width}px`, async ({ page }) => {
+    const ids = await documents(page);
+    await page.setViewportSize(size);
+    for (const [kind, id] of [['invoices', ids.invoice], ['invoices', ids.paid], ['quotes', ids.quote]] as const) {
+      await page.goto(`/${kind}/${id}`);
+      const lines = page.locator('table.lines');
+      await expect(lines).toBeVisible();
+      const cells = lines.locator('tfoot td');
+      expect(await cells.count()).toBeGreaterThan(1);
+      for (const cell of await cells.all()) {
+        const box = (await cell.boundingBox())!;
+        const text = (await cell.textContent())!.trim();
+        expect(box.x, `${kind} "${text}" starts on screen`).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width, `${kind} "${text}" ends on screen`).toBeLessThanOrEqual(size.width + 0.5);
+      }
+      await shot(page, `totals-${kind}-${size.width}`);
+      // Nothing needs sideways scrolling to be read.
+      const region = page.getByRole('region', { name: /lines list/ });
+      expect(await region.evaluate((el) => el.scrollWidth - el.clientWidth), `${kind} lines scroll sideways`).toBeLessThanOrEqual(1);
+    }
+  });
+}
+
+test('phone: payment dates stay in one piece', async ({ page }) => {
+  const ids = await documents(page);
+  await page.setViewportSize(PHONE);
+  await page.goto(`/invoices/${ids.paid}`);
+  const cell = page.getByRole('table', { name: 'Payments' }).locator('tbody td').first();
+  await expect(cell).toBeVisible();
+  const { ws, lines } = await cell.evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    return { ws: getComputedStyle(el).whiteSpace, lines: new Set(Array.from(range.getClientRects()).map((r) => Math.round(r.top))).size };
+  });
+  expect(ws).toBe('nowrap');
+  expect(lines, 'the date sits on one line').toBe(1);
+});
+
+test('phone: a stacked cell label is read once, and wide screens read the column headings instead', async ({ page }) => {
+  await page.setViewportSize(PHONE);
+  await page.goto('/clients');
+  const table = page.locator('main table.stack-table').first();
+  await expect(table).toBeVisible();
+  const rows = await table.locator('tbody tr').count();
+  const phone = await table.ariaSnapshot();
+  expect(phone.match(/Account manager/g)?.length, 'once in each row name and once in each cell name, never more').toBe(rows * 2);
+  expect(phone).not.toContain('columnheader');
+  await expect(table.getByRole('columnheader')).toHaveCount(0);
+  await expect(table.getByRole('cell', { name: /^Account manager / }), 'label read once per row on a phone').toHaveCount(rows);
+  await page.setViewportSize(DESKTOP);
+  await expect(table.locator('thead')).toBeVisible();
+  const wide = await table.ariaSnapshot();
+  expect(wide).toContain('columnheader');
+  await expect(table.getByRole('columnheader', { name: 'Account manager' })).toHaveCount(1);
+  await expect(table.getByRole('cell', { name: /^Account manager/ }), 'cells do not repeat the heading on a wide screen').toHaveCount(0);
+});
+
+test('phone: choosing a day in Month brings its details into view', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize(PHONE);
+  await page.goto('/calendar');
+  await page.getByRole('radio', { name: 'Month', exact: true }).click();
+  const panel = page.getByLabel('Day details');
+  await expect(panel).toBeVisible();
+  await page.locator('.cal-cell:not(.is-other)').nth(3).click();
+  // The page may be too short to put the panel at the very top; its heading must at least be on screen.
+  await expect.poll(() => panel.locator('.cal-panel-title').evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; })).toBe(true);
+  await shot(page, 'phone-calendar-day-in-view');
 });

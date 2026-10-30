@@ -10,6 +10,7 @@ import { Chips } from '@/components/ui/Chips';
 import { Disclosure } from '@/components/ui/Disclosure';
 import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
 import { PageHead } from '@/components/ui/PageHead';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface TrailEvent { seq: number; at: string; action: string; actorName: string | null; clientName: string | null; sentence: string }
 interface Trail { events: TrailEvent[]; next: number | null }
@@ -135,7 +136,7 @@ export default function AuditTrailPage() {
 
       {rows.length > 0 && (
         <section className="sheet prospects-sheet">
-          <div className="prospects-scroll">
+          <TableScroll label="Activity history list">
             <table className="prospects-table" aria-label="Activity history">
               <thead><tr><th>When</th><th>What happened</th></tr></thead>
               <tbody>
@@ -147,7 +148,7 @@ export default function AuditTrailPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         </section>
       )}
 

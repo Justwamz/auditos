@@ -12,6 +12,7 @@ import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
 import { PageHead } from '@/components/ui/PageHead';
 import { matchesQuery } from '@/lib/text-match';
 import { kes } from '@/lib/dates';
+import { TableScroll } from '@/components/ui/TableScroll';
 
 interface Row {
   id: string; number: string | null; status: string; overdue: boolean; clientName: string; issueDate: string | null; dueDate: string | null; total: string; outstanding: string;
@@ -77,7 +78,7 @@ export default function InvoicesPage() {
 
       {rows.length > 0 && (
         <section className="sheet prospects-sheet">
-          <div className="prospects-scroll">
+          <TableScroll label="Invoices list">
             <table className="prospects-table" aria-label="Invoices">
               <thead><tr><th>Number</th><th>Client</th><th>Status</th><th>Issued</th><th>Due</th><th className="num">Total</th><th className="num">Owed</th></tr></thead>
               <tbody>
@@ -94,7 +95,7 @@ export default function InvoicesPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         </section>
       )}
     </div>
