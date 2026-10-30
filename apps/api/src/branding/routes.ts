@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { derivePalette, DEFAULT_BRAND, type Adjustment } from '@auditos/brand';
 import { withTenant } from '@auditos/db';
 import { actorOf, httpError, tenantCtx } from '../authz';
+import { isIconVariant, keepIcon, keptIcon, squareIcon } from './icon';
 import { checkLogo, LOGO_TOO_BIG, MAX_LOGO_BYTES } from './logo';
 import { loadBrandingRow, type BrandingRow } from './theme';
 
@@ -108,6 +109,38 @@ export async function brandingRoutes(app: FastifyInstance): Promise<void> {
       if ((await loadBrandingRow(tx))?.logoId) await save(tx, { logoId: null });
     });
     return { ok: true };
+  });
+
+  /**
+   * The firm logo as a square icon for the browser tab and home screen. The logo is looked up in this firm's rows on every
+   * request (a finished icon is only handed out after that lookup), so another firm's id is simply not found.
+   */
+  app.get<{ Params: { id: string; variant: string } }>('/branding/icon/:id/:variant', { config: { access: 'tenant' } }, async (req, reply) => {
+    const id = uuid.safeParse(req.params.id);
+    if (!id.success || !isIconVariant(req.params.variant)) throw httpError(404, 'not_found');
+    const variant = req.params.variant;
+    const key = `${id.data}:${variant}`;
+    const fetched = await withTenant(pool, { ...tenantCtx(req), readOnly: true }, async (tx) => {
+      const found = (await tx.query('select 1 from firm_logos where id = $1', [id.data])).rows[0];
+      if (!found) return null;
+      const hit = keptIcon(key);
+      if (hit !== undefined) return { icon: hit };
+      const bytes = (await tx.query('select bytes from firm_logos where id = $1', [id.data])).rows[0]?.bytes as Buffer | undefined;
+      return { bytes };
+    });
+    if (!fetched) throw httpError(404, 'not_found');
+    let icon: Buffer | null;
+    if ('icon' in fetched) icon = fetched.icon ?? null;
+    else {
+      icon = fetched.bytes ? await squareIcon(fetched.bytes, variant) : null;
+      keepIcon(key, icon);
+    }
+    if (!icon) return reply.code(302).header('location', `/icons/auditos-${variant}.png`).header('cache-control', 'private, no-store').send();
+    return reply
+      .header('cache-control', 'private, max-age=31536000, immutable')
+      .header('x-content-type-options', 'nosniff')
+      .type('image/png')
+      .send(icon);
   });
 
   app.get<{ Params: { id: string } }>('/branding/logo/:id', { config: { access: 'tenant' } }, async (req, reply) => {
