@@ -52,7 +52,7 @@ test('signed out: the manifest, icons, worker and offline page are reachable', a
 });
 
 test('signed out: nothing else is public', async ({ request }) => {
-  for (const p of ['/clients', '/', '/engagements']) {
+  for (const p of ['/clients', '/', '/engagements', '/icons/x/y', '/sw.js/x', '/swXjs']) {
     const r = await request.get(p, { maxRedirects: 0 });
     expect(r.status(), p).toBe(307);
   }
@@ -86,12 +86,13 @@ test('offline after signing in shows the offline page and nothing private is kep
 test("an older version's cache is removed when the worker starts", async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.goto('/login');
+  // Seed from a same-origin page that does not register the worker, so the worker cannot start first.
+  await page.goto('/icons/auditos.svg');
   await page.evaluate(async () => {
     const c = await caches.open('aos-shell-v0');
     await c.put('/old', new Response('old'));
   });
-  await page.reload();
+  await page.goto('/login');
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });

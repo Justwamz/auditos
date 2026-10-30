@@ -28,6 +28,7 @@ export default defineConfig({
       url: `http://localhost:${WEB_PORT}/login`,
       reuseExistingServer: false,
       timeout: 180_000,
+      // NEXT_PUBLIC_SW is for testing only: it lets the dev server register the worker (production always does).
       env: { API_URL: `http://localhost:${API_PORT}`, NEXT_PUBLIC_SW: '1' },
     },
   ],
