@@ -112,6 +112,7 @@ a:hover { color: var(--ledger-deep); text-decoration-thickness: 2px; }
 .rail button.secondary { margin-top: 0.5rem; background: transparent; color: var(--rail-fg, #e9f1ea); border: 1px solid var(--rail-line, #7fa38c); box-shadow: none; }
 .rail button.secondary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); border-color: var(--rail-hover-border, #cfe0d4); color: #fff; }
 .main { padding: 2rem 2.5rem 4rem; max-width: 80rem; width: 100%; }
+.topbar, .rail-close { display: none; }
 .page-head { margin-bottom: 1.5rem; }
 .page-head p { margin-top: 0.35rem; color: var(--pencil); }
 
@@ -284,15 +285,26 @@ table.ledger td.num { min-width: 8.5rem; }
 .mandatory-mark { color: var(--red-pen); font-weight: 600; }
 
 @media (max-width: 52rem) {
-  .shell { grid-template-columns: 1fr; }
-  .rail { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; }
-  .rail nav { flex-direction: row; flex-wrap: wrap; overflow: visible; }
-  .rail .nav-group { flex-direction: row; flex-wrap: wrap; align-items: center; }
-  .rail .nav-group + .nav-group { margin-top: 0; }
-  .rail .nav-heading { display: none; }
-  .rail .who { margin-top: 0; }
-  .main { padding: 1.25rem 1rem 3rem; }
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; position: sticky; top: 0; z-index: 40; height: 56px; padding: 0 0.75rem 0 1rem; background: var(--rail-bg, #235640); color: var(--rail-fg, #e9f1ea); }
+  .topbar-name { font-weight: 600; color: #fff; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar .menu-btn { min-width: 44px; background: transparent; color: #fff; border: 1px solid var(--rail-line, #7fa38c); box-shadow: none; }
+  .topbar .menu-btn:focus-visible, .rail-close:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .rail {
+    position: fixed; inset: 0 auto 0 0; width: min(20rem, 86vw); height: 100dvh; overflow-y: auto;
+    transform: translateX(-100%); visibility: hidden;
+    transition: transform var(--dur) var(--ease), visibility 0s linear var(--dur);
+    z-index: 50;
+  }
+  .rail.is-open { transform: none; visibility: visible; transition: transform var(--dur) var(--ease); }
+  .rail:focus { outline: none; }
+  .rail-backdrop { position: fixed; inset: 0; background: rgba(29, 39, 51, 0.4); z-index: 49; }
+  .rail-close { display: inline-flex; align-items: center; justify-content: center; align-self: flex-end; background: transparent; color: #fff; border: 1px solid var(--rail-line, #7fa38c); box-shadow: none; }
+  .rail nav a { min-height: 44px; }
+  .main { padding: 1rem 1rem 3rem; }
   .signoffs { flex-wrap: wrap; }
+  button, .button, select, input:not([type=checkbox]):not([type=radio]), .tabbar a, .tabs button { min-height: 44px; }
+  .icon-close, .row-menu-btn, .cal-step { min-width: 44px; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 @media print {

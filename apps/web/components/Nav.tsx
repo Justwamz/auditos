@@ -1,8 +1,10 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import { visibleFocusable, trapTarget } from '@/lib/focus';
+import { PHONE_QUERY, useMediaQuery } from '@/lib/media';
 import { isCurrent, navFor } from '@/lib/nav';
 import { ROLE_LABELS, initialsOf } from '@/lib/text';
 
@@ -19,6 +21,49 @@ export function Nav({ name, role, isAdmin, firm, multiFirm, brandName, logoId }:
   const router = useRouter();
   const groups = navFor(role, isAdmin);
   const [logoFailed, setLogoFailed] = useState(false);
+  const [open, setOpen] = useState(false);
+  const drawer = useMediaQuery(PHONE_QUERY);
+  const rail = useRef<HTMLElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+  const shown = open && drawer;
+
+  // Navigating, or widening the window past the drawer layout, closes the menu.
+  useEffect(() => setOpen(false), [path]);
+  useEffect(() => {
+    if (!drawer) setOpen(false);
+  }, [drawer]);
+
+  useEffect(() => {
+    if (!shown) {
+      if (wasOpen.current) menuButton.current?.focus();
+      wasOpen.current = false;
+      return;
+    }
+    wasOpen.current = true;
+    const el = rail.current;
+    if (el) (visibleFocusable(el).find((x) => x.tagName === 'A') ?? el).focus();
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab' || !rail.current) return;
+      const items = visibleFocusable(rail.current);
+      const to = trapTarget(items, document.activeElement as HTMLElement | null, rail.current, e.shiftKey);
+      if (to) {
+        e.preventDefault();
+        to.focus();
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [shown]);
 
   async function signOut() {
     try {
@@ -30,8 +75,21 @@ export function Nav({ name, role, isAdmin, firm, multiFirm, brandName, logoId }:
   }
 
   return (
-    <aside className="rail">
+    <>
+    <div className="topbar">
+      <span className="topbar-name">{brandName ?? 'AuditOS'}</span>
+      <button ref={menuButton} type="button" className="menu-btn" aria-expanded={shown} aria-controls="main-menu" onClick={() => setOpen(true)}>Menu</button>
+    </div>
+    {shown && <div className="rail-backdrop" onClick={() => setOpen(false)} />}
+    <aside
+      className={shown ? 'rail is-open' : 'rail'}
+      id="main-menu"
+      ref={rail}
+      tabIndex={-1}
+      {...(shown ? { role: 'dialog', 'aria-modal': true, 'aria-label': 'Menu' } : {})}
+    >
       <a className="skip-link" href="#content">Skip to content</a>
+      <button type="button" className="rail-close" onClick={() => setOpen(false)}>Close menu</button>
       {brandName ? (
         <div>
           {logoId && !logoFailed ? (
@@ -76,5 +134,6 @@ export function Nav({ name, role, isAdmin, firm, multiFirm, brandName, logoId }:
         </div>
       </div>
     </aside>
+    </>
   );
 }
