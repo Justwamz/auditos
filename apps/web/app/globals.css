@@ -174,6 +174,10 @@ button.secondary:hover:not(:disabled) { background: var(--ledger-wash); border-c
 button.danger { background: #fff; border-color: var(--red-pen); color: var(--red-pen); box-shadow: none; }
 button.danger:hover:not(:disabled) { background: var(--red-wash); border-color: var(--red-pen); color: var(--red-pen); }
 button.quiet { background: transparent; border-color: transparent; color: var(--ledger-deep); padding-inline: 0.5rem; box-shadow: none; font-weight: 500; }
+/* On the dark side menu, the install offer reads like the Sign out button beside it. */
+.rail .install { margin-top: 0.5rem; }
+.rail .install button.quiet { color: var(--rail-fg, #e9f1ea); }
+.rail .install button.quiet:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); color: #fff; }
 button.quiet:hover:not(:disabled) { background: var(--ledger-wash); border-color: transparent; color: var(--ledger-deep); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 0.25rem; }

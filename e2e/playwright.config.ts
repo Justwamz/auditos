@@ -28,7 +28,7 @@ export default defineConfig({
       url: `http://localhost:${WEB_PORT}/login`,
       reuseExistingServer: false,
       timeout: 180_000,
-      env: { API_URL: `http://localhost:${API_PORT}` },
+      env: { API_URL: `http://localhost:${API_PORT}`, NEXT_PUBLIC_SW: '1' },
     },
   ],
 });

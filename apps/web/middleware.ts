@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/accept-invite'];
+const PUBLIC_PATHS = ['/login', '/accept-invite', '/offline', '/site.webmanifest'];
 
 function contentSecurityPolicy(nonce: string): string {
   const dev = process.env.NODE_ENV !== 'production';
@@ -15,6 +15,8 @@ function contentSecurityPolicy(nonce: string): string {
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
+    "worker-src 'self'",
+    "manifest-src 'self'",
   ].join('; ');
 }
 
@@ -40,4 +42,4 @@ export function middleware(req: NextRequest) {
   return res;
 }
 
-export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'] };
+export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico|icons/|sw.js).*)'] };

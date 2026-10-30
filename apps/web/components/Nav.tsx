@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { InstallButton } from '@/components/InstallButton';
 import { api } from '@/lib/api';
 import { visibleFocusable, trapTarget } from '@/lib/focus';
 import { PHONE_QUERY, useMediaQuery } from '@/lib/media';
@@ -132,6 +133,7 @@ export function Nav({ name, role, isAdmin, firm, multiFirm, brandName, logoId }:
             <span>{ROLE_LABELS[role] ?? role}</span>
           </span>
         </div>
+        <InstallButton />
         <div className="row">
           <button className="secondary" onClick={signOut}>Sign out</button>
           {multiFirm && <Link href="/login?select=1" style={{ color: 'var(--rail-fg, #e9f1ea)' }} className="small">Switch firm</Link>}
