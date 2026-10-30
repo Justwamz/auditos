@@ -48,7 +48,7 @@ body {
   line-height: 1.55;
   font-variant-numeric: tabular-nums;
 }
-h1, h2, h3 { font-family: var(--sans); font-weight: 600; line-height: 1.2; margin: 0; }
+h1, h2, h3 { font-family: var(--sans); font-weight: 600; line-height: 1.2; margin: 0; overflow-wrap: anywhere; }
 h1 { font-size: 28px; line-height: 1.15; font-weight: 650; letter-spacing: -0.015em; }
 h2 { font-size: 18px; font-weight: 600; }
 h3 { font-size: 1.05rem; }
@@ -277,7 +277,7 @@ table.ledger td.num { min-width: 8.5rem; }
 .choice-role { font-size: 13px; font-weight: 500; color: var(--pencil); }
 .secret { font-family: ui-monospace, Consolas, monospace; background: #fff; border: 1px dashed var(--rule-strong); padding: 0.5rem 0.7rem; word-break: break-all; user-select: all; }
 
-.item-list { list-style: none; margin: 0; padding: 0; }
+.item-list { list-style: none; margin: 0; padding: 0; overflow-wrap: anywhere; }
 .item-list > li { border-top: 1px solid var(--rule); padding: 0.75rem 0; }
 .question { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.4rem; padding: 0.7rem 0; border-top: 1px solid var(--rule); }
 .question .options { display: flex; gap: 1.2rem; }
@@ -610,6 +610,7 @@ button.cal-day-head:hover:not(:disabled) { background: var(--ledger-wash); color
 
 /* Shared pieces on small screens */
 .table-scroll { overflow-x: auto; max-width: 100%; }
+.stack-label { display: none; }
 .table-scroll:focus-visible { outline: 2px solid var(--ledger); outline-offset: 2px; }
 .prospects-scroll { max-width: 100%; }
 @media (max-width: 52rem) {
@@ -617,6 +618,13 @@ button.cal-day-head:hover:not(:disabled) { background: var(--ledger-wash); color
   .page-head-actions, .section-head-actions { width: 100%; margin-left: 0; }
   .page-head-actions > *, .section-head-actions > * { flex: 1 1 auto; }
   .modal { max-width: calc(100vw - 2rem); max-height: calc(100dvh - 2rem); overflow-y: auto; }
+}
+@media (max-width: 52rem) {
+  /* Later than the base rules above so these win: 44px tap targets and a focus ring that sits inside the scrolling strip. */
+  .cal-step, .row-menu-btn, .icon-close, .cal-mini-day { min-width: 44px; }
+  .tabbar a, .tabs button { min-height: 44px; }
+  button.quiet { min-width: 44px; white-space: nowrap; }
+  .tabs button:focus-visible, .tabbar a:focus-visible { outline-offset: -3px; }
 }
 @media (max-width: 40rem) {
   .tabs, .tabbar { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
@@ -633,8 +641,23 @@ button.cal-day-head:hover:not(:disabled) { background: var(--ledger-wash); color
   .stack-table tr { padding: var(--space-3) 0; border-bottom: 1px solid var(--rule); }
   .stack-table tbody tr:last-child { border-bottom: 0; }
   .stack-table td { display: flex; gap: var(--space-3); align-items: baseline; height: auto; padding: var(--space-1) 0; border: 0; text-align: left; }
-  .stack-table td::before { content: attr(data-label); flex: 0 0 7.5rem; font-size: 13px; font-weight: 600; color: var(--pencil); }
-  .stack-table td[data-label='']::before { display: none; }
+  .stack-table .stack-label { display: block; flex: 0 0 7.5rem; font-size: 13px; font-weight: 600; color: var(--pencil); }
   .stack-table td[data-label=''] { justify-content: flex-end; }
   .stack-table td > :first-child { min-width: 0; }
+  .stack-table td { overflow-wrap: anywhere; }
+
+  /* Calendar: the month is the picker, so the small month is left out; cells keep the number and dots, the title sits above the controls. */
+  .cal-side { grid-template-columns: minmax(0, 1fr); }
+  .cal-layout:not(.is-wide) .cal-mini-sheet { display: none; }
+  .cal-side .sheet, .cal-main { padding: var(--space-3) var(--space-1); }
+  .cal-mini-grid { gap: 0; }
+  .cal-month { gap: 2px; }
+  .cal-cell { min-height: 56px; padding: var(--space-1); }
+  .cal-count { display: none; }
+  .cal-diamond-cell { top: 6px; right: 6px; }
+  .cal-toolbar > .row { flex-wrap: wrap; }
+  .cal-month-title { order: -1; flex: 1 0 100%; margin: 0; }
+  .cal-panel { position: static; }
+  .prospects-cards { grid-template-columns: minmax(0, 1fr); }
 }
+.lines tfoot td[colspan] { white-space: normal; }

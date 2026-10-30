@@ -146,7 +146,7 @@ export default function CalendarPage() {
 
       <div className={`cal-layout${view === 'month' ? '' : ' is-wide'}`}>
         <div className="cal-side">
-          <section className="sheet">
+          <section className="sheet cal-mini-sheet">
             <MiniMonth anchor={anchor} selected={selected} onPick={go} />
           </section>
           <section className="sheet cal-legend" aria-label="What to show">

@@ -8,6 +8,8 @@ import { ErrorNote, Notice } from '@/components/bits';
 import { EmptyState, Skeleton } from '@/components/ui/EmptyState';
 import { PageHead } from '@/components/ui/PageHead';
 import { SidePanel } from '@/components/ui/SidePanel';
+import { StackCell } from '@/components/ui/StackCell';
+import { TableScroll } from '@/components/ui/TableScroll';
 import { SECTOR_LABELS } from '@/lib/text';
 
 interface Client { id: string; name: string; sector: string; legalForm: string; framework: string; yearEndMonth: number; accountManagerName: string | null; relationship: 'account_manager' | 'team' | 'oversight' }
@@ -103,25 +105,25 @@ export default function ClientsPage() {
             </section>
           ) : (
             <section className="sheet prospects-sheet">
-              <div className="prospects-scroll">
-                <table className="prospects-table stack-table">
-                  <thead><tr><th>Client</th><th>Account manager</th><th>Sector</th><th>Year end</th><th>Why you see it</th></tr></thead>
-                  <tbody>
+              <TableScroll label="Clients">
+                <table className="prospects-table stack-table" role="table">
+                  <thead role="rowgroup"><tr role="row"><th role="columnheader">Client</th><th role="columnheader">Account manager</th><th role="columnheader">Sector</th><th role="columnheader">Year end</th><th role="columnheader">Why you see it</th></tr></thead>
+                  <tbody role="rowgroup">
                     {rows.map((c) => (
-                      <tr key={c.id}>
-                        <td data-label="Client"><div>
+                      <tr key={c.id} role="row">
+                        <StackCell label="Client"><div>
                           <Link href={`/clients/${c.id}`}><strong>{c.name}</strong></Link>
                           <div className="small muted">{c.legalForm} · {c.framework === 'IFRS_SME' ? 'IFRS for SMEs' : 'Full IFRS'}</div>
-                        </div></td>
-                        <td data-label="Account manager">{c.accountManagerName ?? 'Not set'}</td>
-                        <td data-label="Sector">{SECTOR_LABELS[c.sector] ?? c.sector}</td>
-                        <td data-label="Year end">{MONTHS[c.yearEndMonth - 1]}</td>
-                        <td className="muted" data-label="Why you see it">{WHY[c.relationship]}</td>
+                        </div></StackCell>
+                        <StackCell label="Account manager">{c.accountManagerName ?? 'Not set'}</StackCell>
+                        <StackCell label="Sector">{SECTOR_LABELS[c.sector] ?? c.sector}</StackCell>
+                        <StackCell label="Year end">{MONTHS[c.yearEndMonth - 1]}</StackCell>
+                        <StackCell className="muted" label="Why you see it">{WHY[c.relationship]}</StackCell>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TableScroll>
             </section>
           )}
         </>

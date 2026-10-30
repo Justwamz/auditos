@@ -2,6 +2,8 @@
 import { useState, type MouseEvent } from 'react';
 import { Disclosure } from '@/components/ui/Disclosure';
 import { RowMenu } from '@/components/ui/RowMenu';
+import { StackCell } from '@/components/ui/StackCell';
+import { TableScroll } from '@/components/ui/TableScroll';
 import { fmtDate, SECTOR_LABELS } from '@/lib/text';
 import { kes, OPEN_STAGES, STAGE_LABELS, type Prospect, type ProspectActions, type Stage } from '@/lib/pipeline';
 
@@ -67,35 +69,35 @@ export function ProspectTable({ rows, actions, manager }: { rows: Prospect[]; ac
   };
 
   return (
-    <div className="prospects-scroll">
-      <table className="prospects-table stack-table">
-        <thead>
-          <tr>
-            <th>Prospect</th>
-            <th>Stage</th>
-            <th className="num">Fee</th>
-            <th>Expected start</th>
-            <th>Owner</th>
-            <th><span className="sr-only">Actions</span></th>
+    <TableScroll label="Prospects">
+      <table className="prospects-table stack-table" role="table">
+        <thead role="rowgroup">
+          <tr role="row">
+            <th role="columnheader">Prospect</th>
+            <th role="columnheader">Stage</th>
+            <th role="columnheader" className="num">Fee</th>
+            <th role="columnheader">Expected start</th>
+            <th role="columnheader">Owner</th>
+            <th role="columnheader"><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
-        <tbody>
+        <tbody role="rowgroup">
           {rows.map((p) => (
-            <tr key={p.id} className="prospects-row" onClick={(e) => onRow(e, p.id)}>
-              <td data-label="Prospect">
+            <tr key={p.id} role="row" className="prospects-row" onClick={(e) => onRow(e, p.id)}>
+              <StackCell label="Prospect">
                 <Disclosure open={open.has(p.id)} onToggle={() => toggle(p.id)} summary={<strong className="prospect-name">{p.name}</strong>}>
                   <ProspectDetails p={p} actions={actions} manager={manager} />
                 </Disclosure>
-              </td>
-              <td data-label="Stage"><StagePill stage={p.stage} /></td>
-              <td className="num" data-label="Fee">{kes(p.expectedFee)}</td>
-              <td data-label="Expected start">{p.expectedStart ? fmtDate(p.expectedStart) : 'Not set'}</td>
-              <td data-label="Owner">{p.ownerName}</td>
-              <td className="num" data-label=""><ProspectMenu p={p} actions={actions} manager={manager} /></td>
+              </StackCell>
+              <StackCell label="Stage"><StagePill stage={p.stage} /></StackCell>
+              <StackCell className="num" label="Fee">{kes(p.expectedFee)}</StackCell>
+              <StackCell label="Expected start">{p.expectedStart ? fmtDate(p.expectedStart) : 'Not set'}</StackCell>
+              <StackCell label="Owner">{p.ownerName}</StackCell>
+              <StackCell className="num" label=""><ProspectMenu p={p} actions={actions} manager={manager} /></StackCell>
             </tr>
           ))}
         </tbody>
       </table>
-    </div>
+    </TableScroll>
   );
 }

@@ -8,6 +8,7 @@ import { ErrorNote, Notice } from '@/components/bits';
 import { HelpLink } from '@/components/HelpLink';
 import { ProspectCards } from '@/components/ProspectCards';
 import { ProspectPanel, type PanelMode, type Person } from '@/components/ProspectPanel';
+import { StackCell } from '@/components/ui/StackCell';
 import { TableScroll } from '@/components/ui/TableScroll';
 import { ProspectTable, StagePill } from '@/components/ProspectTable';
 import { Chips } from '@/components/ui/Chips';
@@ -147,14 +148,14 @@ export default function PipelinePage() {
           {closed.length > 0 && (
             <section className="sheet">
               <Disclosure open={closedOpen || (filtered && rows.length === 0)} onToggle={setClosedOpen} summary={<span>Closed <span className="muted small">({closed.length})</span></span>}>
-                <TableScroll label="Closed prospects"><table className="prospects-table stack-table">
-                  <thead><tr><th>Prospect</th><th>Outcome</th><th>Owner</th></tr></thead>
-                  <tbody>
+                <TableScroll label="Closed prospects"><table className="prospects-table stack-table" role="table">
+                  <thead role="rowgroup"><tr role="row"><th role="columnheader">Prospect</th><th role="columnheader">Outcome</th><th role="columnheader">Owner</th></tr></thead>
+                  <tbody role="rowgroup">
                     {closed.map((p) => (
-                      <tr key={p.id}>
-                        <td data-label="Prospect">{p.name}</td>
-                        <td data-label="Outcome"><StagePill stage={p.stage} />{p.stage === 'won' ? ' now a client' : p.lostReason ? ` ${p.lostReason}` : ''}</td>
-                        <td data-label="Owner">{p.ownerName}</td>
+                      <tr key={p.id} role="row">
+                        <StackCell label="Prospect">{p.name}</StackCell>
+                        <StackCell label="Outcome"><StagePill stage={p.stage} />{p.stage === 'won' ? ' now a client' : p.lostReason ? ` ${p.lostReason}` : ''}</StackCell>
+                        <StackCell label="Owner">{p.ownerName}</StackCell>
                       </tr>
                     ))}
                   </tbody>
