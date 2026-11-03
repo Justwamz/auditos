@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { derivePalette, DEFAULT_BRAND, type Adjustment } from '@auditos/brand';
 import { withTenant } from '@auditos/db';
 import { actorOf, httpError, tenantCtx } from '../authz';
-import { isIconVariant, keepIcon, keptIcon, squareIcon } from './icon';
+import { isIconVariant, keptIcon, produceIcon } from './icon';
 import { checkLogo, LOGO_TOO_BIG, MAX_LOGO_BYTES } from './logo';
 import { loadBrandingRow, type BrandingRow } from './theme';
 
@@ -129,12 +129,7 @@ export async function brandingRoutes(app: FastifyInstance): Promise<void> {
       return { bytes };
     });
     if (!fetched) throw httpError(404, 'not_found');
-    let icon: Buffer | null;
-    if ('icon' in fetched) icon = fetched.icon ?? null;
-    else {
-      icon = fetched.bytes ? await squareIcon(fetched.bytes, variant) : null;
-      keepIcon(key, icon);
-    }
+    const icon = 'icon' in fetched ? fetched.icon : fetched.bytes ? await produceIcon(key, fetched.bytes, variant) : null;
     if (!icon) return reply.code(302).header('location', `/icons/auditos-${variant}.png`).header('cache-control', 'private, no-store').send();
     return reply
       .header('cache-control', 'private, max-age=31536000, immutable')

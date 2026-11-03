@@ -1,7 +1,8 @@
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
 import { deflateSync } from 'node:zlib';
 import sharp from 'sharp';
 import type { TestTenant } from '@auditos/db/testing';
+import { clearKept, keepIcon, keptSize, MAX_KEPT_BYTES, setDrawer } from '../src/branding/icon';
 import { harness, login, makeTenant, makeUser, multipartBody, ownerQuery, type Harness, type Session, type TestUser } from './helpers';
 
 let h: Harness;
@@ -53,6 +54,15 @@ const rgbaBadData = (): Buffer => {
   return Buffer.concat([PNG_SIG, chunk('IHDR', ihdr), chunk('IDAT', Buffer.from('truncated')), chunk('IEND', Buffer.alloc(0))]);
 };
 /** A header that claims far more than the allowed side: refused before any decoding. */
+/** Passes the upload checks (header, size, data length) but its chunk checksums are blank, which the picture library refuses. */
+const badChecksums = (): Buffer => {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(8, 0);
+  ihdr.writeUInt32BE(8, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 2;
+  return Buffer.concat([PNG_SIG, chunk('IHDR', ihdr), chunk('IDAT', deflateSync(Buffer.alloc(8 * (1 + 3 * 8)))), chunk('IEND', Buffer.alloc(0))]);
+};
 const hugeClaim = (): Buffer => {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(60000, 0);
@@ -150,7 +160,7 @@ describe('the square icon', () => {
 });
 
 describe('falling back', () => {
-  test('a JPEG with a good header and a junk body goes to the AuditOS icon', async () => {
+  test('a JPEG that passes the upload check but has a junk body goes to the AuditOS icon', async () => {
     const id = await plant(T.id, 'image/jpeg', jpgJunk(), 20, 20);
     const r = await get(sA, `/branding/icon/${id}/192`);
     expect(r.statusCode).toBe(302);
@@ -158,7 +168,7 @@ describe('falling back', () => {
     expect(r.headers['cache-control']).toBe('private, no-store');
   });
 
-  test('a transparent PNG with damaged data goes to the AuditOS icon (tampered row)', async () => {
+  test('a transparent PNG whose data cannot be unpacked fails the upload check and goes to the AuditOS icon', async () => {
     const id = await plant(T.id, 'image/png', rgbaBadData(), 2, 2);
     const r = await get(sA, `/branding/icon/${id}/maskable`);
     expect(r.statusCode).toBe(302);
@@ -197,5 +207,85 @@ describe('who may ask', () => {
     const r = await get(null, `/branding/icon/${logoA}/512`);
     expect(r.statusCode).toBe(401);
     expect(String(r.headers['content-type'])).not.toContain('image/png');
+  });
+});
+
+describe('failures, sharing and limits', () => {
+  const ok = async () => (await upload(sA, await picture(60, 30, red)));
+  const calls: string[] = [];
+  beforeEach(() => {
+    clearKept();
+    calls.length = 0;
+  });
+  afterEach(() => setDrawer(null));
+
+  test('a picture that passes the upload check but is refused by the picture library goes to the AuditOS icon', async () => {
+    const bad = badChecksums();
+    await expect(sharp(bad, { failOn: 'error' }).png().toBuffer()).rejects.toThrow();
+    const id = await plant(T.id, 'image/png', bad, 8, 8);
+    const r = await get(sA, `/branding/icon/${id}/192`);
+    expect(r.statusCode).toBe(302);
+    expect(r.headers.location).toBe('/icons/auditos-192.png');
+  });
+
+  test('a drawing failure is tried again on the next request', async () => {
+    const id = await ok();
+    let n = 0;
+    setDrawer(async () => {
+      if (n++ === 0) throw new Error('slow disk');
+      return picture(4, 4, red);
+    });
+    expect((await get(sA, `/branding/icon/${id}/32`)).statusCode).toBe(302);
+    expect((await get(sA, `/branding/icon/${id}/32`)).statusCode).toBe(200);
+    expect(n).toBe(2);
+  });
+
+  test('a file that fails the upload check is remembered as unusable and never drawn', async () => {
+    const id = await plant(T.id, 'image/png', Buffer.concat([PNG_SIG, Buffer.from('nothing')]), 1, 1);
+    setDrawer(async () => {
+      calls.push('draw');
+      return picture(4, 4, red);
+    });
+    expect((await get(sA, `/branding/icon/${id}/32`)).statusCode).toBe(302);
+    expect((await get(sA, `/branding/icon/${id}/32`)).statusCode).toBe(302);
+    expect(calls).toEqual([]);
+    expect(keptSize().entries).toBe(1);
+  });
+
+  test('the kept icons stay within a total size', () => {
+    const chunkSize = 6 * 1024 * 1024;
+    for (let i = 0; i < 8; i++) keepIcon(`k${i}`, Buffer.alloc(chunkSize));
+    const s = keptSize();
+    expect(s.bytes).toBeLessThanOrEqual(MAX_KEPT_BYTES);
+    expect(s.entries).toBe(4);
+  });
+
+  test('at the same time, the same icon is drawn once', async () => {
+    const id = await ok();
+    setDrawer(async () => {
+      calls.push('draw');
+      await new Promise((r) => setTimeout(r, 100));
+      return picture(4, 4, red);
+    });
+    const rs = await Promise.all(Array.from({ length: 8 }, () => get(sA, `/branding/icon/${id}/180`)));
+    expect(rs.map((r) => r.statusCode)).toEqual(Array(8).fill(200));
+    expect(calls.length).toBe(1);
+  });
+
+  test('a burst of different icons never draws more than two at once', async () => {
+    const ids = [await ok(), await ok(), await ok()];
+    let now = 0;
+    let most = 0;
+    setDrawer(async () => {
+      now++;
+      most = Math.max(most, now);
+      await new Promise((r) => setTimeout(r, 80));
+      now--;
+      return picture(4, 4, red);
+    });
+    const variants = ['32', '180', '192'];
+    const rs = await Promise.all(ids.flatMap((id) => variants.map((v) => get(sA, `/branding/icon/${id}/${v}`))));
+    expect(rs.every((r) => r.statusCode === 200)).toBe(true);
+    expect(most).toBe(2);
   });
 });
